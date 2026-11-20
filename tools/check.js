@@ -1864,7 +1864,7 @@ function checkRosetteSpheres(fail) {
       if (g.n !== SURFACES[`${k}Sphere`].tiles(W))
         fail(`${k} sphere W${W}: ${g.n} cells, said ${SURFACES[`${k}Sphere`].tiles(W)}`);
       // its north disc seen from outside as the plane draws it (the plane's y down, the sphere's y up seen from its north: not
-      // mirrored), its cells the plane's (its start laid as there, see flatGrid)
+      // mirrored), its cells the plane's (its start laid as there, see cellsPlane)
       const F = APERIODIC[k](W),
         o = (W - 1) / 2;
       let xx = 0,

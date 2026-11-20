@@ -20,6 +20,10 @@
  *   4. A setup (Part 10) — number, variant, surface, rule, Life start — lives in the page link, in
  *      the Gallery and in its JSON files. Display choices are never part of it.
  *
+ * Words: the plane is the menu's 2D (2D squares, 2D circles: walk.plane, plane…), a surface its 3D
+ * (3D solids: a solid, a torus, a sphere…: walk.surface, surface…); flat means flattened (Shape's
+ * Flat ── Inflated), never 2D; a walk in 3D space, not on a surface, is a lattice's (Walk › Lattice).
+ *
  * Contents
  *   Part 1   Digits: the formula worker (BigInt, exact or with guard digits)
  *   Part 2   Catalogues and state
@@ -37,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.441';
+const VERSION = '0.5.442';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14886,7 +14890,7 @@ function rosetteSphereMesh(kind, W) {
       middles: [F.coreIds, F.coreIds.map((t) => m + t)],
       disc: { kind, W, row: planeRow(kind, W), torus: false, ...plane, xy: (t) => plane.xy(t >= m ? t - m : t) },
     },
-  )); // (south: the south half's first cell, its cells the north's m on, walls and all; middles: each half's, the north's and the south's; disc: its flat grid, its cells the plane's, a south cell's place its north twin's, see flatGrid)
+  )); // (south: the south half's first cell, its cells the north's m on, walls and all; middles: each half's, the north's and the south's; disc: its flat grid, its cells the plane's, a south cell's place its north twin's, see cellsPlane)
 }
 
 // Life on them: a variant each, one shape (Rosettes) with a tab each, its rosette's name and picture
@@ -24052,7 +24056,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
   const theirs = new Set(out.flatMap(ids)),
     touched = new Set();
   // placed as the squares' grid of side W (middle at (W − 1) / 2 both ways): another size grows from the same place; its
-  // cells then its walls, flat (see flatPolys), its cells' corners written straight (those of a live one among the others' noted)
+  // cells then its walls, flat (see packedPolygons), its cells' corners written straight (those of a live one among the others' noted)
   const o = [mid[0] - (W - 1) / 2, mid[1] - (W - 1) / 2],
     start = new Int32Array(rows.length + out.length + 1);
   let size = 0,
@@ -24073,7 +24077,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
     };
   for (const h of rows) put(h, true);
   for (const h of out) if (ids(h).some((id) => touched.has(id))) put(h, false);
-  const F = flatPolys(k, start.subarray(0, k + 1), xy.subarray(0, at));
+  const F = packedPolygons(k, start.subarray(0, k + 1), xy.subarray(0, at));
   let area = 0;
   for (let t = 0; t < rows.length; t++) area += polyArea(F.poly(t));
   const coreIds = rows.flatMap((h, t) => (h.core ? [t] : [])); // (its middle's cells: a rosette sphere's motif, see motifOf)
@@ -24087,7 +24091,7 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
     width: Math.sqrt(area / rows.length),
   }; // (n: its cells, then its walls; norm: its way to measure, its disc's; width: its cells', see cellWidth)
 }
-// a grid that never repeats, built once a size: kept while in use (its polygons some hundred MB at a million cells: the plane's, see walk.plane.flat)
+// a grid that never repeats, built once a size: kept while in use (its polygons some hundred MB at a million cells: the plane's, see walk.plane.polygons)
 const DISC_TOP = 1024; // (the largest disc's side: 2²⁰ cells, see CELLS; the hats', spectres' and pinwheel's tiling built for it)
 const discMemo = (build) => {
   const cache = remember('discMemo', weakCache());
@@ -25132,7 +25136,7 @@ function rosetteIcon(kind) {
 }
 for (const k of Object.keys(ROSETTES))
   if (!conedFamily(k)) {
-    // (made when first drawn: its disc needs what comes later, see flatPolys)
+    // (made when first drawn: its disc needs what comes later, see packedPolygons)
     Object.defineProperty(ICONS, k, {
       configurable: true,
       enumerable: true,
@@ -25160,17 +25164,17 @@ for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces')
     n[1] = '3D solids'; // (the solids and the round surfaces, one space: its groups, see shapeGroupsOf)
   else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares';
-// the flat grid cells lie on: the plane's; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
+// the plane cells lie on: the plane's own; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
-function flatGrid() {
+function cellsPlane() {
   return walk.plane ?? walk.surface?.disc ?? null;
 }
 function planeCorners(kind, x, y) {
   // a cell's corners, in world units: its lattice's (see latticeCorners)
   if (APERIODIC[kind]) {
-    const { W } = flatGrid();
+    const { W } = cellsPlane();
     return APERIODIC[kind](W).poly(y * W + x);
-  } // (a rosette sphere's: its disc's, see flatGrid)
+  } // (a rosette sphere's: its disc's, see cellsPlane)
   return latticeCorners(kind, x, y).map((p) => tilingWorld(kind, p));
 }
 // a cell's corners in its lattice's units (see latticeOf): a tiling's, its motif's; a square's, from its corner; a hexagon's
@@ -25409,7 +25413,7 @@ const iconPixel = (b64) => {
 // a cell's width: the root of its grid's cells' mean area (a lattice cell's, two rows of them; a grid that never repeats,
 // all its cells')
 const cellWidth = (kind) => {
-  if (APERIODIC[kind]) return APERIODIC[kind](flatGrid().W).width;
+  if (APERIODIC[kind]) return APERIODIC[kind](cellsPlane().W).width;
   const per = gridCells(kind);
   return Math.sqrt(
     [0, 1]
@@ -25474,10 +25478,10 @@ const roundWalls = (K) =>
 function iconWay(i, K) {
   const frame = patternFrame(i, K),
     { ex, ey, n } = frame;
-  if (flatGrid()) {
+  if (cellsPlane()) {
     // (as drawn: the plane turned by planeTurn; out, its bottom to its slice's wall, a rosette sphere's to its lune's way out from the pole)
     const w = roundWalls(K) && planeSlices(K),
-      o = (flatGrid().W - 1) / 2,
+      o = (cellsPlane().W - 1) / 2,
       c = !walk.plane && K > 1 && !poleColours(walk.surface, K) && frame.centre; // (at a pole: upright, as on the plane)
     const out = w ? w.angles[i] : c ? Math.atan2(c[1] - o, c[0] - o) : null;
     return { ...frame, tilt: (out === null ? 0 : out - Math.PI / 2) - planeTurn(), mirror: false };
@@ -25509,8 +25513,8 @@ function iconRoom(K) {
     g = walk.surface,
     { part } = iconCellsOf(K);
   const cellSide = cellWidth(kind);
-  const at = flatGrid()
-    ? (t) => cellMiddle(kind, ...flatGrid().xy(t))
+  const at = cellsPlane()
+    ? (t) => cellMiddle(kind, ...cellsPlane().xy(t))
     : g.torus
       ? (t) => sheetPoint(g, ...sheetPlace(g, t), 0)
       : (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3)); // (where it is: on the plane, on the sheet unrolled, in space)
@@ -25681,7 +25685,7 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
   const { n, xy } = planeGrid(kind, W, row),
     F = APERIODIC[kind]?.(W),
     walls = withWalls && !F ? planeWallPlaces(kind, W, torus) : [],
-    m = withWalls && F ? F.m : n + walls.length; // (withWalls: its walls after its cells, as planeFlat has them)
+    m = withWalls && F ? F.m : n + walls.length; // (withWalls: its walls after its cells, as planePolygons has them)
   // each cell's corners in its lattice's units (see latticeCorners; a grid that never repeats: its own, flat), wrapping round
   // the grid every its columns' units along (row / its cells a lattice step: a rectangle's not W), W up; the same corner of
   // two cells, one id
@@ -25847,7 +25851,7 @@ function buildLifePlane(seq) {
   });
   Object.assign(walk, {
     stacked: spaceTime && spaceTimeApplies(walk.variant),
-    plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), flat: planeFlat(kind, W, planeTorus(kind)) },
+    plane: { kind, W, row, n, xy, at, torus: planeTorus(kind), polygons: planePolygons(kind, W, planeTorus(kind)) },
     xs: walk.wx,
     ys: walk.wx, // (one point, as its world's: see startLife)
   });
@@ -25949,7 +25953,7 @@ function stackCubes(mode) {
 // The angle the view turns its world by (drawn turned, see turnLayer; a frame or the pointer in the turned world): a
 // rectangle's (a slanted grid's straight sheet, see planeKind), its side U across; any other grid's, as it is (its tiles as
 // their picture, their torus's)
-const planeTurn = (kind = flatGrid()?.kind) =>
+const planeTurn = (kind = cellsPlane()?.kind) =>
   RECTS[kind] ? -Math.atan2(RECTS[kind].basis[0][1], RECTS[kind].basis[0][0]) : 0;
 const turnPoint = ([u, v], a) => [u * Math.cos(a) - v * Math.sin(a), u * Math.sin(a) + v * Math.cos(a)];
 // a layer drawn turned by a (the grid's turn, 0: as it is), about the view's origin, at the screen's resolution
@@ -25962,7 +25966,7 @@ function turnLayer(ctx, a = planeTurn()) {
 }
 // the grid's frame: the corners of its four corner cells, turned as it is drawn (turn 0: as they are)
 function planeBounds(turn = planeTurn()) {
-  const { kind, W, row } = flatGrid(),
+  const { kind, W, row } = cellsPlane(),
     b = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
   const per = gridCells(kind),
     corner = [
@@ -26371,7 +26375,7 @@ function renderDrawTools() {
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, see drawsHere)
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active'), whyNot = null) =>
     setTile(b, { on, greyed: away ? why : own ? ownWhy : '', whyNot }); // (its own on; whyNot, a setup's: a brush on the plane only)
-  const tooBig = (p) => discPattern(p) && flatGrid()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
+  const tooBig = (p) => discPattern(p) && cellsPlane()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
   setTile($('drawView'), { on: brush.view || !kind, whyNot: drawOnPlane }); // (at any generation; a surface's, on: to see)
   for (const b of $('brushCards').children)
     grey(
@@ -26609,7 +26613,7 @@ function drawPlaneGrid() {
 // and its place's only, see planeCorners)
 let gridMiddles = null;
 const cellMiddle = (kind, x, y) => {
-  const g = flatGrid();
+  const g = cellsPlane();
   if (g?.kind !== kind || !(x >= 0 && y >= 0 && x < g.row && y < g.W) || (x | 0) !== x || (y | 0) !== y)
     return meanPoint(planeCorners(kind, x, y));
   if (gridMiddles?.g !== g) {
@@ -26991,7 +26995,7 @@ function drawGhost() {
 // a pattern's picture: its own cells, fitted in the icon (dying ones fainter)
 const cellsIcon = (kind, rle) =>
   polysIcon(orientPattern(kind, rle, 0, false).map(([x, y, v]) => [planeCorners(kind, x, y), v]));
-// a disc's pattern (see DRAW_PATTERNS), on the disc shown (see flatGrid): its cells as they lie at its middle
+// a disc's pattern (see DRAW_PATTERNS), on the disc shown (see cellsPlane): its cells as they lie at its middle
 const DISC_ICON_W = 48; // (a disc's pictures on a disc of its own this wide, whatever the one shown: its patterns found on it)
 const discIcon = (kind, cells) => {
   const D = discCells(kind, DISC_ICON_W);
@@ -30885,7 +30889,7 @@ const HUNT_ZONES = {
   custom: ['link', 'Found'],
 }; // a start from a link with its cells (a hunt's result), from none of these: shown then only
 const famousZone = (zone) => zone === 'patterns' || zone === 'centred';
-const onDisc = () => !!flatGrid() && !!APERIODIC[patternKind()]; // (a grid that never repeats, a disc: its patterns by their middles, see centredChoices)
+const onDisc = () => !!cellsPlane() && !!APERIODIC[patternKind()]; // (a grid that never repeats, a disc: its patterns by their middles, see centredChoices)
 // the Icon and Punk zones' pictures (pixelarticons.js, punks.js): 24 × 24 bits each, their names (a link's: an icon's, a
 // punk's number), what one is called, where they come from
 const ICON_SETS = {
@@ -31227,10 +31231,10 @@ const patchSpots = (surface, K) => {
 // angle from it, as many in each (a colour from the middle out to the wall, as much wall as the others); a slice's
 // spot: its cell nearest halfway out along its middle angle. Kept per grid
 let sliceMemo = null;
-const wallSlices = (K, kind = flatGrid()?.kind) =>
+const wallSlices = (K, kind = cellsPlane()?.kind) =>
   !!kind && !planeTorus(kind) && K > 1 && ((K !== 2 && K !== 4) || !!APERIODIC[kind] || shaped(kind)); // (in a circle or a hexagon: always; kind: the plane's in use, else a size's to tell)
 function planeSlices(K) {
-  const { kind, W, n, xy } = flatGrid(),
+  const { kind, W, n, xy } = cellsPlane(),
     turn = planeTurn(),
     key = `${gridKey()}|${K}|${turn}|${placementKey()}`;
   if (sliceMemo?.key === key) return sliceMemo;
@@ -32273,7 +32277,7 @@ const patternsOn = () => {
   const m = VARIANTS[walk.variant],
     K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (
-    !!flatGrid() ||
+    !!cellsPlane() ||
     !!walk.surface?.torus ||
     (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
     (!!hullSolidOf(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (a cut's: its solid's)
@@ -32286,7 +32290,7 @@ const cellKind = (g) => g.cells; // (a mesh's cells' kind, its surface's tab's, 
 const patternKind = () => {
   const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts());
   return (
-    flatGrid()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.surface.tiling ? 'tri' : cellKind(walk.surface))
+    cellsPlane()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.surface.tiling ? 'tri' : cellKind(walk.surface))
   );
 }; // (a hull solid's: its first colour's face's, a square or a triangle)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
@@ -32355,7 +32359,7 @@ function cellIndex(g) {
 function patternPlace(i, K) {
   const g = walk.surface,
     surface = VARIANTS[walk.variant].surface; // (the walk shown's, as g)
-  if (flatGrid()) return { on: 'plane' };
+  if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   const hull = hullColours(surface, K),
     squares = (g.uncut ?? g).squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings; a cut's, its solid's)
@@ -32424,7 +32428,7 @@ function triPlace(face) {
 // way); null on none (a solid of hexagons' cell folded over an edge)
 function cellPlace(t) {
   const g = walk.surface;
-  if (flatGrid()) return { on: 'plane' };
+  if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
@@ -32509,7 +32513,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
   };
   const [cols, rows] = teamGrid(K);
   if (place.on === 'plane') {
-    const flat = flatGrid(),
+    const flat = cellsPlane(),
       { W, n, xy, at, torus } = flat,
       disc = rosetteHalved(g, K) && i >= K / 2 ? g.south : 0; // (disc: its first cell, a south colour's its half's, see rosetteHalved)
     const mid = (u) => cellMiddle(kind, ...xy(u)),
@@ -33690,12 +33694,12 @@ for (const [table, off] of [
   }
 const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their numbers, see DRAW_PATTERNS)
-// A disc's cells (its disc of W, the shown one's by default, see flatGrid), a disc pattern's by their numbers: a disc's cells
+// A disc's cells (its disc of W, the shown one's by default, see cellsPlane), a disc pattern's by their numbers: a disc's cells
 // numbered from its middle out, nearest first, the same at every size (see discPatch). laid(cells, k): a pattern's cells
 // turned k of the figure's turns round the middle, [cell, state] (null if one is past the disc); way(cells), the way it lies
 // from the middle (its cells' middles summed); corners(t), a cell's
 const discCellsMemo = remember('discCellsMemo', new Map());
-function discCells(kind, W = flatGrid().W) {
+function discCells(kind, W = cellsPlane().W) {
   const id = `${kind}|${W}`;
   if (discCellsMemo.has(id)) return discCellsMemo.get(id);
   const F = APERIODIC[kind](W),
@@ -33752,7 +33756,7 @@ function discCells(kind, W = flatGrid().W) {
 }
 // with colours (K dividing its turns): those found 6 from the middle (CENTRED_OFF), a copy a colour, in its slice
 function centredChoices(kind, K, rule, mine, any, centred = true) {
-  const { W, xy } = flatGrid(),
+  const { W, xy } = cellsPlane(),
     o = (W - 1) / 2,
     n = figureTurns(kind),
     out = Array.from({ length: K }, () => []);
@@ -33831,7 +33835,7 @@ const choiceOfWord = (list, word) => {
 function patternChoices(centred = false) {
   // (once a grid, its colours and rule)
   const L = walk.life,
-    id = `${flatGrid() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${placementKey()}`, // (their parts' own spots)
+    id = `${cellsPlane() ? `${gridKey()}|${planeTurn()}` : ''}|${L.colours}|${lifeParts()}|${L.ruleText}|${placementKey()}`, // (their parts' own spots)
     m = choicesMemo[centred]; // (its teams laid too: Newcomer's one fewer, see lifeParts)
   if (m?.id !== id || m.g !== walk.surface)
     choicesMemo[centred] = { id, g: walk.surface, choices: laidChoices(centred).map(namedChoices) };
@@ -34024,7 +34028,7 @@ function middleCells(i = 0, K = 1) {
     n = walk.life.seed.length;
   if (K === 1 && !walk.plane && g.faceMids?.length < g.faces?.length)
     return centreCells(g.faceMids[g.cellFaces[frontCell()]]); // (a face of several triangles, a dodecahedron's pentagon: its middle)
-  if (APERIODIC[patternKind()] && !flatGrid() && !g.disc) {
+  if (APERIODIC[patternKind()] && !cellsPlane() && !g.disc) {
     // (cells with no lattice on a surface, the Penrose sphere's: those nearest the colour's spot, or the cell in front)
     const spot = K > 1 ? patchSpots(VARIANTS[walk.variant].surface, K)?.[i] : null;
     return centreCells(spot ?? Array.from(g.cen.subarray(3 * frontCell(), 3 * frontCell() + 3)));
@@ -36815,7 +36819,7 @@ const setCut = (k) => {
   needsFull ||= k !== cutAxis;
   cutAxis = k;
 }; // (a notch picked, or dragged over)
-/* Flat drawings by the card as well (see gpuFlat): the 2D walks (a 3D one in its 3D scene, see gpuCubes). The whole
+/* The lattices' walks drawn by the card as well (see gpuLatticeWalk): the 2D walks (a 3D one in its 3D scene, see gpuCubes). The whole
  * walk so far is redrawn at each frame, fast enough to pan and zoom walks of millions of steps smoothly:
  *  - fill: one instance per enclosed vertex of the fill (see computeFill), in the colour of the step
  *    that closed it;
@@ -37123,7 +37127,7 @@ function walkCubes(mode) {
 // A plane's polygons, its cells' then its walls', flat: their corners' x, y in turn (polygon k's from start[k] to start[k + 1]),
 // no array of arrays kept (2^20 hexagons: 50 MB, not 300); poly(k), one's corners
 // polygons flat: their corners x and y in turn, each one's start (start[k] to start[k + 1]); poly(k) one's
-const flatPolys = (m, start, xy) => ({
+const packedPolygons = (m, start, xy) => ({
   m,
   start,
   xy,
@@ -37133,9 +37137,9 @@ const flatPolys = (m, start, xy) => ({
     return P;
   },
 });
-// a plane's walls' places (a torus: none; in a hexagon: its own, see planeShape), after its cells in planeFlat and planeMesh
+// a plane's walls' places (a torus: none; in a hexagon: its own, see planeShape), after its cells in planePolygons and planeMesh
 const planeWallPlaces = (kind, W, torus) => (torus ? [] : (planeShape(kind, W)?.walls ?? planeWalls(kind, W)));
-function planeFlat(kind, W, torus) {
+function planePolygons(kind, W, torus) {
   // a plane's cells then its walls (a grid that never repeats: its own)
   if (APERIODIC[kind]) return APERIODIC[kind](W);
   const walls = planeWallPlaces(kind, W, torus).map(([x, y]) => planeCorners(kind, x, y));
@@ -37158,7 +37162,7 @@ function planeFlat(kind, W, torus) {
     }
     start[k + 1] = at / 2;
   }
-  return flatPolys(m, start, xy.subarray(0, at));
+  return packedPolygons(m, start, xy.subarray(0, at));
 }
 // Life on the graphics card (see 11.4c), the game's engine: L's, made again for another L; the cells sent again when the
 // processor wrote them (L.gpuOld); null without WebGPU (no Life then)
@@ -37977,7 +37981,7 @@ fn clipOf(s: vec3f, bias: f32) -> vec4f {  // (depth 0 to 1; front: before all e
   let z = clamp(-s.z / u.depth - bias, -1.0, 1.0) * 0.5 + 0.5;
   return vec4f(s.x / u.screen.x * 2.0 - 1.0, 1.0 - s.y / u.screen.y * 2.0, mix(z, z * 0.01, u.front), 1.0);
 }
-fn flatAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
+fn clipAt(q: vec2f) -> vec4f { return vec4f(q.x / u.screen.x * 2.0 - 1.0, 1.0 - q.y / u.screen.y * 2.0, 0.0, 1.0); }
 fn lightSpace(p: vec3f) -> vec3f { return vec3f(dot(p, u.Lx), dot(p, u.Ly), -dot(p, u.L)) / u.lr; }
 // the steps since step at: the step shown (stepWhole) and its share of the next (gliding, see glideAt), their difference in
 // whole numbers (exact at millions of steps, where a float's would not be)
@@ -38247,19 +38251,19 @@ fn haloAt(p: vec2i) -> vec4f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(
   let c = h.rgb * (1.0 - h.a);  // (its share its mode's, see lampsF; none on Halo's lamps)
   return vec4f(c, max(c.r, max(c.g, c.b)));
 }
-// flat drawings (2D walks): world (x, y) to pixels by view (scale, ox, oy)
+// the 2D walks' drawings: world (x, y) to pixels by view (scale, ox, oy)
 struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
-@vertex fn flatPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
+@vertex fn walkPathV(@location(0) quad: vec2f, @location(1) a0: vec2f, @location(2) b0: vec2f, @location(3) key: u32, @builtin(instance_index) k: u32) -> Col {
   var o: Col;
   let l = lifeOf(u.firstBorn + i32(k), 2147483647, false);  // (its step its instance's)
   if (key == 255u || l.y <= l.x) { o.pos = vec4f(2.0, 2.0, 2.0, 1.0); return o; }  // (a step that draws nothing: a spiral's 0; not walked yet)
   if (u.colour == 2) { o.col = vec4f(band(pal, (f32(key) + 0.5) / 256.0), 1.0); } else { o.col = vec4f(rainbow(f32(k)), 1.0); }
   let a = u.view.yz + mix(a0, b0, l.x) * u.view.x; let b = u.view.yz + mix(a0, b0, l.y) * u.view.x;  // (as its life draws it, see lifeOf)
   var d = b - a; if (length(d) > 1e-4) { d = normalize(d); } else { d = vec2f(1.0, 0.0); }
-  o.pos = flatAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
+  o.pos = clipAt(mix(a, b, quad.x) + (vec2f(-d.y, d.x) * quad.y + d * (quad.x * 2.0 - 1.0)) * u.width * 0.5);
   return o;
 }
-@vertex fn flatTilesV(@location(0) c: vec4f, @location(1) at: f32, @builtin(vertex_index) v: u32) -> Col {  // (a fan of 6 corners as 4 triangles: 0, q, q + 1)
+@vertex fn walkTilesV(@location(0) c: vec4f, @location(1) at: f32, @builtin(vertex_index) v: u32) -> Col {  // (a fan of 6 corners as 4 triangles: 0, q, q + 1)
   var o: Col;
   let q = array<u32, 12>(0u, 1u, 2u, 0u, 2u, 3u, 0u, 3u, 4u, 0u, 4u, 5u)[v];
   var col = band(grad, (c.z + 0.5) / 256.0);
@@ -38268,13 +38272,13 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   let a = u.alphaF * shown;
   o.col = vec4f(col * u.bright * a, a);
   let k = u32(c.w) * 6u + q; let t4 = u.tpl[k / 2u];
-  o.pos = flatAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
+  o.pos = clipAt(u.view.yz + (c.xy + select(t4.xy, t4.zw, (k & 1u) == 1u)) * u.view.x);
   return o;
 }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return vec4f(mix(i.col.rgb, u.fadeTo * i.col.a, u.fade), i.col.a); }  // (premultiplied)
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
-fn planeAt(p: vec2f) -> vec4f { return flatAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
+fn planeAt(p: vec2f) -> vec4f { return clipAt(u.view.yz + vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y) * u.view.x); }
 @vertex fn planeCellsV(@location(0) pos: vec2f, @location(1) id: u32) -> Col {
   var o: Col; let c = unpack4x8unorm(tileCol[id]);
   o.pos = select(planeAt(pos), vec4f(2.0, 2.0, 2.0, 1.0), c.a == 0.0);  // (its alpha: 0 not drawn; under ${SEEN_THROUGH} an ink seen through at that share, laid over the tile under it (a trail); else drawn whole, painted or its ground, see texelRgba)
@@ -39320,7 +39324,7 @@ function gpuFrame(enc, drawAll) {
 }
 // A flat drawing: the fill, the cells, the path
 // a 2D cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
-// see flatPathV; a surface's tiles and cubes fade by eased); walkFadeSteps: the steps it takes at the speed played
+// see walkPathV; a surface's tiles and cubes fade by eased); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.5;
 document.documentElement.style.setProperty('--fade-seconds', `${WALK_FADE_SECONDS}s`); // (the style's fades as long: a Gallery picture's)
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0); // (its seconds at any speed: half a step at 1/s)
@@ -39361,7 +39365,8 @@ function eased(key, want) {
   }
   return out;
 }
-function gpuFlat(to) {
+// a walk on a lattice (2D, or a 3D one's cubes), or Elementary's rows: none on a surface, none Life's plane (see gpuPlane)
+function gpuLatticeWalk(to) {
   if (walk.is3d) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]); // (a 3D walk in its 3D scene: cubes, or bars along its lines)
   if (walk.rows) {
     gpuClear();
@@ -39373,38 +39378,38 @@ function gpuFlat(to) {
   const { device } = D,
     mode = $('colourMode').value,
     s = view.scale;
-  if (D.keys.flatPts !== walk.xs) {
+  if (D.keys.walkPts !== walk.xs) {
     const pts = new Float32Array(2 * (walk.n + 1));
     for (let i = 0; i <= walk.n; i++) {
       pts[2 * i] = walk.xs[i];
       pts[2 * i + 1] = walk.ys[i];
     }
-    gpuBuffer('flatPts', pts);
-    D.keys.flatPts = walk.xs;
+    gpuBuffer('walkPts', pts);
+    D.keys.walkPts = walk.xs;
   }
   const keysKey = `${mode === 'digit'}|${walk.keys === walk.antStates}`;
-  if (D.keys.flatKeys !== walk.keys || D.keys.flatKeysMode !== keysKey) {
+  if (D.keys.walkKeys !== walk.keys || D.keys.walkKeysMode !== keysKey) {
     const keys = new Uint32Array(Math.max(1, walk.n));
     const look = stepLook(mode);
     for (let i = 0; i < walk.n; i++)
       keys[i] = walk.skipZeros && walk.digits[i] === 0 ? 255 : look?.key ? look.key(i) : 0;
-    gpuBuffer('flatKeys', keys);
-    D.keys.flatKeys = walk.keys;
-    D.keys.flatKeysMode = keysKey;
+    gpuBuffer('walkKeys', keys);
+    D.keys.walkKeys = walk.keys;
+    D.keys.walkKeysMode = keysKey;
   }
   stepPalette(D);
   let fillCount = 0;
   if (fillOn()) {
     fillNow();
     if (areaFill.count && areaFill.templates.length <= 4) {
-      if (D.keys.flatFill !== areaFill) {
+      if (D.keys.walkFill !== areaFill) {
         const inst = new Float32Array(4 * areaFill.count);
         for (let k = 0; k < areaFill.count; k++)
           inst.set([areaFill.cx[k], areaFill.cy[k], rainbowBand(areaFill.at[k] - 1), areaFill.tpl[k]], 4 * k);
-        gpuBuffer('flatFill', inst);
-        gpuBuffer('flatFillAt', Float32Array.from(areaFill.at.subarray(0, areaFill.count)));
+        gpuBuffer('walkFill', inst);
+        gpuBuffer('walkFillAt', Float32Array.from(areaFill.at.subarray(0, areaFill.count)));
         D.fillTpl = templateArray(areaFill.templates);
-        D.keys.flatFill = areaFill;
+        D.keys.walkFill = areaFill;
       }
       fillCount = countUpTo(areaFill.at, areaFill.count, to);
     }
@@ -39413,14 +39418,14 @@ function gpuFlat(to) {
   let cellCount = 0;
   if (cells) {
     const cellsKey = `${mode}|${walk.keys === walk.antStates}`;
-    if (D.keys.flatCells !== walk.xs || D.keys.flatCellsMode !== cellsKey) {
+    if (D.keys.walkCells !== walk.xs || D.keys.flatCellsMode !== cellsKey) {
       const { inst, at, m } = flatCellInstances(mode);
-      gpuBuffer('flatCells', inst.subarray(0, 4 * m));
-      gpuBuffer('flatCellsAt', Float32Array.from(at.subarray(0, m)));
+      gpuBuffer('walkCells', inst.subarray(0, 4 * m));
+      gpuBuffer('walkCellsAt', Float32Array.from(at.subarray(0, m)));
       D.cellAt = at;
       D.cellN = m;
       D.cellTpl = templateArray(CELL_TEMPLATES[walk.lattice]);
-      D.keys.flatCells = walk.xs;
+      D.keys.walkCells = walk.xs;
       D.keys.flatCellsMode = cellsKey;
     }
     cellCount = countUpTo(D.cellAt, D.cellN, to);
@@ -39435,7 +39440,7 @@ function gpuFlat(to) {
   const tiles = (buffer, atBuffer, tpl, count, alpha, fade) => {
     rp.setPipeline(
       gpuDrawPipe('flatTiles', {
-        vertex: 'flatTilesV',
+        vertex: 'walkTilesV',
         fragment: 'colF',
         blend: BLEND_PRE,
         depth: false,
@@ -39452,11 +39457,11 @@ function gpuFlat(to) {
     rp.setVertexBuffer(1, atBuffer);
     rp.draw(12, count);
   };
-  if (fillCount) tiles(D.flatFill, D.flatFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
+  if (fillCount) tiles(D.walkFill, D.walkFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
   if (cellCount)
     tiles(
-      D.flatCells,
-      D.flatCellsAt,
+      D.walkCells,
+      D.walkCellsAt,
       D.cellTpl,
       cellCount,
       shows('cells', walk.variant) && line ? 0.15 : 1,
@@ -39466,7 +39471,7 @@ function gpuFlat(to) {
   if (line && walked > 0) {
     rp.setPipeline(
       gpuDrawPipe('flatPath', {
-        vertex: 'flatPathV',
+        vertex: 'walkPathV',
         fragment: 'colF',
         topology: 'triangle-strip',
         blend: BLEND_PRE,
@@ -39487,11 +39492,11 @@ function gpuFlat(to) {
       width: cells ? Math.max(0.6, Math.min(s * 0.12, 3)) : Math.max(0.6, Math.min(s * 0.3, 6)),
     };
     rp.setVertexBuffer(0, D.quad);
-    rp.setVertexBuffer(1, D.flatPts, 0);
-    rp.setVertexBuffer(2, D.flatPts, 8);
-    rp.setVertexBuffer(3, D.flatKeys);
+    rp.setVertexBuffer(1, D.walkPts, 0);
+    rp.setVertexBuffer(2, D.walkPts, 8);
+    rp.setVertexBuffer(3, D.walkKeys);
     rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, look)]);
-    rp.draw(4, walked); // (each as its life draws it, see flatPathV)
+    rp.draw(4, walked); // (each as its life draws it, see walkPathV)
   }
   rp.end();
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
@@ -39761,7 +39766,7 @@ function gpuPlane(paint) {
     { n } = walk.plane,
     { scale: s } = view,
     key = gridKey(),
-    F = walk.plane.flat;
+    F = walk.plane.polygons;
   if (D.keys.plane !== key) {
     const { pos, ids, tris } = planeVertices(F);
     gpuBuffer('planePos', pos);
@@ -41193,11 +41198,11 @@ function tick(now = performance.now()) {
     layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
     drawn = 0;
   }
-  // a walk on the card, redrawn whole when anything changes (see gpuFlat)
+  // a walk on the card, redrawn whole when anything changes (see gpuLatticeWalk)
   if (needsFull && !walk.n) gpuClear();
   if (walk.n && (needsFull || drawn !== stepShown || gliding())) {
     // (gliding: its cells fading in between two steps)
-    gpuFlat(stepShown);
+    gpuLatticeWalk(stepShown);
     if (drawn !== stepShown) {
       drawn = stepShown;
       statsDirty = true;

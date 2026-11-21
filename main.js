@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.568';
+const VERSION = '0.5.569';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10577,72 +10577,74 @@ function navGo(level, ...values) {
 // tiling picked by tabs under the list: variants, its variants per tiling (walks along the edges and on
 // cells, ants, Life);
 // tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title: a turned one's its
+// The base grids folded, one table: on a torus, a Möbius strip and a Klein bottle, each grid's surface `${fold}${part}`
+// (its variants'), straight and, where its grid turns there (a strip's or a bottle's: see stripSides; a torus's: see
+// torusSheets), turned: `…Turned`, the hexagons the other way round (pointy straight, named …Turned; flat turned, see
+// POINTY); Cairo's sheets its own (see cairoSheet), never turned. Each grid: its kind, its names' part, its cells, its
+// tab's picture, name and words (see baseFamily), its turn on a torus and on a strip or a bottle (degrees, 0: none: those
+// torusSheets and stripSides find, declared here as the grids' shapes are built after the menu)
+const BASE_GRIDS = [
+  ['square', '', 'squares', 'tilesSq', 'Squares', 'Squares', 0, 45],
+  ['cairo', 'Cairo', 'pentagons', 'pentagons', 'Cairo', 'Cairo pentagons', 0, 0],
+  ['tri', 'Tri', 'triangles', 'tilesTri', 'Triangles', 'Triangles', 30, 30],
+  ['kite', 'Kite', 'kites', 'kites', 'Kites', 'Kites (each triangle cut in 3)', 30, 30],
+  ['hex', 'Hex', 'hexagons', 'tilesHex', 'Hexagons', 'Hexagons', 30, 30],
+];
+// a fold's grid turned there: its turn, in degrees (0: none)
+const baseTurn = (fold, kind) => BASE_GRIDS.find(([k]) => k === kind)[fold === 'torus' ? 6 : 7];
+const BASE_SURFACES = Object.keys(FOLDS).flatMap((fold) =>
+  BASE_GRIDS.flatMap(([kind, part, unit]) =>
+    [false, true]
+      .filter((turned) => !turned || baseTurn(fold, kind))
+      .map((turned) => ({
+        name: `${fold}${part}${turned !== (kind === 'hex') ? 'Turned' : ''}`,
+        base: `${fold}${part}`,
+        fold,
+        kind,
+        unit,
+        turned,
+      })),
+  ),
+);
+// a fold's family (see FAMILIES): its variants, then each grid's tab and its turned one's where it turns (see Turned in
+// renderModePicker)
+const baseFamily = (fold, variants) => ({
+  name: FOLDS[fold].name,
+  variants,
+  tab: 0,
+  tabs: BASE_GRIDS.flatMap(([kind, part, , pic, name, words]) => {
+    const f = variants.findIndex((vs) => vs.some((v) => VARIANTS[v]?.surface === `${fold}${part}`)),
+      deg = baseTurn(fold, kind);
+    return [
+      [f, false, pic, name, words],
+      ...(deg ? [[f, true, pic, name, `${name}, turned by ${deg}° (${FOLDS[fold].way})`]] : []),
+    ];
+  }),
+});
 // shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
 const familyPlaces = remember('familyPlaces', new Map()); // (each variant's family and tiling, see familyPlace)
 const FAMILIES = [
-  {
-    name: 'Torus',
-    variants: [
-      ['walkTorusSquaresTurtleEdges', 'walkTorusSquaresTurtleCells', 'lifeTorusSquares'],
-      ['walkTorusHexTurtleEdges', 'walkTorusHexTurtleCells', 'lifeTorusHex'],
-      ['walkTorusTrianglesTurtleEdges', 'walkTorusTrianglesTurtleCells', 'lifeTorusTriangles'],
-      ['walkTorusCairoTurtleCells', 'lifeTorusCairo'],
-      ['walkTorusKitesTurtleCells', 'lifeTorusKites'],
-    ],
-    tab: 0,
-    tabs: [
-      [0, false, 'tilesSq', 'Squares', 'Squares'],
-      [3, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
-      [2, false, 'tilesTri', 'Triangles', 'Triangles'],
-      [2, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (rows round the tube)'],
-      [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
-      [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'],
-      [1, false, 'tilesHex', 'Hexagons', 'Hexagons'],
-      [1, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)'],
-    ],
-  },
-  {
-    name: 'Möbius strip',
-    variants: [
-      ['walkMobiusStripSquaresTurtleEdges', 'walkMobiusStripSquaresTurtleCells', 'lifeMobiusStripSquares'],
-      ['walkMobiusStripHexTurtleEdges', 'walkMobiusStripHexTurtleCells', 'lifeMobiusStripHex'],
-      ['walkMobiusStripTrianglesTurtleEdges', 'walkMobiusStripTrianglesTurtleCells', 'lifeMobiusStripTriangles'],
-      ['walkMobiusStripCairoTurtleCells', 'lifeMobiusStripCairo'],
-      ['walkMobiusStripKitesTurtleCells', 'lifeMobiusStripKites'],
-    ],
-    tab: 0,
-    tabs: [
-      [0, false, 'tilesSq', 'Squares', 'Squares'],
-      [3, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
-      [2, false, 'tilesTri', 'Triangles', 'Triangles'],
-      [2, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (pointing along the strip)'],
-      [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
-      [4, true, 'kites', 'Kites', 'Kites, turned by 30° (pointing along the strip)'],
-      [1, false, 'tilesHex', 'Hexagons', 'Hexagons'],
-      [1, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns across the strip)'],
-    ],
-  },
-  {
-    name: 'Klein bottle',
-    variants: [
-      ['walkKleinBottleSquaresTurtleEdges', 'walkKleinBottleSquaresTurtleCells', 'lifeKleinBottleSquares'],
-      ['walkKleinBottleCairoTurtleCells', 'lifeKleinBottleCairo'],
-      ['walkKleinBottleHexTurtleEdges', 'walkKleinBottleHexTurtleCells', 'lifeKleinBottleHex'],
-      ['walkKleinBottleTrianglesTurtleEdges', 'walkKleinBottleTrianglesTurtleCells', 'lifeKleinBottleTriangles'],
-      ['walkKleinBottleKitesTurtleCells', 'lifeKleinBottleKites'],
-    ],
-    tab: 0,
-    tabs: [
-      [0, false, 'tilesSq', 'Squares', 'Squares'],
-      [1, false, 'pentagons', 'Cairo', 'Cairo pentagons'],
-      [3, false, 'tilesTri', 'Triangles', 'Triangles'],
-      [3, true, 'tilesTriTurned', 'Triangles', 'Triangles, turned by 30° (rows round the tube)'],
-      [4, false, 'kites', 'Kites', 'Kites (each triangle cut in 3)'],
-      [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'],
-      [2, false, 'tilesHex', 'Hexagons', 'Hexagons'],
-      [2, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)'],
-    ],
-  },
+  baseFamily('torus', [
+    ['walkTorusSquaresTurtleEdges', 'walkTorusSquaresTurtleCells', 'lifeTorusSquares'],
+    ['walkTorusHexTurtleEdges', 'walkTorusHexTurtleCells', 'lifeTorusHex'],
+    ['walkTorusTrianglesTurtleEdges', 'walkTorusTrianglesTurtleCells', 'lifeTorusTriangles'],
+    ['walkTorusCairoTurtleCells', 'lifeTorusCairo'],
+    ['walkTorusKitesTurtleCells', 'lifeTorusKites'],
+  ]),
+  baseFamily('mobius', [
+    ['walkMobiusStripSquaresTurtleEdges', 'walkMobiusStripSquaresTurtleCells', 'lifeMobiusStripSquares'],
+    ['walkMobiusStripHexTurtleEdges', 'walkMobiusStripHexTurtleCells', 'lifeMobiusStripHex'],
+    ['walkMobiusStripTrianglesTurtleEdges', 'walkMobiusStripTrianglesTurtleCells', 'lifeMobiusStripTriangles'],
+    ['walkMobiusStripCairoTurtleCells', 'lifeMobiusStripCairo'],
+    ['walkMobiusStripKitesTurtleCells', 'lifeMobiusStripKites'],
+  ]),
+  baseFamily('klein', [
+    ['walkKleinBottleSquaresTurtleEdges', 'walkKleinBottleSquaresTurtleCells', 'lifeKleinBottleSquares'],
+    ['walkKleinBottleCairoTurtleCells', 'lifeKleinBottleCairo'],
+    ['walkKleinBottleHexTurtleEdges', 'walkKleinBottleHexTurtleCells', 'lifeKleinBottleHex'],
+    ['walkKleinBottleTrianglesTurtleEdges', 'walkKleinBottleTrianglesTurtleCells', 'lifeKleinBottleTriangles'],
+    ['walkKleinBottleKitesTurtleCells', 'lifeKleinBottleKites'],
+  ]),
   // Boy's surface, a tab a solid it is made from (see BOY_BASES: Life only)
   {
     name: "Boy's surface",
@@ -15708,18 +15710,12 @@ function finishTorus(verts, tiles, sides, nu, nv, uv, mids = null, placed = fals
  * strip's edge it goes round to the face just behind (the same tile, turned over). The faces make one
  * closed surface: every tile has as many neighbours as on a torus, and nothing is mirrored. */
 const MOBIUS_WIDTH = 1.05; // (about 4π / 12: 12 colours' stretches square as it is, 10's within a ring's margin, see ringLength, stripSteps)
-// the base grids' strips, laid as a tiling's (see tilingStrip), named as their tori: straight, then turned (the hexagons'
-// the other way round: their flat ones first, see POINTY); Cairo's its own (see mobiusSheetOf)
-for (const [kind, unit, straight, turned] of [
-  ['square', 'squares', 'mobius'],
-  ['tri', 'triangles', 'mobiusTri', 'mobiusTriTurned'],
-  ['kite', 'kites', 'mobiusKite', 'mobiusKiteTurned'],
-  ['hex', 'hexagons', 'mobiusHexTurned', 'mobiusHex'],
-]) {
-  const { deg, along } = stripSides(kind);
-  MOBIUS_STRIPS[straight] = { kind, basis: along[0], unit };
-  if (turned) MOBIUS_STRIPS[turned] = { kind, basis: along[1], deg, unit };
-}
+// the base grids' strips, laid as a tiling's (see tilingStrip); Cairo's its own (see mobiusSheetOf)
+for (const { name, fold, kind, unit, turned } of BASE_SURFACES)
+  if (fold === 'mobius' && kind !== 'cairo') {
+    const { deg, along } = stripSides(kind);
+    MOBIUS_STRIPS[name] = turned ? { kind, basis: along[1], deg, unit } : { kind, basis: along[0], unit };
+  }
 const MOBIUS_KINDS = ['mobiusCairo', ...Object.keys(MOBIUS_STRIPS)];
 // a Klein bottle's strip, its sheet glued across too (see kleinTilingSheet): its name's, a tiling's (see FOLDED) or a base
 // grid's; none, Cairo's (its own, see kleinCairoMesh)
@@ -17069,17 +17065,8 @@ const MORPH_WHERE =
   'This surface has no other form (the pits, the bumps and the sponge: their holes leave none between).'; // (Morph's greyed words)
 const MORPHABLE = [
   ...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`),
-  'klein',
-  'kleinHex',
-  'kleinTri',
-  'kleinCairo',
-  'kleinKite',
-  'kleinHexTurned',
-  'kleinTriTurned',
-  'kleinKiteTurned',
+  ...BASE_SURFACES.filter((B) => B.fold !== 'mobius').map((B) => B.name), // (the base grids' tori and bottles)
   ...foldedIn('klein'),
-  'torusKite',
-  'torusKiteTurned',
   'cube',
   'pits',
   'bumps',
@@ -17100,12 +17087,6 @@ const MORPHABLE = [
   ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
   'globe',
   ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`),
-  'torus',
-  'torusHex',
-  'torusTri',
-  'torusCairo',
-  'torusHexTurned',
-  'torusTriTurned',
   'hexsphere',
   'twistedsphere',
   'penroseSphere',
@@ -17715,13 +17696,12 @@ for (const k of Object.keys(TETRAKIS_SOLIDS)) {
 // the tori laid from a motif (see tilingTorusMesh), the tilings' and the base grids' (named as their strips, see MOBIUS_STRIPS;
 // Cairo's its own, see torusCairoMesh): their rows B round the tube, as many A round the ring as keep them even
 for (const [name, kind, turned, unit] of [
-  ['torus', 'square', false, 'squares'],
-  ['torusTri', 'tri', false, 'triangles'],
-  ['torusTriTurned', 'tri', true, 'triangles'],
-  ['torusKite', 'kite', false, 'kites'],
-  ['torusKiteTurned', 'kite', true, 'kites'],
-  ['torusHexTurned', 'hex', false, 'hexagons'],
-  ['torusHex', 'hex', true, 'hexagons'],
+  ...BASE_SURFACES.filter((B) => B.fold === 'torus' && B.kind !== 'cairo').map((B) => [
+    B.name,
+    B.kind,
+    B.turned,
+    B.unit,
+  ]),
   ...foldedIn('torus').map((name) => [name, FOLDED[name].kind, FOLDED[name].turned, TILINGS[FOLDED[name].kind].cells]),
 ]) {
   const t = gridMotif(kind),
@@ -18336,22 +18316,7 @@ const SOLIDS = [
   ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
 ];
 const TORI = [
-  'klein',
-  'kleinHex',
-  'kleinTri',
-  'kleinCairo',
-  'kleinKite',
-  'kleinHexTurned',
-  'kleinTriTurned',
-  'kleinKiteTurned',
-  'torusKite',
-  'torusKiteTurned',
-  'torus',
-  'torusTri',
-  'torusHex',
-  'torusCairo',
-  'torusTriTurned',
-  'torusHexTurned',
+  ...BASE_SURFACES.filter((B) => B.fold !== 'mobius').map((B) => B.name), // (the base grids' tori and bottles)
   ...MOBIUS_KINDS,
   ...foldedIn('klein'),
   ...foldedIn('torus'),
@@ -18431,28 +18396,19 @@ for (const [kind, S] of Object.entries(SURFACES)) {
   S.nearest = (f) => S.near(S.tiles(f)); // a variant's own size: the usual one with about as many cells
 }
 // The tori turned by 30° (⟲ 30°, under its tilings: the hexagons, the triangles and the tilings of six turns): the surface a variant walks on
-const TURNED = {
-  torusTri: 'torusTriTurned',
-  torusHex: 'torusHexTurned',
-  torusKite: 'torusKiteTurned',
-  mobiusTri: 'mobiusTriTurned',
-  mobiusHex: 'mobiusHexTurned',
-  mobiusKite: 'mobiusKiteTurned',
-  kleinHex: 'kleinHexTurned',
-  kleinTri: 'kleinTriTurned',
-  kleinKite: 'kleinKiteTurned',
-};
+const TURNED = Object.fromEntries(BASE_SURFACES.filter((B) => B.turned).map((B) => [B.base, `${B.base}Turned`])); // (the hexagons' flat named plain: see POINTY)
 // a torus's turn, turned (see torusSheets: the tilings'; the hexagons' and triangles' by 30°)
 // the turn of a surface's tiles on its sheet against the plane's (see sideTurn): a tiling's torus, by its sheet's side round
-// the ring; a strip, along it; the hexagons' and triangles', 0, or 30 turned
+// the ring; a strip, along it; a base grid's, 0, or its turn turned (see BASE_SURFACES)
 function tilesTurn(surface) {
   if (FOLDED[surface]) return sideTurn(FOLDED[surface].kind, FOLDED[surface].side); // (a tiling folded: its sheet's side round the ring)
-  return surface.endsWith('Turned') !== POINTY.has(surface.replace(/Turned$/, '')) ? 30 : 0;
+  const B = BASE_SURFACES.find((b) => b.name === surface);
+  return B?.turned ? baseTurn(B.fold, B.kind) : 0; // (a base grid's: its turn there, none straight)
 }
 for (const s of Object.keys(FOLDED)) if (FOLDED[`${s}Turned`]) TURNED[s] = `${s}Turned`; // (see FOLDED)
 let torusTurned = false;
 // the hexagons' tori, strips and bottles at 0° pointy as the plane's (their Turned ones), turned their flat ones
-const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
+const POINTY = new Set(BASE_SURFACES.filter((B) => B.kind === 'hex').map((B) => B.base)); // (pointy straight: named …Turned, see BASE_GRIDS)
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
@@ -27807,26 +27763,9 @@ const SURFACE_CELLS = {
   bumps: '■',
   frame: '■',
   menger: '■',
-  torus: '■',
-  mobius: '■',
-  klein: '■',
-  torusHex: '⬡',
   hexsphere: '⬡',
-  mobiusHex: '⬡',
-  kleinHex: '⬡',
-  torusCairo: '⬠',
-  mobiusCairo: '⬠',
-  kleinCairo: '⬠',
   ...Object.fromEntries(hexSolids.map((k) => [`${k}Hex`, '⬡'])),
   ...Object.fromEntries(Object.keys(TETRAKIS_SOLIDS).map((k) => [`${k}Tetrakis`, '◩'])),
-  torusKite: '◆',
-  mobiusKite: '◆',
-  kleinKite: '◆',
-  torusKiteTurned: '◆',
-  mobiusKiteTurned: '◆',
-  kleinKiteTurned: '◆',
-  kleinHexTurned: '⬡',
-  kleinTriTurned: '▲',
   tetraKite: '◆',
   octaKite: '◆',
   icosaKite: '◆',
@@ -27871,6 +27810,7 @@ const PLANE_MARKS = {
   ring11: '⊚',
   ring12: '❈',
 };
+for (const { name, kind } of BASE_SURFACES) SURFACE_CELLS[name] = PLANE_MARKS[kind]; // (the base grids folded, see BASE_GRIDS)
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette surface: its rosette's cells, rules and all)
 for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = PLANE_MARKS[S.tiling]; // (a surface of a tiling's cells: its rules, the twisted sphere's, the Penrose sphere's)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.512';
+const VERSION = '0.5.513';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10291,7 +10291,7 @@ for (const F of Object.values(CONED))
       if (r.tiling.startsWith(F.rules) && !/[a-z]/.test(r.rule)) r.tiling = Object.values(F.marks).join('') + r.tiling;
     }
 const BLOCK_STEPS = { torusHex: 3, torusTriTurned: 3, mobius: 2 };
-const BLOCK_ALONG = { mobius: 2 }; // (a Möbius strip of squares: its length in squares even, its blocks' two sets coming round along it, see stripSteps)  // (their sizes a multiple: their 3 sets of blocks come round the tube only so, see meshBlocks)
+const BLOCK_ALONG = { mobius: 2, torus: 2 }; // (a Möbius strip's or a torus's of squares: its length in squares even, its blocks' two sets coming round along it, see stripSteps, ringColumns)  // (their sizes a multiple: their 3 sets of blocks come round the tube only so, see meshBlocks)
 // Elementary: Wolfram's rules on an unbounded grid of squares, a row a generation down (see parseElementary), its rows built
 // as a walk's steps (see elementaryRows); Life's for its rules and starts
 VARIANTS.elementarySquares = {
@@ -11590,6 +11590,15 @@ function renderModePicker() {
   $('tilesLabel').hidden = !inFamily; // (two blocks: the surface, then its tiles; an ant's: its shape, then its creatures)
   $('shapesLabel').textContent = SPACES[space][0]; // (its tab's name, as Size its section's title; its groups' titles under it)
   if (inFamily) $('tilesLabel').textContent = `${inFamily.F.name} tiles`;
+  // a ring's shapes, a section of their own over its tiles: Torus shape, Klein bottle shape (see RING_SHAPES)
+  const ring = Object.keys(RING_SHAPES).find((f) => inFamily?.F.name === FOLDS[f].name);
+  for (const id of ['ringShapeLabel', 'ringShapeTabs']) $(id).hidden = !ring;
+  if (ring) {
+    $('ringShapeLabel').textContent = `${inFamily.F.name} shape`;
+    $('ringShapeTabs').replaceChildren(
+      choiceTabs(`${ring}Shape`, RING_SHAPES[ring], shapeOn(ring, w), (k) => (ringShape[ring] = k), null),
+    );
+  }
   if (inFamily) {
     const { F, tab } = inFamily;
     // the same kind (walk, ant, Life) on another tiling, along the edges or on cells as now; only the
@@ -11659,10 +11668,6 @@ function renderModePicker() {
             }),
           ]
         : []),
-      // a ring's shapes, their row (see RING_SHAPES)
-      ...Object.keys(RING_SHAPES)
-        .filter((f) => F.name === FOLDS[f].name)
-        .map((f) => choiceTabs(`${f}Shape`, RING_SHAPES[f], shapeOn(f, w), (k) => (ringShape[f] = k), null)),
     );
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -15218,8 +15223,16 @@ function ringLength(x, square, units, ok = () => true) {
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
 function ringColumns(x, nv, step = 1, klein = false, ok, own) {
   const K = ringColours(ringVariant()),
-    [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
-  return ringLength(own ?? x, own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b, [a % step ? a * step : a], ok);
+    [a, b] = klein ? [K, 1] : torusBlocks(K, { nv }),
+    unit = a % step ? a * step : a,
+    v = VARIANTS[ringVariant()],
+    along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
+  return ringLength(
+    own ?? x,
+    own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b,
+    [(unit * along) / gcd(unit, along)],
+    ok,
+  );
 }
 
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
@@ -37234,9 +37247,9 @@ const readableColour = (colour) => {
 const teamColour = (s) => (oceanOn() && LANDS[s] ? LANDS[s] : LIFE_COLOURS[s]); // (team s, a battle's walker or Life's colour: Earth's lands up to a Sextet, else Life's colours)
 const LAND_NAMES = ['green', 'white', 'yellow', 'lime', 'cyan', 'ochre']; // (Earth's lands, see PALETTES)
 const teamName = (s) => (oceanOn() && LANDS[s] ? LAND_NAMES[s] : LIFE_COLOUR_NAMES[s]);
-// Cut: Off, or a fixed plane through the middle facing S, E or Up (the sides View's S, E and Up look from), the half on
-// that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
-const CUT_AXES = [['Off'], ['S', [0, -1, 0]], ['E', [1, 0, 0]], ['Up', [0, 0, 1]]];
+// Cut: Off, or a fixed plane through the middle facing South, East or Up (the sides View's South, East and Up look from),
+// the half on that axis's side gone: its notches on a row as Flat ── Inflated (see sizeGauge)
+const CUT_AXES = [['Off'], ['South', [0, -1, 0]], ['East', [1, 0, 0]], ['Up', [0, 0, 1]]];
 let cutAxis = defaultOf('cut', tabVariant());
 const cutOn = () => cutAxis > 0 && !$('cutRow').hidden;
 const cutNormal = () => CUT_AXES[cutAxis][1] ?? [0, 0, 0];

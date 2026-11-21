@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.528';
+const VERSION = '0.5.529';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15125,6 +15125,18 @@ const TORUS_SHAPES = [
 ];
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
+// the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
+// steps as a share of the one it falls in: a knot's (see knotPoint), a Klein bottle's (see kleinBottlePoint)
+const stepAt = (along, at) => {
+  let lo = 0,
+    hi = along.length - 1;
+  while (hi - lo > 1) {
+    const m = (lo + hi) >> 1;
+    if (along[m] < at) lo = m;
+    else hi = m;
+  }
+  return lo + (at - along[lo]) / (along[hi] - along[lo] || 1);
+};
 // A torus knot's point (see TORUS_SHAPES), as the ring's at the same place: x round it (−π to π, along the knot by its
 // length), w out from its middle and h up, the ring's, here across the knot: its tangent turned level (as Desmos's
 // automata on a trefoil knot, cq17lqjgb7), and up (as the ring's, its turn the same: no mirror)
@@ -15148,15 +15160,7 @@ function knotPoint(knot, x, w, h) {
   const { along } = knot,
     N = along.length - 1,
     scale = (2 * Math.PI) / along[N],
-    at = ((((x / (2 * Math.PI) + 0.5) % 1) + 1) % 1) * along[N];
-  let lo = 0,
-    hi = N;
-  while (hi - lo > 1) {
-    const m = (lo + hi) >> 1;
-    if (along[m] <= at) lo = m;
-    else hi = m;
-  }
-  const t = ((2 * Math.PI) / N) * (lo + (at - along[lo]) / (along[hi] - along[lo])),
+    t = ((2 * Math.PI) / N) * stepAt(along, ((((x / (2 * Math.PI) + 0.5) % 1) + 1) % 1) * along[N]),
     C = curve(t),
     T = unit(curve(t + 1e-5).map((v, d) => v - C[d])),
     N0 = unit([-T[1], T[0], 0]),
@@ -15472,15 +15476,7 @@ function kleinBottle(shape = shapeOn('klein')) {
 // the vertical: its neck's arch east
 function kleinBottlePoint(s, u) {
   const { at: shapeAt, N, along, centre, scale } = kleinBottle(),
-    at = s * along[N];
-  let lo = 0,
-    hi = N;
-  while (hi - lo > 1) {
-    const m = (lo + hi) >> 1;
-    if (along[m] < at) lo = m;
-    else hi = m;
-  }
-  const [x, y, z] = shapeAt((3 * (lo + (at - along[lo]) / (along[hi] - along[lo] || 1))) / N, u);
+    [x, y, z] = shapeAt((3 * stepAt(along, s * along[N])) / N, u);
   return [-(x - centre[0]) * scale, -(y - centre[1]) * scale, (z - centre[2]) * scale];
 }
 // Cairo's Klein bottle: its tiles as its torus's (in the same order), their corners one vertex per point of the bottle, found

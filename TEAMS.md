@@ -326,6 +326,15 @@ plane's turns and mirrors, a solid's Opposite).
 | Anywhere | `laidChoices` anywhere | each colour's pattern anywhere in its part |
 | Formula | `numberSeed`: the digits a cell in turn (`digitsOn`) | the same, each live cell its part's colour (`paintOwn`) |
 
+**Whether a pattern fits (Famous, Anywhere), by construction, never searched for nowhere** (v0.5.532): on a lattice, a
+pattern is tried only where its span (`span`: its short and long sides in its grid's lattice cells, Tetrakis's four
+triangles a square) fits its part's room (`laidChoices`' `sides`): the plane's block, a sheet's block or stretch, a solid's
+face (its side; the cube's frame's: `cubeRoom`, a face's grid of squares where the cube's faces are one, the cube, Pits'
+and Bumps' floors, their Tetrakis too; none, 0, on Menger's sponge and Frame, holed through, and on cuts with no face
+frame, as the rhombic triacontahedron's Tetrakis). Anywhere: either way round (its part's cells checked as laid); Famous:
+at its spot, the room's short side less a cell round it. On a disc (Penrose, Hats…: no lattice) by its middle, its turns
+round the centre only (`centredChoices`), a few tries.
+
 **In the code, as a table? Recommended.** The parts and the spots are each a chain of branches by figure today
 (`partPlaces`: plane, Möbius, torus, globe, rosette, hull, solid; `patternFrame`'s centre, `middleCells`), and each memo
 keys itself by hand (`partMemo`, `choicesMemo`, `middleMemo`, `iconMemo`: Symmetry, Apart and a Duel's cut each added

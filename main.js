@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.531';
+const VERSION = '0.5.532';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14145,6 +14145,7 @@ function mengerMesh(L, m = 1) {
   };
   const mesh = finishMesh(verts, quads, 4, L, out);
   mesh.concave = true;
+  mesh.holed = true; // (no face a grid of squares: no frame to lay a pattern on, see cubeRoom)
   mesh.cubic = true; // (the cube's turns: 3 colours, 2 opposite faces each)
   mesh.cellFaces = Int32Array.from(faces);
   mesh.solid = cubeSolid();
@@ -32957,7 +32958,7 @@ function cellPlace(t) {
     } // (its face's middle cell, of its cells: none, its frame none)
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
-  if (cellKind(g) !== 'square') return null; // (the cube's frame a grid of squares: other cells none, no pattern laid there, see laidChoices)
+  if (!cubeRoom(g)) return null; // (no face a grid of squares: no frame, no pattern laid there, see laidChoices)
   return {
     on: 'cube',
     f: AXES.reduce(
@@ -32969,6 +32970,16 @@ function cellPlace(t) {
       0,
     ),
   };
+}
+// the side, in squares, of a face's grid on a solid the cube's frame holds on (see cellPlace), else 0: its faces the cube's
+// (a carved cube's, its pits' floors, see cubePits), each a grid of squares (not Menger's sponge's, holed through), its cells
+// on a square lattice (squares, Tetrakis's triangles four a square)
+function cubeRoom(g) {
+  const S = g.uncut ?? g,
+    [a, b] = gridMotif(cellKind(g)).basis,
+    surface = VARIANTS[walk.variant].surface;
+  const square = Math.abs(dot(a, b)) < 1e-9 && Math.abs(Math.hypot(...a) - Math.hypot(...b)) < 1e-9;
+  return (FACE_BASE[surface] ?? surface) === 'cube' && !S.holed && square ? (S.floorSize ?? S.size) : 0;
 }
 // a solid's face f of squares (the cube's, its pit's floor's on the cube with pits, a hull solid's), on the solid a cut cuts:
 // its squares' side, a square's index by its row and column, its middle in space
@@ -34374,28 +34385,30 @@ function laidChoices(centred, any = false) {
     [cols, rows] = teamGrid(K);
   const mine = !ruleCard(rule, tabVariant());
   if (onDisc()) return centredChoices(kind, K, rule, mine, any, centred);
-  // (centred: a rectangle's room and its patterns' spans in its grid's lattice cells, as on that grid)
+  // a pattern's span and a part's room, each its short and long sides in its grid's lattice cells (a solid's face, a square:
+  // its side both; none, 0): a pattern tried only where it fits, by construction, never searched for nowhere (Anywhere: either
+  // way round, its part's own cells checked as laid; centred: at its spot, the room's short side less a cell round it)
   const R = RECTS[kind],
     cellsAcross = R ? Math.min(...R.basis.map((v) => Math.hypot(...v))) / Math.hypot(...latticeStep(R.base)) : 1,
     pk = R ? R.base : kind,
     pper = gridCells(pk);
   const span = (rle, t, f) => {
     const cs = orientPattern(pk, rle, t, f);
-    return Math.max(...cs.map((c) => Math.floor(c[0] / pper)), ...cs.map((c) => c[1])) + 1;
+    return [Math.max(...cs.map((c) => Math.floor(c[0] / pper))) + 1, Math.max(...cs.map((c) => c[1])) + 1].sort(
+      (x, y) => x - y,
+    );
   };
-  const room = walk.plane
-    ? Math.min(planeColumns(kind, walk.plane.W) / cols, walk.plane.W / rows) * cellsAcross
+  const sides = walk.plane
+    ? [(planeColumns(kind, walk.plane.W) / cols) * cellsAcross, (walk.plane.W / rows) * cellsAcross]
     : g.mobius
-      ? Math.min((2 * g.L) / K, g.nv) // (a Möbius strip: a stretch of its loop)
+      ? [(2 * g.L) / K, g.nv] // (a Möbius strip: a stretch of its loop)
       : g.torus
-        ? Math.min(g.nu / torusBlocks(K)[0], g.nv / torusBlocks(K)[1])
-        : g.uncut
-          ? (g.uncut.floorSize ?? g.size)
-          : g.floors
-            ? g.floorSize
-            : g.sides === 3 || g.kite
-              ? g.size / 2
-              : g.size;
+        ? [g.nu / torusBlocks(K)[0], g.nv / torusBlocks(K)[1]]
+        : g.squareFaces || g.triFaces || g.hexagons || g.kite || (g.sides === 3 && !g.uncut)
+          ? Array(2).fill(g.sides === 3 || g.kite ? g.size / 2 : g.size)
+          : Array(2).fill(cubeRoom(g)); // (the others the cube's frame's, see cellPlace: none, 0)
+  const [short, long] = sides.sort((x, y) => x - y),
+    fits = ([a, b]) => (centred ? b <= short - 2 : a <= short && b <= long);
   const shapes = [],
     seen = new Set();
   for (const p of DRAW_PATTERNS.filter((q) => q[1] === baseOf(kind) && (mine || q[2].includes(rule)))) {
@@ -34406,7 +34419,7 @@ function laidChoices(centred, any = false) {
             .map((c) => c.join(','))
             .sort()
             .join(' ');
-        if ((!centred || span(p[4], t, f) <= room - 2) && !seen.has(k)) {
+        if (fits(span(p[4], t, f)) && !seen.has(k)) {
           seen.add(k);
           shapes.push(Object.assign(cells, { name: p[3] }));
         }

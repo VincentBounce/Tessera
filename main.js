@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.541';
+const VERSION = '0.5.542';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3853,6 +3853,7 @@ const HEX_SOLIDS = {
 const hexSolids = Object.keys(HEX_SOLIDS);
 // the solids of squares with tetrakis triangles too (each square cut in 4 from its middle, see tetrakisOf): their names
 const TETRAKIS_SOLIDS = { cube: 'Cube', pits: 'Pits', bumps: 'Bumps', frame: 'Frame', menger: 'Sponge' };
+const PINWHEEL_SOLIDS = ['cube', 'rhombicDodeca', 'rhombicTriaconta']; // (the solids of parallelograms, their faces the pinwheel's: see pinwheelSolidMesh)
 const foldOf = (fold, kind) => `${fold}${kind[0].toUpperCase()}${kind.slice(1)}`,
   mobiusOf = (kind) => foldOf('mobius', kind); // (a tiling folded: see FOLDS)
 // a grid's motif: its lattice's sides, one lattice cell's polygons in its units (u·a + v·b: its cells x = 0 … row 0, as the
@@ -10222,6 +10223,15 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
       twinWalks(S.name, HULL_CUTS.halves.name, `${k}${HULL_CUTS.halves.name}`, 'Octahedron', hullIcon(k));
   }
 }
+// the pinwheel solids' Life (see pinwheelSolidMesh): its solid's name and icon
+for (const k of PINWHEEL_SOLIDS) {
+  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k),
+    name = NAV[base][2];
+  lifeGrid(variantName('Life', name, 'Pinwheel'), 'Surfaces', name, VARIANT_ICONS[base], {
+    surface: `${k}Pinwheel`,
+    where: `the pinwheel's right triangles on ${name === 'Cube' ? 'a cube' : `a ${name.toLowerCase()}`}: each face two rectangles of two, cut in 5 again and again, turned every way`,
+  });
+}
 // the carved cubes' squares walked as the cube's (measured 2026-11-17: their hollow corners of 5 and 6 edges walked; their start
 // corners the cube's, see cubeSolid)
 for (const k of ['pits', 'bumps', 'frame', 'menger'])
@@ -10763,6 +10773,19 @@ for (const Fo of Object.values(FOLDS))
       F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
     addTiling(F, [variantName('Life', Fo.name, name)]);
   }
+// the pinwheel solids' (see pinwheelSolidMesh): a tab after their solid's own in its Life menu
+for (const k of PINWHEEL_SOLIDS) {
+  const w = Object.keys(VARIANTS).find((v) => VARIANTS[v].surface === `${k}Pinwheel`),
+    F = FAMILIES.find((F) => F.variants.some((vs) => vs.some((v) => VARIANTS[v]?.life && VARIANTS[v].surface === k)));
+  F.tabs.push([
+    F.variants.length,
+    false,
+    'pinwheel',
+    'Pinwheel',
+    "Pinwheel: Conway and Radin's right triangles on each face",
+  ]);
+  addTiling(F, [w]);
+}
 // a variant's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
 // hexagons, no worm: the grid its triangles' only)
 const walksThere = (v) => {
@@ -14369,6 +14392,65 @@ const hullColours = (surface, K, opposite = false) => {
 // a face's cells (see cellFaces)
 const faceCells = (g, q) => [...g.cellFaces.keys()].filter((t) => g.cellFaces[t] === q);
 
+/* ---- 7.2b Pinwheel solids ---------------------------------------------------------------- */
+// The pinwheel (see PINWHEEL) on the solids of parallelograms: the cube, the rhombic dodecahedron and triacontahedron. Each face
+// a square of side 2L (L = √5ⁿ) cut in two rectangles L × 2L, each in two of the pinwheel's triangles across its diagonal, cut n
+// times (see pinwheelSplit: their legs 1 and 2, a square unit each, 4 · 5ⁿ a face), laid on the face by the map of the square
+// onto it (a rhombus's tiles skewed, as its squares are); a corner on another's side a corner of that side too, across the
+// solid's edges as within a face (see cornersOnSides). Its sizes its cells, CELLS' least to most (its solids: PINWHEEL_SOLIDS)
+const pinwheelFaces = (k) => solidFaces(SURFACES[k].mesh(1)).map((f) => f.corners); // (its faces' corners in turn, in its cells' faces' order)
+const pinwheelSizes = (k) => {
+  const sizes = [];
+  for (let cells = 4 * pinwheelFaces(k).length; cells <= CELLS.most; cells *= 5)
+    if (cells >= CELLS.least) sizes.push(cells);
+  return sizes;
+};
+function pinwheelSolidMesh(k, cells) {
+  const key = `${k}Pinwheel${cells}`;
+  if (meshCache[key]) return meshCache[key];
+  const faces = pinwheelFaces(k),
+    n = Math.round(Math.log(cells / (4 * faces.length)) / Math.log(5)),
+    L = 5 ** (n / 2);
+  // a face: the square's two rectangles, each its two triangles (their right angle's corner, long leg's end, short leg's)
+  let face = [0, L].flatMap((x) => [
+    [
+      [x, 0],
+      [x, 2 * L],
+      [x + L, 0],
+    ],
+    [
+      [x + L, 2 * L],
+      [x + L, 0],
+      [x, 2 * L],
+    ],
+  ]);
+  for (let i = 0; i < n; i++) face = face.flatMap(pinwheelSplit);
+  // on each face, by the map of the square's sides onto two of its own, the solid scaled to an edge of 2L (its tiles a unit)
+  const edge = Math.hypot(...sub(faces[0][1], faces[0][0])),
+    scale = (2 * L) / edge;
+  const tris = faces.flatMap(([A, B, , D]) =>
+    face.map((T) =>
+      T.map(([u, v]) => [0, 1, 2].map((d) => scale * A[d] + ((B[d] - A[d]) * u + (D[d] - A[d]) * v) / edge)),
+    ),
+  );
+  const { verts, add } = vertexStore(),
+    tiles = cornersOnSides(tris).map((p) => p.map((q) => add(...q.map((v) => v / scale)))),
+    most = tiles.reduce((m, c) => Math.max(m, c.length), 0);
+  return (meshCache[key] = Object.assign(
+    finishMesh(
+      verts,
+      tiles.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]),
+      most,
+      cells,
+    ),
+    {
+      cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
+      solid: { corners: solidCorners(SURFACES[k].mesh(1)), centres: solidFaceCentres(SURFACES[k].mesh(1)) }, // (its solid's)
+      tiling: SURFACES[`${k}Pinwheel`].tiling, // (its cells the pinwheel's: no lattice, see patternsOn)
+    },
+  ));
+}
+
 /* ---- 7.3 Polyhedra with triangular faces -------------------------------------------------- */
 /* Flat polyhedra with triangular faces, each face cut into f² triangles (not inflated):
  * tetrahedron (4 faces, corners shared by 3 triangles instead of 6), octahedron (8 faces,
@@ -17022,6 +17104,7 @@ const MORPHABLE = [
   ...hexSolids.map((k) => `${k}Hex`),
   ...Object.keys(HULL_SOLIDS),
   ...hullCuts.map(([, , cut]) => cut),
+  ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
   'globe',
   ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`),
   'torus',
@@ -17595,6 +17678,19 @@ for (const [k, c, cut] of hullCuts)
     tiles: (f) => HULL_CUTS[c].per * SURFACES[k].tiles(f),
     unit: 'triangles',
   };
+// the pinwheel solids (see pinwheelSolidMesh): their sizes their cells, their radius their solid's of an edge of 2L cells
+for (const k of PINWHEEL_SOLIDS) {
+  const edge = (cells) => 2 * Math.sqrt(cells / (4 * pinwheelFaces(k).length)); // (2L, in its tiles' short legs)
+  SURFACES[`${k}Pinwheel`] = {
+    mesh: (cells) => pinwheelSolidMesh(k, cells),
+    radius: (cells) => SURFACES[k].radius(edge(cells)),
+    edge: (cells) => Math.round(10 * edge(cells)) / 10,
+    ownSizes: () => pinwheelSizes(k),
+    tiles: (cells) => cells,
+    unit: 'triangles',
+    tiling: 'pinwheel',
+  }; // (tiling: its rules the pinwheel's)
+}
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
   const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
@@ -18245,6 +18341,7 @@ const SOLIDS = [
   'kitesDartsSphere',
   ...Object.keys(HULL_SOLIDS),
   ...hullCuts.map(([, , cut]) => cut),
+  ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
 ];
 const TORI = [
   'klein',
@@ -24994,68 +25091,77 @@ const SPECTRE = (() => {
  * way the others' : in a circle, round as a disc). Not edge to edge: a tile's corner may lie on another's side, kept as a
  * corner of that side too (its neighbours by a shared corner, as the hats'). As the hats' (see discPatch): a tile a square
  * unit, the W² nearest a middle with room all round */
-const PINWHEEL = (() => {
-  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-  return discMemo((W) => {
-    // the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
-    // incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the largest disc (DISC_TOP² tiles: one tiling
-    // for every size, each disc a cut of it round the same middle), the disc of W² tiles (radius W / √π) and its walls
-    let n = 0;
-    while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < DISC_TOP / Math.sqrt(Math.PI) + 5) n++;
-    const L = 5 ** (n / 2),
-      r = (L * (3 - Math.sqrt(5))) / 2;
-    let tris = [
-      [
-        [0, 0],
-        [2 * L, 0],
-        [0, L],
-      ],
-    ]; // a tile: its right angle's corner, its long leg's end, its short leg's
-    for (let k = 0; k < n; k++)
-      tris = trianglesNear(
-        tris.flatMap(([R, P, Q]) => {
-          const d = [Q[0] - P[0], Q[1] - P[1]],
-            t = ((R[0] - P[0]) * d[0] + (R[1] - P[1]) * d[1]) / (d[0] ** 2 + d[1] ** 2),
-            H = [P[0] + t * d[0], P[1] + t * d[1]];
-          const Mr = mid(H, R),
-            Mp = mid(H, P),
-            Mh = mid(R, P); // (H: the altitude's foot; the part R H P in 4: its corners at R and P,
-          // and the rectangle between cut along H Mh, its two the mirror of the others: both hands, its turns ever more)
-          return [
-            [H, R, Q],
-            [Mr, Mh, R],
-            [Mp, P, Mh],
-            [Mr, Mh, H],
-            [Mp, H, Mh],
-          ];
-        }),
-        [r, r],
-        W / Math.sqrt(Math.PI) + 6,
-      ); // (round the disc of W² and its walls' room only)
-    // the corners on another's side: each side's, in its order (a grid of unit cells over the corners, the ones near a side)
-    const at = new Map(),
-      cell = ([x, y]) => `${Math.floor(x)},${Math.floor(y)}`;
-    for (const T of tris) for (const p of T) (at.get(cell(p)) ?? at.set(cell(p), []).get(cell(p))).push(p);
-    const items = tris.map((T) => {
-      const p = T.flatMap((a, i) => {
-        const b = T[(i + 1) % 3],
-          len = Math.hypot(b[0] - a[0], b[1] - a[1]),
-          on = [];
-        for (let x = Math.floor(Math.min(a[0], b[0])); x <= Math.floor(Math.max(a[0], b[0])); x++)
-          for (let y = Math.floor(Math.min(a[1], b[1])); y <= Math.floor(Math.max(a[1], b[1])); y++) {
-            for (const q of at.get(`${x},${y}`) ?? []) {
-              const u = ((q[0] - a[0]) * (b[0] - a[0]) + (q[1] - a[1]) * (b[1] - a[1])) / len / len,
-                off = Math.abs((q[0] - a[0]) * (b[1] - a[1]) - (q[1] - a[1]) * (b[0] - a[0])) / len;
-              if (u > 1e-9 && u < 1 - 1e-9 && off < 1e-9 && !on.some(([v]) => Math.abs(v - u) < 1e-9)) on.push([u, q]);
-            }
-          }
-        return [a, ...on.sort((x, y) => x[0] - y[0]).map(([, q]) => q)];
-      });
-      return { p: p.flat(), m: [0, 1].map((d) => (T[0][d] + T[1][d] + T[2][d]) / 3) };
-    });
-    return discPatch(items, W, [r, r]); // (round its incircle's middle)
-  });
-})();
+// a tile [R, P, Q] (its right angle's corner, its long leg's end, its short leg's) cut in its 5, √5 smaller: H the altitude's
+// foot; the part R H P in 4, its corners at R and P, and the rectangle between cut along H Mh, its two the mirror of the
+// others (both hands, its turns ever more)
+function pinwheelSplit([R, P, Q]) {
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+    d = [Q[0] - P[0], Q[1] - P[1]],
+    t = ((R[0] - P[0]) * d[0] + (R[1] - P[1]) * d[1]) / (d[0] ** 2 + d[1] ** 2),
+    H = [P[0] + t * d[0], P[1] + t * d[1]];
+  const Mr = mid(H, R),
+    Mp = mid(H, P),
+    Mh = mid(R, P);
+  return [
+    [H, R, Q],
+    [Mr, Mh, R],
+    [Mp, P, Mh],
+    [Mr, Mh, H],
+    [Mp, H, Mh],
+  ];
+}
+// each triangle's corners, each side's followed by the others' corners on it in its order (the pinwheel's: not edge to edge,
+// a corner on another's side a corner of that side too), in the plane or in space: a grid of unit cells over the corners
+// (its tiles a square unit), the ones near a side looked through
+function cornersOnSides(tris) {
+  const at = new Map(),
+    cell = (p) => p.map(Math.floor).join();
+  for (const T of tris) for (const p of T) (at.get(cell(p)) ?? at.set(cell(p), []).get(cell(p))).push(p);
+  return tris.map((T) =>
+    T.flatMap((a, i) => {
+      const b = T[(i + 1) % 3],
+        ab = b.map((v, d) => v - a[d]),
+        len2 = ab.reduce((sum, v) => sum + v * v, 0),
+        on = [];
+      const look = (c) => {
+        if (c.length < a.length) {
+          const d = c.length;
+          for (let x = Math.floor(Math.min(a[d], b[d])); x <= Math.floor(Math.max(a[d], b[d])); x++) look([...c, x]);
+          return;
+        }
+        for (const q of at.get(c.join()) ?? []) {
+          const u = q.reduce((sum, v, d) => sum + (v - a[d]) * ab[d], 0) / len2,
+            off = Math.hypot(...q.map((v, d) => v - a[d] - u * ab[d]));
+          if (u > 1e-9 && u < 1 - 1e-9 && off < 1e-9 && !on.some(([v]) => Math.abs(v - u) < 1e-9)) on.push([u, q]);
+        }
+      };
+      look([]);
+      return [a, ...on.sort((x, y) => x[0] - y[0]).map(([, q]) => q)];
+    }),
+  );
+}
+const PINWHEEL = discMemo((W) => {
+  // the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
+  // incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the largest disc (DISC_TOP² tiles: one tiling
+  // for every size, each disc a cut of it round the same middle), the disc of W² tiles (radius W / √π) and its walls
+  let n = 0;
+  while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < DISC_TOP / Math.sqrt(Math.PI) + 5) n++;
+  const L = 5 ** (n / 2),
+    r = (L * (3 - Math.sqrt(5))) / 2;
+  let tris = [
+    [
+      [0, 0],
+      [2 * L, 0],
+      [0, L],
+    ],
+  ]; // a tile: its right angle's corner, its long leg's end, its short leg's
+  for (let k = 0; k < n; k++) tris = trianglesNear(tris.flatMap(pinwheelSplit), [r, r], W / Math.sqrt(Math.PI) + 6); // (round the disc of W² and its walls' room only)
+  const items = cornersOnSides(tris).map((p, i) => ({
+    p: p.flat(),
+    m: [0, 1].map((d) => (tris[i][0][d] + tris[i][1][d] + tris[i][2][d]) / 3),
+  }));
+  return discPatch(items, W, [r, r]); // (round its incircle's middle)
+});
 /* De Bruijn's multigrids (1981): N families of lines a unit apart, their normals 180°/N apart, all moved by ½ (no three
  * meeting, the whole 2N-fold round the middle); each crossing of two a tile, its corners the sum of the lattice steps of
  * the lines it lies between (a rhombus, its angle the two families'). Ammann–Beenker's (Ammann, 1977; Beenker, 1982): 4,
@@ -31523,6 +31629,7 @@ const FACE_BASE = {
 // the carved cubes' tetrakis, a hull solid's cuts
 for (const k of Object.keys(TETRAKIS_SOLIDS)) FACE_BASE[`${k}Tetrakis`] = FACE_BASE[k] ?? k;
 for (const [k, , cut] of hullCuts) FACE_BASE[cut] = k;
+for (const k of PINWHEEL_SOLIDS) FACE_BASE[`${k}Pinwheel`] = FACE_BASE[k] ?? k; // (its faces its solid's, see pinwheelSolidMesh)
 for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[of];
 // A solid's colouring for K colours, from its turns (see surfaceRotations, rotationGroups), its items (directions: a point's
 // images), each item's colour, each colour's patch item, and faces (its patches' spots its faces' middles: Wild's Face, a pattern
@@ -32800,6 +32907,7 @@ const triFace = (surface, K, i) =>
 const patternsOn = () => {
   // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
   if (!walk.life) return false;
+  if (!cellsPlane() && APERIODIC[walk.surface?.tiling]) return false; // (a solid of a tiling that never repeats: no lattice to lay a picture by, see patternFrame)
   const m = VARIANTS[walk.variant],
     K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (

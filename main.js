@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.506';
+const VERSION = '0.5.507';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11628,10 +11628,10 @@ function renderModePicker() {
             }),
           ]
         : []),
-      // a Klein bottle's shapes, their row (see KLEIN_SHAPES)
-      ...(F.name === FOLDS.klein.name
-        ? [choiceTabs('kleinShape', KLEIN_SHAPES, kleinShapeOn(w), (k) => (kleinShape = k), null)]
-        : []),
+      // a ring's shapes, their row (see RING_SHAPES)
+      ...Object.keys(RING_SHAPES)
+        .filter((f) => F.name === FOLDS[f].name)
+        .map((f) => choiceTabs(`${f}Shape`, RING_SHAPES[f], shapeOn(f, w), (k) => (ringShape[f] = k), null)),
     );
   }
   // the rules, where there are several, each with its picture; those its tiling has not greyed (see walkKindHere)
@@ -15061,6 +15061,64 @@ $('variant').append(...Object.keys(NAV).map((w) => new Option(variantLabel(w), w
  * neighbours with no exception: it is the square grid that wraps around both ways. */
 const TORUS_TUBE = 0.4;
 const tubeOf = (g) => g.tube ?? TORUS_TUBE; // a grid's own tube (its tiles regular whatever its columns: see tilingTorusMesh)
+// a torus's shapes (Shape's tabs, the link's torusShape: its place): the ring, and torus knots, each a tube round the knot
+// (p, q) lying on a torus (2 round its axis, a round its tube), as long as the ring (2π: its tiles as long); tube: its
+// usual one, the most it can be without crossing itself (a trefoil's 0.17 at most), its sheet that much longer than the
+// ring's (see torusTube: its tiles square, as the ring's)
+const TORUS_SHAPES = [
+  ['Ring', 'The torus: a ring, its tube round it', { tube: TORUS_TUBE }],
+  [
+    'Trefoil',
+    'A tube round a trefoil knot: twice round the axis, three times round the tube',
+    { p: 2, q: 3, a: 0.8, tube: 0.16 },
+  ],
+  [
+    'Cinquefoil',
+    'A tube round a cinquefoil knot: twice round the axis, five times round the tube',
+    { p: 2, q: 5, a: 0.6, tube: 0.1 },
+  ],
+];
+// a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
+const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
+// A torus knot's point (see TORUS_SHAPES), as the ring's at the same place: x round it (−π to π, along the knot by its
+// length), w out from its middle and h up, the ring's, here across the knot: out from the torus it lies on (its normal
+// towards the knot from that torus's core circle), and up (as the ring's, its turn the same: no mirror)
+function knotPoint(knot, x, w, h) {
+  const { p, q, a } = knot,
+    curve = (t) => [
+      (2 + a * Math.cos(q * t)) * Math.cos(p * t),
+      (2 + a * Math.cos(q * t)) * Math.sin(p * t),
+      a * Math.sin(q * t),
+    ];
+  if (!knot.along) {
+    // (its length at N steps, once a knot: t from a share of its length)
+    const N = 4096,
+      along = new Float64Array(N + 1);
+    for (let i = 1; i <= N; i++) {
+      const [A, B] = [curve((2 * Math.PI * (i - 1)) / N), curve((2 * Math.PI * i) / N)];
+      along[i] = along[i - 1] + Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+    }
+    knot.along = along;
+  }
+  const { along } = knot,
+    N = along.length - 1,
+    scale = (2 * Math.PI) / along[N],
+    at = ((((x / (2 * Math.PI) + 0.5) % 1) + 1) % 1) * along[N];
+  let lo = 0,
+    hi = N;
+  while (hi - lo > 1) {
+    const m = (lo + hi) >> 1;
+    if (along[m] <= at) lo = m;
+    else hi = m;
+  }
+  const t = ((2 * Math.PI) / N) * (lo + (at - along[lo]) / (along[hi] - along[lo])),
+    C = curve(t),
+    T = unit(curve(t + 1e-5).map((v, d) => v - C[d])),
+    out = [Math.cos(q * t) * Math.cos(p * t), Math.cos(q * t) * Math.sin(p * t), Math.sin(q * t)],
+    N0 = unit(out.map((v, d) => v - dot3(out, T) * T[d])),
+    B = [N0[1] * T[2] - N0[2] * T[1], N0[2] * T[0] - N0[0] * T[2], N0[0] * T[1] - N0[1] * T[0]]; // (N0 × T: up, as the ring's)
+  return C.map((v, d) => v * scale + w * N0[d] + h * B[d]);
+}
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
 // x (its usual), its colours' blocks square (as long round as across: square) when that is 20 % shorter to 60 % longer, a whole
 // count of the first of units (each colour's block whole: the coarsest first) ok allows (a twist's), else the nearest ok allows. Life's colours, a walk's battle's walkers.
@@ -15131,7 +15189,7 @@ function ringLength(x, square, units, ok = () => true) {
 function ringColumns(x, nv, step = 1, klein = false, ok, own) {
   const K = ringColours(ringVariant()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv });
-  return ringLength(own ?? x, own ?? (x * TORUS_TUBE * a) / b, [a % step ? a * step : a], ok);
+  return ringLength(own ?? x, own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b, [a % step ? a * step : a], ok);
 }
 
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
@@ -15155,8 +15213,12 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
   }
   if (c < 1e-6) return [X, -w, h];
   const rr = 1 / c,
-    ph = X / rr;
-  return [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h]; // − c: no jump from the flat sheet
+    ph = X / rr,
+    ring = [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h], // (− c: no jump from the flat sheet)
+    knot = TORUS_SHAPES[shapeOn('torus')][2];
+  if (!knot.p) return ring;
+  const K = knotPoint(knot, X, w, h);
+  return ring.map((v, d) => v + (K[d] - v) * c); // (a knot: from the ring, as it closes)
 }
 
 /* ---- 7.4a Klein bottle -------------------------------------------------------------------- */
@@ -15296,12 +15358,19 @@ const KLEIN_SHAPES = [
   ],
 ];
 const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt];
+// A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
+// torusShape, kleinShape: its place, the first in none), the one picked in each, its sheet the family's whatever its
+// shape (a torus knot's longer, see torusTube); the mesh made for a variant's (see stripKey)
+const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
+  ringShape = { torus: 0, klein: 0 },
+  ringFamily = (w) => /^(torus|klein)/.exec(VARIANTS[w]?.surface ?? '')?.[1],
+  shapeOn = (family, w = ringVariant()) => (ringFamily(w) === family ? ringShape[family] : 0);
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
 // the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its back;
 // Jeener's: a neck's narrowest) and its frame (centred, 3 at its largest: the bottles' height, the bagel's width)
 const kleinTables = {};
-function kleinBottle(shape = kleinShapeOn()) {
+function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
   const N = 6000,
     q = (i) => (3 * i) / N,
@@ -15378,7 +15447,7 @@ function kleinSheetPlace(x0, y0, nu, nv, up) {
 }
 const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
-  const key = `kleinCairo${nv}x${nu}|${kleinShapeOn()}`; // (its shape, see KLEIN_SHAPES)
+  const key = `kleinCairo${nv}x${nu}|${shapeOn('klein')}`; // (its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { tiles, places } = cairoSheet(nu, nv),
     up = 0.5; // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
@@ -15428,7 +15497,7 @@ function cairoSheet(nu, nv) {
 // Cairo's torus (both its counts even: the tiling repeats every other square), its tube its rows over its columns (its
 // squares square); once a size
 function torusCairoMesh(nv, nu) {
-  const key = `torusCairo${nv}x${nu}`;
+  const key = `torusCairo${nv}x${nu}|${shapeOn('torus')}`; // (its shape, see TORUS_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { verts, add } = vertexStore(),
     tube = nv / nu,
@@ -15445,8 +15514,18 @@ function torusCairoMesh(nv, nu) {
 // when unrolled (m < 1) its seams open, so shapeAt places corners per tile, not per vertex
 function finishTorus(verts, tiles, sides, nu, nv, uv, mids = null, placed = false) {
   // mids: the tiles' own middles (their corners repeated: not their mean); placed: its tiles already a sheet's (placeCells')
-  // outwards = away from the circle running through the middle of the tube
+  // outwards = away from the line running through the middle of the tube: the ring's circle, a knot's curve (its nearest
+  // point of 512 along it: a hair apart, its tube far thicker)
+  const knot = TORUS_SHAPES[shapeOn('torus')][2],
+    axis =
+      knot.p && Array.from({ length: 512 }, (_, i) => knotPoint(knot, ((i + 0.5) / 512 - 0.5) * 2 * Math.PI, 0, 0));
   const fromTubeAxis = ([x, y, z]) => {
+    if (axis) {
+      const near = axis.reduce((b, a) =>
+        Math.hypot(a[0] - x, a[1] - y, a[2] - z) < Math.hypot(b[0] - x, b[1] - y, b[2] - z) ? a : b,
+      );
+      return [x - near[0], y - near[1], z - near[2]];
+    }
     const l = Math.hypot(x, y) || 1;
     return [x - x / l, y - y / l, z];
   };
@@ -15634,7 +15713,9 @@ const stripSteps = (kind0, nv, W, own) => {
   );
 };
 const stripKey = () =>
-  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${kleinShapeOn() ? ` ${KLEIN_SHAPES[kleinShapeOn()][0]}` : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${Object.keys(RING_SHAPES)
+    .map((f) => (shapeOn(f) ? ` ${RING_SHAPES[f][shapeOn(f)][0]}` : ''))
+    .join('')}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15876,7 +15957,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     });
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringVariant())}|${kleinShapeOn()}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
+  const key = `${kindK}${size}|${ringColours(ringVariant())}|${shapeOn('klein')}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, cellPlaces, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
@@ -16021,7 +16102,7 @@ const sheetPoint = (g, i, j, m) => {
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
 // the tiling repeats every other square), two pentagons a square (tile 2 (i·nv + j) + o, see cairoCorners),
 // listed counterclockwise on the sheet as the squares are
-const torusCairoColumns = (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 2, false, undefined, own);
+const torusCairoColumns = (nv, own) => ringColumns(nv / torusTube(), nv, 2, false, undefined, own);
 
 // A tiling's polygons, their corners the same from every polygon round them (stored to 6 decimals: those a whole lattice
 // cell apart, or less than 10⁻⁴, made one): a surface glues them by their places, which must agree exactly
@@ -16067,7 +16148,7 @@ function sheetCells(kind, [[p, q], [r, s]]) {
 // pentagons); uvMid: their middles there (cellMiddle's, for Famous: see sheetMiddle)
 function tilingTorusMesh(kind, nv, nu, turned = false) {
   // turned: B round the ring, A round the tube (⟲ 30°)
-  const key = `${kind}torus${turned ? 'Turned' : ''}${nv}x${nu}`;
+  const key = `${kind}torus${turned ? 'Turned' : ''}${nv}x${nu}|${shapeOn('torus')}`; // (its shape, see TORUS_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const t = gridMotif(kind),
     sheet = torusSheets(kind)[turned ? 'turned' : 'plain'],
@@ -17433,7 +17514,7 @@ for (const [name, kind, turned, unit] of [
   SURFACES[name] = {
     mesh: (z) => tilingTorusMesh(kind, ...torusDims(name, z), turned),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
-    columns: (nv, own) => ringColumns((nv * tube) / (ring * TORUS_TUBE), nv, 1, false, undefined, own),
+    columns: (nv, own) => ringColumns((nv * tube) / (ring * torusTube()), nv, 1, false, undefined, own),
     perRow: per,
     steps: [1, 1],
     least: 2,
@@ -18148,10 +18229,6 @@ const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
-// a Klein bottle's shape, its place in KLEIN_SHAPES (Shape's tabs; the link's kleinShape), its sheet ours whatever its shape;
-// the mesh made for a variant's, as its colours (see stripKey)
-let kleinShape = 0;
-const kleinShapeOn = (w = ringVariant()) => (/^klein/.test(VARIANTS[w]?.surface ?? '') ? kleinShape : 0);
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -27655,7 +27732,7 @@ function torusBlocks(K, g = walk.surface) {
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
       const fits = !g?.nv || g.nv % b === 0,
-        e = (fits ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * TORUS_TUBE)));
+        e = (fits ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
       if (e < err) {
         err = e;
         best = [K / b, b];
@@ -34464,7 +34541,7 @@ function getSetup() {
   if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
-  if (kleinShapeOn(w)) s.kleinShape = kleinShapeOn(w); // (its place in KLEIN_SHAPES: Thin, 0, in no link)
+  for (const f of Object.keys(RING_SHAPES)) if (shapeOn(f, w)) s[`${f}Shape`] = shapeOn(f, w); // (its place in its family's shapes: the first, 0, in no link)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
@@ -34545,7 +34622,10 @@ function applySetup(s) {
   set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
-  kleinShape = KLEIN_SHAPES[s.kleinShape] && Number(s.kleinShape) > 0 ? Number(s.kleinShape) : 0;
+  for (const f of Object.keys(RING_SHAPES)) {
+    const k = Number(s[`${f}Shape`]);
+    ringShape[f] = Number.isInteger(k) && RING_SHAPES[f][k] ? k : 0;
+  }
   if (VARIANTS[w].surface) {
     const kind = surfaceOf(VARIANTS[w]);
     fillGridSizes(kind, VARIANTS[w].initial);

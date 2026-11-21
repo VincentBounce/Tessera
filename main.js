@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.567';
+const VERSION = '0.5.568';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35925,12 +35925,9 @@ const lifeEnded = () => {
 // at its end: its last step (a loop known: none, round it on, see looping), or a run that froze or died there
 const atEnd = () => (stepShown >= runEnd() && !looping()) || lifeEnded();
 // the motion started, stopped or turned (play, reverse): a step's fraction gone, the position on its notch (forth the step
-// reached, back the one it left: see glideAt), drawn again; every glide starts from a whole step, and a Life's generation
-// asked by the motion let go (stopped: it stays at the one shown; its batch, back late, played again from there: see
-// lifeStepGPU)
+// reached, back the one it left: see glideAt), drawn again; every glide starts from a whole step
 const motionChanged = () => {
   stepsDue = 0;
-  walk.lifeGoal = null;
   needsFull = true;
 };
 function play(on) {

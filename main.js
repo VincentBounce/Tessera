@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.490';
+const VERSION = '0.5.491';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11626,23 +11626,9 @@ function renderModePicker() {
             }),
           ]
         : []),
-      // Triple, a Klein bottle's switch (see kleinTriple)
+      // a Klein bottle's shapes, their row (see KLEIN_SHAPES)
       ...(F.name === FOLDS.klein.name
-        ? [
-            tile({
-              pic: icon('klein'),
-              text: 'Triple',
-              toggle: true,
-              byDefault: 'off',
-              on: tripleOn(w),
-              title:
-                "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
-              click: () => {
-                kleinTriple = !kleinTriple;
-                compute();
-              },
-            }),
-          ]
+        ? [choiceTabs('kleinShape', KLEIN_SHAPES, kleinShapeOn(w), (k) => (kleinShape = k), null)]
         : []),
     );
   }
@@ -15255,28 +15241,66 @@ function jeenerAt(q, u) {
     S * Math.sin(w) - Math.sin(S * w) - W * Math.cos(((S - 1) / 2) * w) * Math.cos(u),
   ];
 }
-// a bottle's shape, once a shape (Triple, see kleinTriple: Jeener's; else ours): its point (at), its length along it, its
-// share s ∈ [0, 1) to its q (the tiles as long everywhere along it: ours by its profile's and neck's lines, Jeener's by its
-// surface's speed round it, its deltoid stopping at its tips), the sheet's ends' share (ours: the bowl's lowest; Jeener's: a
-// neck's narrowest) and its frame (centred, 3 high)
+// The glass bottle (Shadertoy's 4ltSW8, its distance field's pieces): a tube whose circles lie level, its height h: the body
+// round the vertical, its radius 1.5 − 1.25 y (y = sin² of its height's share, 0 at its top, 1 at its foot, h 1 to −2); its
+// lip half a torus (ring 1, tube 0.5) turning it in to 0.5; its neck down from there, 0.5 − 0.25 y, its axis bent west by
+// 1 − cos (2 at its foot); its handle half a torus (ring 1, tube 0.25) under, from the neck's foot to the body's: glued as
+// ours, its end its start turned over (u to π − u). q ∈ [0, 3] along it: the body [0, 1), the lip [1, 1.5), the neck
+// [1.5, 2.5), the handle [2.5, 3]; its height z
+function glassBottleAt(q, u) {
+  const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
+    level = (x, r, h) => [x + r * Math.cos(u), r * Math.sin(u), h]; // (a level circle round (x, 0, h))
+  if (q < 1) {
+    const h = -2 + 3 * q;
+    return level(0, 1.5 - 1.25 * share(h), h);
+  }
+  if (q < 1.5) {
+    const a = 2 * Math.PI * (q - 1); // (over the lip, outside to inside)
+    return level(0, 1 + 0.5 * Math.cos(a), 1 + 0.5 * Math.sin(a));
+  }
+  if (q < 2.5) {
+    const h = 1 - 3 * (q - 1.5);
+    return level(-(1 - Math.cos(((1 - h) / 3) * Math.PI)), 0.5 - 0.25 * share(h), h);
+  }
+  const a = Math.PI * (2 * q - 4), // (under the handle's ring, π to 2π)
+    r = 0.25 * Math.cos(Math.PI - u); // (its circle across the ring, turned over from the neck's)
+  return [-1 + (1 + r) * Math.cos(a), 0.25 * Math.sin(u), -2 + (1 + r) * Math.sin(a)];
+}
+// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): ours, Jeener's triple, the glass bottle
+const KLEIN_SHAPES = [
+  ['Classic', 'The Klein bottle as blown in glass: a bowl, a pear of a body, its neck through its side into the bowl'],
+  [
+    'Triple',
+    "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
+  ],
+  [
+    'Glass bottle',
+    "Shadertoy's glass Klein bottle (4ltSW8): a body round, its lip turned in, its neck bent down through its side, a handle round back to its foot",
+  ],
+];
+const KLEIN_AT = [kleinAt, jeenerAt, glassBottleAt];
+// a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
+// tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
+// the sheet's ends' share (ours: the bowl's lowest; Jeener's: a neck's narrowest; the glass bottle's: its handle's middle)
+// and its frame (centred, 3 high)
 const kleinTables = {};
-function kleinBottle(triple = tripleOn()) {
-  if (kleinTables[triple]) return kleinTables[triple];
+function kleinBottle(shape = kleinShapeOn()) {
+  if (kleinTables[shape]) return kleinTables[shape];
   const N = 6000,
     q = (i) => (3 * i) / N,
-    at = triple ? jeenerAt : kleinAt,
+    at = KLEIN_AT[shape],
     along = new Float64Array(N + 1);
   const mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
     step = (i) => {
-      if (!triple) {
+      if (!shape) {
         const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1),
           b = mid(i);
         return Math.hypot(a[0] - b[0], a[1] - b[1]);
       }
       let sum = 0;
       for (let j = 0; j < 8; j++) {
-        const a = jeenerAt(q(i - 1), (j * Math.PI) / 4),
-          b = jeenerAt(q(i), (j * Math.PI) / 4);
+        const a = at(q(i - 1), (j * Math.PI) / 4),
+          b = at(q(i), (j * Math.PI) / 4);
         sum += Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / 8;
       }
       return sum;
@@ -15290,12 +15314,16 @@ function kleinBottle(triple = tripleOn()) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  const neck = Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)); // (W least: (S + 1) w + π / T = π)
-  return (kleinTables[triple] = {
+  const ends = [
+    N / 6,
+    Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
+    (N * 2.75) / 3,
+  ];
+  return (kleinTables[shape] = {
     at,
     N,
     along,
-    bottom: along[triple ? neck : N / 6] / along[N],
+    bottom: along[ends[shape]] / along[N],
     centre: lo.map((v, d) => (v + hi[d]) / 2),
     scale: 3 / (hi[2] - lo[2]),
   });
@@ -15332,7 +15360,7 @@ function kleinSheetPlace(x0, y0, nu, nv, up) {
 }
 const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
-  const key = `kleinCairo${nv}x${nu}|${tripleOn()}`; // (its shape, Triple's)
+  const key = `kleinCairo${nv}x${nu}|${kleinShapeOn()}`; // (its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { tiles, places } = cairoSheet(nu, nv),
     up = 0.5; // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
@@ -15588,7 +15616,7 @@ const stripSteps = (kind0, nv, W, own) => {
   );
 };
 const stripKey = () =>
-  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${tripleOn() ? ' triple' : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+  `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${kleinShapeOn() ? ` ${KLEIN_SHAPES[kleinShapeOn()][0]}` : ''}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)
@@ -15830,7 +15858,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     });
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringVariant())}|${tripleOn()}`; // (its length its colours': see kleinLength; its shape, Triple's)
+  const key = `${kindK}${size}|${ringColours(ringVariant())}|${kleinShapeOn()}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { kind, turn, L, W, n, nv, step, by, sides, tiles, mids, latticeCells, cellPlaces, colourCells, originCell } =
       kleinTilingSheet(kindK, size),
@@ -18101,10 +18129,10 @@ const POINTY = new Set(['torusHex', 'mobiusHex', 'kleinHex']);
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
-// a Klein bottle's shape (Triple, a switch; the link's kleinTriple): Jeener's triple bottle, its sheet ours (see jeenerAt); the
-// mesh made for a variant's, as its colours (see stripKey)
-let kleinTriple = false;
-const tripleOn = (w = ringVariant()) => kleinTriple && /^klein/.test(VARIANTS[w]?.surface ?? '');
+// a Klein bottle's shape, its place in KLEIN_SHAPES (Shape's tabs; the link's kleinShape), its sheet ours whatever its shape;
+// the mesh made for a variant's, as its colours (see stripKey)
+let kleinShape = 0;
+const kleinShapeOn = (w = ringVariant()) => (/^klein/.test(VARIANTS[w]?.surface ?? '') ? kleinShape : 0);
 const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
@@ -34417,7 +34445,7 @@ function getSetup() {
   if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
-  if (tripleOn(w)) s.kleinTriple = 1; // (Triple)
+  if (kleinShapeOn(w)) s.kleinShape = kleinShapeOn(w); // (its place in KLEIN_SHAPES: Classic, 0, in no link)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
@@ -34498,7 +34526,7 @@ function applySetup(s) {
   set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
-  kleinTriple = Number(s.kleinTriple) === 1;
+  kleinShape = [1, 2].includes(Number(s.kleinShape)) ? Number(s.kleinShape) : 0;
   if (VARIANTS[w].surface) {
     const kind = surfaceOf(VARIANTS[w]);
     fillGridSizes(kind, VARIANTS[w].initial);

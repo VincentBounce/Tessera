@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.517';
+const VERSION = '0.5.518';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31524,6 +31524,8 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
           .join(' ');
       if (seen.has(sig)) continue;
       seen.add(sig);
+      const byFaces = items.every((q) => mids.some((m) => dot3(unit(m), q) > 1 - 1e-9)) ? 0 : 1; // (its parts whole faces: first)
+      if (best && byFaces > best.score[0]) continue; // (beaten by its first measure, read off its items: none taken on the mesh)
       const col = { items, colour },
         of = spotColours(col, g);
       let none = 0,
@@ -31542,7 +31544,6 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
         }
       const pieces = new Set([...of.keys()].filter((t) => of[t] >= 0).map(root)).size,
         across = items.every((q, i) => colour.some((c, j) => c === colour[i] && dot3(items[j], q) < -1 + 1e-9)), // (its pieces each other's through the centre: Opposite's)
-        byFaces = items.every((q) => mids.some((m) => dot3(unit(m), q) > 1 - 1e-9)) ? 0 : 1, // (its parts whole faces: first)
         score = apart
           ? [byFaces, none, cut.size, across && !opposite ? 1 : 0, -pieces, -G.length, sides]
           : [byFaces, none, cut.size, pieces, -G.length, sides];

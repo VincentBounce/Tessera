@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.534';
+const VERSION = '0.5.535';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14298,13 +14298,15 @@ function hullColourings(surface) {
   };
   const across = (q) => faceAt.get(key3(mids[q].map((v) => -v))); // (its opposite face)
   // (every fair grouping of K colours, in turn, of its first's kind of face, so its patterns' grid by K alone, whatever the
-  // start's place: see patternKind; pairs: each colour a face and its opposite, Doubled's; crossed: a colour holding a face and
-  // its opposite, so none faces another colour across the centre: see hullColours)
+  // start's place: see patternKind; pairs: a colour's faces a face and its opposite; whole: each colour's faces holding their
+  // opposites, a start copied through the centre on its own colour's (Doubled's); crossed: a colour holding a face and its
+  // opposite, so none faces another colour across the centre: see hullColours)
   const add = (kind, groups, pairs = false) => {
     if (groups.length < 2 || (out[groups.length] && out[groups.length][0].kind !== kind) || !fair(groups)) return;
     const all = pairs ? groups : spread(groups),
-      crossed = all.some((gr) => gr.some((q) => gr.includes(across(q))));
-    (out[groups.length] ??= []).push({ kind, groups: all, mids, pairs, crossed, squares: kinds[0][1].length });
+      crossed = all.some((gr) => gr.some((q) => gr.includes(across(q)))),
+      whole = groups.every((gr) => gr.every((q) => gr.includes(across(q))));
+    (out[groups.length] ??= []).push({ kind, groups: all, mids, pairs, whole, crossed, squares: kinds[0][1].length });
   };
   const offer = (kind, qs) => {
     add(
@@ -14357,11 +14359,11 @@ function hullColourings(surface) {
 // the hull solid a surface is (itself, or the solid it cuts: see FACE_BASE), else null
 const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (FACE_BASE[surface] ?? surface) : null);
 // a hull solid's colouring for K colours by the start's place (see hullColourings), as a solid's by colouring: Doubled's
-// (opposite), its first in pairs, each colour a face and its opposite; the others', its first with no colour holding both
-// (its colours' faces may face each other: Face to face), else its first; null where none
+// (opposite), its first whose colours each hold their faces' opposites; the others', its first with no colour holding both
+// (its colours' faces may face each other: Face to face); else its first; null where none
 const hullColours = (surface, K, opposite = false) => {
   const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null;
-  return (all && (opposite ? all.find((c) => c.pairs) : (all.find((c) => !c.crossed) ?? all[0]))) ?? null;
+  return (all && (all.find((c) => (opposite ? c.whole : !c.crossed)) ?? all[0])) ?? null;
 };
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
 // a face's cells (see cellFaces)
@@ -24255,11 +24257,12 @@ const symmetryOf = (kind, W = walk.plane?.W) =>
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
 // whether a solid's start can be copied through its centre (Doubled, see START_PLACES): in colours, its parts two opposite pieces
-// a colour (see colouring's mirror; a hull solid's pairs); one colour, the solid its own copy so
+// a colour (see colouring's mirror; a hull solid's colours each holding their faces' opposites, see hullColours); one colour,
+// the solid its own copy so
 const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
   (K > 1
-    ? !!colouring(surface, K, true) || !!hullColours(surface, K, true)
+    ? !!colouring(surface, K, true) || !!hullColours(surface, K, true)?.whole
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
       ));

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.503';
+const VERSION = '0.5.504';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17158,6 +17158,7 @@ const SURFACES = {
     tiles: (m) => 72 * m * m,
     unit: 'squares',
     edge: (m) => 3 * m, // a cube's frame: its branches m squares wide, its edge 3m
+    startPeriod: 2, // (a face's middle a corner at an even width, a hole's side at an odd one: start 1 two kinds of point)
     how: (m) =>
       `a cube's frame, (Edge=${formatNumber(3 * m)}) / 3 = ${formatNumber(m)} its branches' width: 72 × {y:${formatNumber(m)}² squares}`,
   },

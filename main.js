@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.527';
+const VERSION = '0.5.528';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22520,7 +22520,8 @@ function startColours(seed) {
 // in colours, a start laid by parts (a soup, a zone, a text: each colour's in its own) its shape so, each copy in its own part's
 // colour (its dying state kept; none's: dead), as a hunt's (see huntPlan); the digits' and cells drawn their own colours
 function symmetricStart(seed) {
-  if (startSymmetry() === 'none') return;
+  const sym = startSymmetry();
+  if (sym === 'none') return;
   const K = lifeParts(),
     own = K > 1 && (plane.start === 'random' || plane.start === 'text') ? new Uint8Array(seed.length) : null;
   if (own)
@@ -22530,14 +22531,14 @@ function symmetricStart(seed) {
   for (let t = 0; t < seed.length; t++) {
     // (its first live copy's, before it: as it is; a pattern laid on any of them, Famous's on a solid's part's second piece)
     const v =
-      startCopies(t)
+      startCopies(t, sym)
         .sort((a, b) => a - b)
         .map((c) => seed[c])
         .find(Boolean) ?? 0;
     seed[t] = !v || !own ? v : own[t] ? colourState(own[t] - 1, Math.floor((v - 1) / walk.life.colours) + 1) : 0;
   }
 }
-const firstCopy = (t) => Math.min(...startCopies(t));
+const firstCopy = (t, sym = startSymmetry()) => Math.min(...startCopies(t, sym));
 const firstCell = ([x, y]) => {
   const { at, xy } = walk.plane,
     t = at(x, y);
@@ -22570,8 +22571,8 @@ function startParts(seed) {
   if (K === 1) return;
   // (Wild: each colour's soup in its part, as many alive in each, see soupInParts; on the plane its symmetry's first copies
   // drawn, the others as theirs, see symmetricStart; the cells no one's, on its slices' lines, dead)
-  const own = startSymmetry() !== 'none',
-    first = (t) => !own || firstCopy(t) === t,
+  const sym = startSymmetry(),
+    first = (t) => sym === 'none' || firstCopy(t, sym) === t,
     next = seededRandom(plane.seed);
   seed.fill(0);
   soupInParts(
@@ -24256,11 +24257,12 @@ const oppositeAllowed = (surface, K) =>
       ));
 // the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Doubled, see START_PLACES), else none
 const startSymmetry = () => (walk.plane ? symmetryOf(walk.plane.kind) : startOpposite() ? 'opposite' : 'none');
-// a cell and its copies by the start's symmetry: the plane's (see cellCopies), a solid's cell and the one across its centre
-const startCopies = (t) =>
+// a cell and its copies by the start's symmetry (sym: asked once a start, never once a cell: see placeNow): the plane's (see
+// cellCopies), a solid's cell and the one across its centre
+const startCopies = (t, sym = startSymmetry()) =>
   walk.plane
     ? cellCopies(walk.plane.kind, walk.plane.W, t)
-    : startSymmetry() === 'opposite'
+    : sym === 'opposite'
       ? [t, oppositeCell(walk.surface, t)]
       : [t];
 // the cell across a solid's centre from cell t, once a mesh (its middle's opposite point's cell)
@@ -32309,7 +32311,8 @@ function numberSeed(x, own) {
     }
   }
   digitsOn(seed, digits);
-  if (startSymmetry() !== 'none') for (let t = 0; t < n; t++) if (firstCopy(t) !== t) seed[t] = 0; // (its first copies only, the others theirs, as Wild's soup: see symmetricStart)
+  const sym = startSymmetry();
+  if (sym !== 'none') for (let t = 0; t < n; t++) if (firstCopy(t, sym) !== t) seed[t] = 0; // (its first copies only, the others theirs, as Wild's soup: see symmetricStart)
   if (lifeParts() > 1) paintOwn(seed, own);
   symmetricStart(seed);
   seed.number = x;
@@ -32358,13 +32361,14 @@ function huntPlan() {
   });
   const cells = [],
     copies = [];
-  if (startSymmetry() !== 'none') {
-    for (const t of [...zone]) for (const c of startCopies(t)) zone.add(c);
+  const sym = startSymmetry();
+  if (sym !== 'none') {
+    for (const t of [...zone]) for (const c of startCopies(t, sym)) zone.add(c);
     const partOf = new Map(); // a copy outside the patches: its part's colour
     huntParts(0, K).forEach((p, i) => p.forEach((t) => partOf.set(t, i + 1)));
     const colourOf = (t) => mine.get(t) ?? partOf.get(t);
     for (const t of zone) {
-      const first = firstCopy(t);
+      const first = firstCopy(t, sym);
       if (first === t) cells.push([t, colourOf(t)]);
       else copies.push([t, first, colourOf(t)]);
     }

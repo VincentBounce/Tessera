@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.521';
+const VERSION = '0.5.522';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11140,7 +11140,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   // the choices that place each colour's part, each tab a click (see PART_CHOICES)
   if (m.life)
     for (const [field, { list, whyNot }] of Object.entries(PART_CHOICES))
-      if (wants(field)) list.forEach(([name], k) => set(`${field}:${k}`, field, k, whyNot(s), name));
+      if (wants(field)) list.forEach(([name], k) => set(`${field}:${k}`, field, k, whyNot(s, k), name));
   const starts = wants('startNo') && w === tabVariant() && variantStarts(); // (a start's −, +: at the variant shown, its starts' list known there)
   if (starts) {
     set('startNo:-1', 'startNo', startStep(s.startNo, -1, starts.length), '', 'Previous start');
@@ -24086,11 +24086,6 @@ const SYMMETRIES = {
     'kaleidoscopic',
     'A part of the start turned and mirrored: eight copies on squares, twelve in a hexagon',
   ],
-  opposite: [
-    'Opposite',
-    'through the centre',
-    "Half of the start on each colour's part, copied on its other half through the solid's centre (a solid's: each colour's part two opposite pieces, see colouring): two copies",
-  ],
 };
 // out of the menu's graph (see OFF_GRAPH): each symmetry's search asks every grid's parts it crosses, 0.3 to 0.4 s a first
 // hover on a solid (2026-11-21); its words say what it waits for
@@ -24250,7 +24245,7 @@ const symmetryOf = (kind, W = walk.plane?.W) =>
   plane.sym !== 'none' && W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none'; // (none picked: none, the grid's own not looked for)
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
-// whether a solid's start can be copied through its centre (Symmetry's Opposite): in colours, its parts two opposite pieces
+// whether a solid's start can be copied through its centre (Wild's Face opposite): in colours, its parts two opposite pieces
 // a colour (see colouring's mirror; a hull solid's pairs); one colour, the solid its own copy so
 const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
@@ -24259,13 +24254,8 @@ const oppositeAllowed = (surface, K) =>
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
       ));
-// the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Opposite), else none
-const startSymmetry = () =>
-  walk.plane
-    ? symmetryOf(walk.plane.kind)
-    : plane.sym === 'opposite' && walk.surface && oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts())
-      ? 'opposite'
-      : 'none';
+// the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Wild's Face opposite), else none
+const startSymmetry = () => (walk.plane ? symmetryOf(walk.plane.kind) : wildOpposite() ? 'opposite' : 'none');
 // a cell and its copies by the start's symmetry: the plane's (see cellCopies), a solid's cell and the one across its centre
 const startCopies = (t) =>
   walk.plane
@@ -26499,8 +26489,6 @@ const symmetryAllowed = (
     outline = m.plane && outlineIn(outlineSet, m.plane),
     k = m.plane && planeKind(m.plane, outline),
     by = { start, zone, K: parts === lifeTeams - (newcomerOn() ? 1 : 0) ? undefined : parts, outline }; // (the game's where they are its)
-  if (SOLIDS.includes(m.surface) && m.life && !m.margolus)
-    return y === 'none' || (y === 'opposite' && oppositeAllowed(m.surface, parts)); // (a solid's: through its centre only)
   if (v === walk.variant && walk.plane && outline === outlineOf(m.plane))
     return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
@@ -26510,7 +26498,7 @@ const symmetryAllowed = (
 function renderSymmetry() {
   const m = VARIANTS[tabVariant()],
     now = walk.life ? startSymmetry() : 'none';
-  $('symmetryRow').hidden = !(m.plane || (SOLIDS.includes(m.surface) && m.life)) || !!m.elementary; // (Elementary: a row, no copies; a solid's: Opposite)
+  $('symmetryRow').hidden = !m.plane || !!m.elementary; // (the plane's grids' turns and mirrors; Elementary: a row, no copies; a solid's copy through its centre: Wild's, see WILD_ZONES)
   $('symmetryTiles').replaceChildren(
     textTabs(
       Object.keys(SYMMETRIES).map((y) => {
@@ -27787,7 +27775,7 @@ const piecesOf = (w, K = lifeTeams) => {
   const m = VARIANTS[w];
   if (!m.life || K < 2) return false;
   if (m.plane) return planeTorus(m.plane);
-  const sym = plane.sym === 'opposite';
+  const sym = wildOpposite();
   return (
     SOLIDS.includes(m.surface) &&
     (colouring(m.surface, K, sym, true)?.pieces ?? 0) > (colouring(m.surface, K, sym, false)?.pieces ?? 0)
@@ -28042,7 +28030,7 @@ const choiceTabs = (field, list, now, pick, whyNot, then = compute) =>
         on: now === k,
         byDefault: k ? '' : 'yes',
         choice: `${field}:${k}`,
-        whyNot,
+        whyNot: whyNot && ((s) => whyNot(s, k)), // (each tab its own: Wild's three, see PART_CHOICES)
         click: () => {
           if (now !== k) {
             pick(k);
@@ -31332,15 +31320,26 @@ const seedThatFits = (r) => {
 // patchSpots), a hull solid's its first; none in Solo, off a solid, or where a patch is on a corner or an edge (the stella's
 // tips and hollows, the Dodecahedron's 5: a face cut). Realm before v0.5.425, its plane's parts apart (two cells between
 // colours) gone with it
-// Wild's zone, one choice of two (the link's wildFace: its place): each colour's face on a solid, where each colour has one
-// (see colourFaces), or its whole part
+// Wild's zone on a solid, one choice of three (the link's wildFace: its place): each colour's soup on its own face (see
+// colourFaces); on its face and copied on the opposite one through the solid's centre (its parts two opposite pieces, see
+// oppositeAllowed: its copies' words third); or over its whole part
 const WILD_ZONES = [
-  ['Face', "Each colour's soup on its own face of the solid, the one in the middle of its part"],
+  ['Face together', "Each colour's soup on its own face of the solid, the one in the middle of its part"],
+  [
+    'Face opposite',
+    "Each colour's soup on its face, copied on the opposite face through the solid's centre",
+    'through the centre',
+  ],
   ['Part', "Each colour's soup over its whole part"],
 ];
 let wildFace = 0;
 const wildFacesHere = () => !!walk.life && !!colourFaces(VARIANTS[walk.variant].surface, lifeParts()); // (each colour a face of the solid shown)
-const wildOnFaces = () => wildFace === 0 && wildFacesHere();
+const wildOnFaces = () => hunt.zone === 'full' && wildFace === 0 && wildFacesHere();
+const wildOpposite = () =>
+  hunt.zone === 'full' &&
+  wildFace === 1 &&
+  !!walk.surface &&
+  oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts());
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
 // no mesh: a hull solid's its colour's first face (as the cube's, see hullColourings), another's the face whose middle its
 // patch's spot is (an index in FACE_MIDDLES, see cellFaces); null where a patch is off a face's middle, in Solo, off a solid
@@ -31387,17 +31386,21 @@ const PART_CHOICES = {
   wildFace: {
     list: WILD_ZONES,
     pick: (k) => (wildFace = k),
-    now: () => (hunt.zone === 'full' && wildFace === 1 && wildFacesHere() ? 1 : 0),
+    now: () => (wildOpposite() ? 1 : hunt.zone === 'full' && wildFace === 2 ? 2 : 0),
     then: () => {
       lifeReseed();
       renderHunt();
       syncLink();
     },
-    whyNot: (s) =>
-      s.zone === 'full' &&
-      colourFaces(VARIANTS[s.w].surface, setupParts(s), s.teamsApart === 1 && piecesOf(s.w, s.lifeTeams))
-        ? ''
-        : "Only with Wild, on a solid where each colour's part lies round the middle of a face.",
+    whyNot: (s, k) =>
+      s.zone !== 'full' || !SOLIDS.includes(VARIANTS[s.w].surface)
+        ? 'Only with Wild, on a solid.'
+        : k === 0 &&
+            !colourFaces(VARIANTS[s.w].surface, setupParts(s), s.teamsApart === 1 && piecesOf(s.w, s.lifeTeams))
+          ? "Only on a solid where each colour's part lies round the middle of a face."
+          : k === 1 && !oppositeAllowed(VARIANTS[s.w].surface, setupParts(s))
+            ? 'Only on a solid whose colours can each lie in two opposite pieces.'
+            : '',
   },
 };
 // out of the menu's graph (see OFF_GRAPH): each tab asks every solid's colourings its search crosses, measured on their
@@ -31408,13 +31411,13 @@ const partChoiceTabs = (field) => {
   const c = PART_CHOICES[field];
   return choiceTabs(field, c.list, c.now(), c.pick, c.whyNot, c.then);
 };
-// Start's tabs under the zones (in place of the last ones drawn): a Duel's cut its row, then a colour's pieces and Wild's
-// face side by side
+// Start's tabs under the zones (in place of the last ones drawn): Wild's three its row, then a colour's pieces and a Duel's
+// cut side by side
 function renderPartTabs() {
   for (const row of $('huntZones').querySelectorAll(':scope > .tab-row')) row.remove();
   $('huntZones').append(
-    tabRow(partChoiceTabs('duelCut')),
-    tabRow(partChoiceTabs('teamsApart'), partChoiceTabs('wildFace')),
+    tabRow(partChoiceTabs('wildFace')),
+    tabRow(partChoiceTabs('teamsApart'), partChoiceTabs('duelCut')),
   );
 }
 const COLOUR_PARTS = {
@@ -31622,7 +31625,7 @@ function spotColours(col, g) {
 }
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {
-  const c = colouring(surface, K, plane.sym === 'opposite'); // (Opposite's: its parts' colouring, see huntParts)
+  const c = colouring(surface, K, wildOpposite()); // (Face opposite's: its parts' colouring, see huntParts)
   return c.patch.map((i) => c.items[i]);
 };
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
@@ -31991,7 +31994,7 @@ function colourUnitPlaces(g) {
   return (g.colourUnitPlaces = out);
 }
 // each colour's part: its places' open cells only (a wall's, on a surface, no one's: the plane has none, see planeGrid)
-function huntParts(r, K, opposite = plane.sym === 'opposite' && !walk.plane, mixed = teamsMixed()) {
+function huntParts(r, K, opposite = wildOpposite(), mixed = teamsMixed()) {
   // (opposite: Symmetry's Opposite on a solid, see colouring; mixed: Mixed's, else each colour's own place)
   const { start } = walk.life.nbr;
   return partPlaces(r, K, opposite, mixed).map((part) => part.filter((t) => start[t] < start[t + 1]));
@@ -32503,7 +32506,7 @@ function renderHunt() {
     z === 'custom'
       ? 'A start found by a hunt, from a link: pick a zone to hunt in'
       : `${all ? `All its ${formatNumber(all)} ${tried} tried, each once, then done` : `On and on until stopped: ${tried} at random one in 3, the others tweaks of the best`}; a click on one found plays it`;
-  const zone = shown + (sym !== 'none' ? ` · ${SYMMETRIES[sym][1]}` : '');
+  const zone = shown + (sym !== 'none' ? ` · ${walk.plane ? SYMMETRIES[sym][1] : WILD_ZONES[wildFace][2]}` : ''); // (the plane's Symmetry, a solid's Wild)
   $('huntBtn').innerHTML = busy ? `${icon('stop')} Stop hunt and play` : `${icon('search')} ${capitalised(what)}`;
   setTile($('huntBtn'), {
     whyNot: busy
@@ -34716,8 +34719,8 @@ function getSetup() {
         .join(''); // (its starts' order: so=acb)
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now()) s[field] = 1; // (its place in its tabs: the first, 0, in no link)
-  if (walk.life && startSymmetry() !== 'none') s.popSymmetry = startSymmetry(); // (the plane's, a solid's Opposite)
+  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now()) s[field] = c.now(); // (its place in its tabs: the first, 0, in no link)
+  if (walk.life && walk.plane && startSymmetry() !== 'none') s.popSymmetry = startSymmetry(); // (the plane's; a solid's copy through its centre Wild's: wildFace)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -34810,12 +34813,12 @@ function applySetup(s) {
     // (Life: its size and start without a rule too, the grid's first then)
     if (VARIANTS[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
-    plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none'; // (the plane's, a solid's Opposite)
+    plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none'; // (the plane's)
     lifeTeams = Number(s.teams) || 1;
     teamsMix = Number(s.popMixed) === 1;
     duelCut = Number(s.duelCut) === 1 ? 1 : 0;
     teamsApart = Number(s.teamsApart) === 1 ? 1 : 0;
-    wildFace = Number(s.wildFace) === 1 ? 1 : 0;
+    wildFace = WILD_ZONES[Number(s.wildFace)] ? Number(s.wildFace) : 0;
     newcomer = Number(s.popNewcomer) === 1;
     if (s.playRule) {
       ruleFittedTo = w;

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.529';
+const VERSION = '0.5.530';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10068,7 +10068,7 @@ const LIFE_GRIDS = [
     ['Triangles', 'boyIcosa', 'icosahedron', "an icosahedron's triangles"],
     ['Hex', 'boyHex', 'hexagon', "a sphere of hexagons' hexagons (and its pentagons)"],
   ].map(([name, surface, icon, of]) => [
-    `lifeBoy${name}`,
+    `lifeBoysSurface${name}`, // (its key its link's words, see variantWords)
     'Surfaces',
     "Boy's surface",
     icon,
@@ -10634,7 +10634,7 @@ const FAMILIES = [
   // Boy's surface, a tab a solid it is made from (see BOY_BASES: Life only)
   {
     name: "Boy's surface",
-    variants: [['lifeBoySquares'], ['lifeBoyTriangles'], ['lifeBoyHex']],
+    variants: [['lifeBoysSurfaceSquares'], ['lifeBoysSurfaceTriangles'], ['lifeBoysSurfaceHex']],
     tab: 0,
     tabs: [
       [0, false, 'tilesSq', 'Squares', "A cube's squares, each glued to its opposite"],
@@ -31322,7 +31322,7 @@ const seedThatFits = (r) => {
 // each colour's start on its own face, the faces side by side; face to face, each across the centre from another colour's;
 // doubled, copied on the opposite face through the solid's centre (its parts two opposite pieces, see oppositeAllowed: its
 // copies' words third); or over its whole part (a start that fills it: Wild's soup, Formula's digits). The one in effect the
-// one picked where allowed, else the first allowed (see placeNow)
+// one picked where allowed, else the first allowed, none (-1) off a solid (see placeNow)
 const START_PLACES = [
   ['Side by side', "Each colour's start on its own face, the colours' faces side by side, alike"],
   ['Face to face', "Each colour's start on its own face, each face across the centre from another colour's"],
@@ -31335,9 +31335,9 @@ const START_PLACES = [
 ];
 let startPlace = 0;
 const fillsPart = (start, zone) => start === 'random' && (zone === 'full' || zone === 'numbers'); // (a start over each colour's part)
-const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startPlace.whyNot(s, k)) ?? 0,
+const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startPlace.whyNot(s, k)) ?? -1,
   placeNow = () => placeIn(setupNow()),
-  soupOnFaces = () => hunt.zone === 'full' && placeNow() <= 1, // (Wild's soup on each colour's face)
+  soupOnFaces = () => hunt.zone === 'full' && [0, 1].includes(placeNow()), // (Wild's soup on each colour's face; none off a solid: -1)
   startOpposite = () => !!walk.surface && placeNow() === 2;
 const spotsOf = (col) => (placeNow() === 1 ? col?.facing : col?.patch); // (a colouring's spots as the start's place lays them)
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
@@ -34433,9 +34433,10 @@ function laidChoices(centred, any = false) {
       };
       const moves = laid.length * part.length,
         move = (k) => lay(laid[Math.floor(k / part.length)], part[k % part.length]),
+        anyMove = (k) => lay(laid[k % laid.length], part[Math.floor(k / laid.length)]), // (whether any: cell by cell, every shape at each, so one too big for every cell is not tried on all of them first)
         out = [];
       for (let k = 0; k < moves && !((any || moves > FAMOUS_ALL) && out.length); k++) {
-        const f = move(k);
+        const f = (any ? anyMove : move)(k);
         if (f) out.push(f);
       }
       const firstShape = new Map();
@@ -34769,7 +34770,7 @@ function getSetup() {
         .join(''); // (its starts' order: so=acb)
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now()) s[field] = c.now(); // (its place in its tabs: the first, 0, in no link)
+  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now() > 0) s[field] = c.now(); // (none, -1: no place, off a solid) // (its place in its tabs: the first, 0, in no link)
   if (walk.life && walk.plane && startSymmetry() !== 'none') s.popSymmetry = startSymmetry(); // (the plane's; a solid's copy through its centre: startPlace)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {

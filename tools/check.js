@@ -1080,7 +1080,7 @@
   // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
   // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
   // variants made in any order)
-  const VARIANTS_PRINT = -1842478717; // (v0.5.452: lattice: 'surface' gone from the surfaces' variants, their surface alone)
+  const VARIANTS_PRINT = -1838308655; // (v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
   const variantsPrint = () => {
     const text = JSON.stringify([
       Object.keys(NAV)

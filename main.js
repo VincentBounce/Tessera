@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.553';
+const VERSION = '0.5.554';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26881,14 +26881,7 @@ function renderDrawTools() {
   grey($('openPng'), false, '', false, ({ w: v }) => pngWhyNot(v));
   $('brushColours').classList.toggle('off', away);
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
-  // the start's cells: away, back to them (gen 0); there, Clear
-  const b = $('startCells'),
-    [pic, words, tip] = away
-      ? ['start', 'Go to gen 0 to draw', "The cells drawn are its start's (gen 0): there, to see them as they are"]
-      : ['trash', 'Clear', 'Clears the cells drawn'];
-  b.innerHTML = `${icon(pic)}${words}`;
-  b.title = tip;
-  setTile(b, { greyed: !away && !population.size ? 'No cell is drawn.' : '' });
+  grey($('startCells'), !population.size, 'No cell is drawn.');
   // Draw from current state: the generation shown (away from gen 0), else the one before Draw
   setTile($('drawFromCurrent'), {
     greyed: !away && !drawHistory.past.length ? 'No generation was shown before Draw.' : '',
@@ -35958,14 +35951,11 @@ function play(on) {
   const was = playing;
   playing = on && walk.n > 0 && !atEnd();
   if (playing !== was) motionChanged();
-  // (playing: View, Draw's look only, drawing again once it stops: a link loaded cold the same)
+  // (playing: View, Draw's look only, kept once it stops: a brush picked draws again, at gen 0; a link loaded cold the same)
   if (playing && drawing && !brush.view) {
-    brush.view = brush.byPlay = true;
+    brush.view = true;
     ghost = null;
     drawGhost();
-    renderPlaneRow();
-  } else if (!playing && brush.byPlay) {
-    brush.view = brush.byPlay = false;
     renderPlaneRow();
   }
   if (playing) reverse(false);
@@ -42099,11 +42089,6 @@ $('activity').addEventListener('pointermove', (e) => {
 });
 $('back').addEventListener('click', () => seekTo(stepShown - 1));
 $('startCells').addEventListener('click', () => {
-  // (see renderDrawTools: to gen 0, Clear)
-  if (drawAway()) {
-    seekTo(0);
-    return;
-  }
   rememberDrawing();
   population = new Map();
   lifeReseed(); // (the plane's or a surface's)
@@ -42457,7 +42442,9 @@ $('brushCards').replaceChildren(
       byDefault: id === 'cell' ? 'yes' : '',
       click: () => {
         brush.id = id;
-        brush.view = brush.byPlay = false; // (a brush in hand: View off)
+        brush.view = false; // (a brush in hand: View off, back to its start's cells at gen 0)
+        play(false);
+        seekTo(0);
         renderPlaneRow();
       },
     }); // (see brush)
@@ -42468,7 +42455,6 @@ $('brushCards').replaceChildren(
 // View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it
 $('drawView').addEventListener('click', () => {
   brush.view = !brush.view;
-  brush.byPlay = false;
   renderPlaneRow();
 });
 $('brushTurn').addEventListener('click', () => {

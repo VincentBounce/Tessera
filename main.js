@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.535';
+const VERSION = '0.5.536';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24256,13 +24256,15 @@ const symmetryOf = (kind, W = walk.plane?.W) =>
   plane.sym !== 'none' && W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none'; // (none picked: none, the grid's own not looked for)
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
-// whether a solid's start can be copied through its centre (Doubled, see START_PLACES): in colours, its parts two opposite pieces
-// a colour (see colouring's mirror; a hull solid's colours each holding their faces' opposites, see hullColours); one colour,
-// the solid its own copy so
+// whether a solid's start can be copied through its centre (Doubled, see START_PLACES): in colours, each colour's copy on its
+// own part, by the colouring its parts are of (a hull solid's, its colours each holding their faces' opposites, see
+// hullColours; another's, colouring's mirror); one colour, the solid its own copy so
 const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
   (K > 1
-    ? !!colouring(surface, K, true) || !!hullColours(surface, K, true)?.whole
+    ? hullColours(surface, K)
+      ? !!hullColours(surface, K, true).whole
+      : !!colouring(surface, K, true)
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
       ));

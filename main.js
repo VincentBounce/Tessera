@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.560';
+const VERSION = '0.5.561';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42355,20 +42355,11 @@ $('pngTools').append(
     title: 'Saves the generation shown as a black and white PNG picture, a square a pixel',
   }),
 );
-$('clearTools').append(
-  tile({
-    id: 'startCells',
-    row: true,
-    pic: icon('trash'),
-    text: 'Clear',
-    title: 'Clears the cells drawn',
-    click: () => {
-      rememberDrawing();
-      population = new Map();
-      lifeReseed(); // (the plane's or a surface's)
-    },
-  }),
-);
+$('startCells').addEventListener('click', () => {
+  rememberDrawing();
+  population = new Map();
+  lifeReseed(); // (the plane's or a surface's)
+});
 $('pngFile').addEventListener('change', async () => {
   const file = $('pngFile').files[0];
   $('pngFile').value = '';

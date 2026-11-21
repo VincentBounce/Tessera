@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.555';
+const VERSION = '0.5.556';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11126,10 +11126,11 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
         ),
       );
   }
-  // a Life's starts (its tabs: Hunt, Text, Digits, Draw), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
+  // a Life's starts (its tabs, Elementary's own apart: see START_TABS), and its hunt's zones on the grid shown (their room known there only, see huntFits; Custom a link's, no tile)
   const m = VARIANTS[w];
   if (m.life && !m.loops && !m.elementary && wants('start'))
-    for (const [start, name] of LIFE_STARTS) set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
+    for (const [start, , name] of START_TABS.filter(([s]) => s === 'digits' || !ELEMENTARY_STARTS.includes(s)))
+      set(`start:${start}`, 'start', start, startWhyNot(start, w), name);
   if (m.life && wants('rule'))
     for (const r of lifeRulesListed(w)) set(`lifeRule:${r.rule}`, 'rule', r.rule, '', r.name); // (its rules' cards)
   // the Count / % tabs: the rule written the other way, on the grid shown (its cells' counts known once built)
@@ -26673,15 +26674,8 @@ function renderSymmetry() {
 const SYMMETRY_WHERE =
   'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.'; // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
-// Draw's brushes and View, at variant w: drawn on the plane only; on a surface its rule's patterns are to see (View on)
-// a Life's starts, its tabs (see renderPlaneRow), and why one cannot be at variant v: Draw on a surface (its rule's patterns:
+// why a Life's start (its tab, see START_TABS) cannot be at variant v: Draw on a surface (its rule's patterns:
 // none for blocks); Text where no picture fits (its room known on the grid built only: another variant's not judged, not claimed)
-const LIFE_STARTS = [
-  ['random', 'Hunt'],
-  ['text', 'Text'],
-  ['digits', 'Digits'],
-  ['draw', 'Draw'],
-];
 const startWhyNot = (start, v) =>
   start === 'draw'
     ? !VARIANTS[v].plane && VARIANTS[v].margolus
@@ -35948,13 +35942,6 @@ function play(on) {
   const was = playing;
   playing = on && walk.n > 0 && !atEnd();
   if (playing !== was) motionChanged();
-  // (playing: View, Draw's look only, kept once it stops: a brush picked draws again, at gen 0; a link loaded cold the same)
-  if (playing && drawing && !brush.view) {
-    brush.view = true;
-    ghost = null;
-    drawGhost();
-    renderPlaneRow();
-  }
   if (playing) reverse(false);
   renderPlayer();
   statsDirty = true; // (stopped: the chips lit again, see updateStats)
@@ -41539,7 +41526,16 @@ function updateStats() {
   });
   $('step').enablers = toLength;
   $('end').hidden = lifePlayer() && !runLoop(); // (Life, a reversible one: +10k till its end is known)
-  if (drawing && walk.life && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
+  // Draw, leaving gen 0 or back (Play, a step, End, a seek): View on as it leaves, kept (a brush picked draws again, at gen 0);
+  // its tools drawn again then, not each frame (785 cards)
+  if (drawing && walk.life && drawAway() !== drawToolsAway) {
+    if (drawAway()) {
+      brush.view = true;
+      ghost = null;
+      drawGhost();
+    }
+    renderPlaneRow();
+  }
   setTile($('end'), {
     greyed: runStops().some((g) => g > stepShown)
       ? ''
@@ -42249,6 +42245,7 @@ const START_TABS = [
     'Hunt',
     'A soup to start, its cells drawn by chance, or a hunt among soups (its goal below); in a reversible rule, zones drawn by chance',
   ],
+  ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0'],
   ['text', 'letter', 'Text', 'Words typed, laid as cells in the font picked'],
   [
     'digits',
@@ -42256,7 +42253,6 @@ const START_TABS = [
     'Digits',
     "The number's digits laid as cells, one digit a cell, as many as the grid has cells: the same number, the same start.\nIn base K + 1, live cells only: one colour, base 2, 0 dead, 1 alive; in K colours, digit k alive in colour k (Mixed: base 2, each live cell a colour at random, as the Formula hunt's).\nIn turn: a rectangle row by row, a grid in a hexagon or a circle from its middle out, wound round it.\nThe number: Number's (a constant, a fraction, a formula)",
   ],
-  ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0'],
 ]; // (start, picture, name, tooltip; One cell, Two cells, Half then Digits: Elementary's, as Ant's rule then Digits, see elementaryRows)
 $('lifeStartTabs').append(
   tileGroup(

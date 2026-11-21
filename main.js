@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.488';
+const VERSION = '0.5.489';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10544,6 +10544,7 @@ function navGo(level, ...values) {
 // cells, ants, Life);
 // tabs, [tiling, turned by 30° (see TURNED), icon, its shape (as the 2D grids name it, see shapeLabel), title: a turned one's its
 // shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
+const familyPlaces = remember('familyPlaces', new Map()); // (each variant's family and tiling, see familyPlace)
 const FAMILIES = [
   {
     name: 'Torus',
@@ -10727,7 +10728,7 @@ for (const Fo of Object.values(FOLDS))
     F.tabs.push([F.variants.length, false, `tiling-${kind}`, name, name]);
     if (turned)
       F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
-    F.variants.push([variantName('Life', Fo.name, name)]);
+    addTiling(F, [variantName('Life', Fo.name, name)]);
   }
 // a variant's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
 // hexagons, no worm: the grid its triangles' only)
@@ -10768,13 +10769,28 @@ const turnedAllowed = (v, turned = false) => {
   const fam = familyOf(v);
   return !!fam && fam.F.tabs.some(([f, tu]) => f === fam.m && tu) && blocksTurn(v, !turned);
 };
-// the family of a variant and its tiling there (null: not in a family), as declared: none of the page's state
+// the family of a variant and its tiling there (null: not in a family), as declared: none of the page's state; a table made
+// once (the graph's search asks it thousands of times a hover: 0.6 s of Up / Down's 2.2 s, a walk through the families each)
 function familyPlace(w) {
-  for (const F of FAMILIES) {
-    const m = F.variants.findIndex((pair) => pair.includes(w));
-    if (m >= 0) return { F, m };
-  }
-  return null;
+  if (!familyPlaces.size)
+    for (const F of FAMILIES)
+      F.variants.forEach((pair, m) => {
+        for (const v of pair) if (!familyPlaces.has(v)) familyPlaces.set(v, { F, m }); // (in two, the first, as a walk through them finds)
+      });
+  return familyPlaces.get(w) ?? null;
+}
+// FAMILIES grown as the page loads, each variant's place known at once (see familyPlace), never through another way: a tiling
+// added to family F, its variants; variant w in the tiling of variant beside, its tab (an ant or a worm beside its walk,
+// Explore or Replicators beside Life)
+function addTiling(F, variants) {
+  const at = { F, m: F.variants.push(variants) - 1 };
+  if (familyPlaces.size) for (const v of variants) if (!familyPlaces.has(v)) familyPlaces.set(v, at);
+}
+function joinTiling(w, beside) {
+  const at = familyPlace(beside);
+  if (!at) return;
+  at.F.variants[at.m].push(w);
+  familyPlaces.set(w, at);
 }
 // and its tab, its tiling turned as the one picked (see torusTurned)
 // a shape's tilings in this mode, as its tiles name them (Hexagons · Triangles · Kites), else its grid in words (one tiling)
@@ -12910,9 +12926,7 @@ for (const [w, [walkVariant, word]] of Object.entries(SURFACE_WORMS)) {
   };
   NAV[w] = ['Ant', NAV[walkVariant][1], NAV[walkVariant][2], 'Ant', 'edges'];
   VARIANT_ICONS[w] = 'worm';
-  FAMILIES.flatMap((F) => F.variants)
-    .find((ms) => ms.includes(walkVariant))
-    .push(w);
+  joinTiling(w, walkVariant);
 }
 for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
   const { surface, initial, turns } = VARIANTS[walkVariant];
@@ -12932,9 +12946,7 @@ for (const [w, [walkVariant, place]] of Object.entries(SURFACE_ANTS)) {
   ANTS[w] = { walk: walkVariant };
   NAV[w] = ['Ant', 'Surfaces', place, 'Ant', 'cells'];
   VARIANT_ICONS[w] = VARIANT_ICONS[walkVariant];
-  FAMILIES.flatMap((F) => F.variants)
-    .find((ms) => ms.includes(walkVariant))
-    .push(w);
+  joinTiling(w, walkVariant);
 }
 // An ant's rule, a turmite's (Greg Turk, Jim Propp): per state an entry per colour of its cell, each the colour it leaves
 // there, a word of the walk it goes through the cells with (its turn, see antCommands) and its state next, the states parted by
@@ -14932,7 +14944,7 @@ for (const k of Object.keys(ROSETTE_SPHERES)) {
     name,
     `${name}: its disc on each half, their teeth biting into each other`,
   ]);
-  F.variants.push([w]);
+  addTiling(F, [w]);
 }
 // the menu's order, once every variant made (the surfaces' ants and the rosette spheres too): in each shape's rules: Turtle, then Pivot
 // Cairo right after Squares, Hexagons before Triangles (right after Kites where they are), Tetrakis after Hexagons, the Klein bottle after the Möbius strip, the
@@ -14985,9 +14997,7 @@ for (const [life, n] of Object.entries(NAV))
       VARIANTS[w] = { ...VARIANTS[life], ...fields(life, n) };
       VARIANT_ICONS[w] = VARIANT_ICONS[life];
       NAV[w] = [mode, n[1], n[2], rule, ''];
-      FAMILIES.flatMap((F) => F.variants)
-        .find((ms) => ms.includes(life))
-        ?.push(w); // (in its tiling's tab, beside Life's)
+      joinTiling(w, life); // (in its tiling's tab, beside Life's)
     }
 // Sphere before the Tetrahedron
 {

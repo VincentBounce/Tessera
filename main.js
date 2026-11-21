@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.546';
+const VERSION = '0.5.547';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22593,7 +22593,7 @@ function lifeReseed() {
   L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts(), L.C));
   startColours(L.seed);
   setLifeSeed(L.seed.slice(), null);
-  renderPlaneRow(); // (its start's tools, as the plane's: Clear's and Import's Undo)
+  renderPlaneRow(); // (its start's tools, as the plane's: Undo, Redo)
 }
 // A start as the Start says, once the grid is built: in Hunt, a soup's colours each in its part of the
 // grid (see huntParts)
@@ -23170,7 +23170,8 @@ const plane = {
 // view: View on, a click draws nothing (at first: a click draws once a brush is picked; see drawsHere), its brush kept
 const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
-// the drawing's history: the cells drawn before each edit (a click, Clear, Import, Open PNG), Undo's, and those undone, Redo's
+// the drawing's history: the cells drawn before each edit (Draw picked: the generation shown then, its first; a click, Clear,
+// Import, Open PNG), Undo's, and those undone, Redo's
 // (each as a link writes them, see populationRle: a few bytes, a soup imported too); a start of another kind forgets it
 let drawHistory = { past: [], future: [] };
 const rememberDrawing = () => {
@@ -23180,11 +23181,14 @@ const rememberDrawing = () => {
 const forgetDrawing = () => (drawHistory = { past: [], future: [] });
 // Undo (from past to future) or Redo (back): the cells drawn as they were
 function drawStep(from, to) {
-  to.push(populationRle(population));
-  population = populationOf(from.pop());
+  drawHistory[to].push(populationRle(population));
+  population = populationOf(drawHistory[from].pop());
   lifeReseed();
 }
-let stateBeforeDraw = new Map(); // the generation shown as Draw was picked (its cells, a drawing's: see cellsShown), what Import lays
+const DRAW_STEPS = [
+  ['drawUndo', 'undo', 'Undo', 'The cells drawn before the last edit', 'past', 'future', 'Nothing drawn to undo.'],
+  ['drawRedo', 'redo', 'Redo', 'The edit undone again', 'future', 'past', 'Nothing undone to redo.'],
+]; // (each: its tile, its icon, its name and words, the stack it takes from and the one it keeps the cells on, why greyed)
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,
 // rules, name, RLE (the plane's rows: two triangles or pentagons a square, its first square an even one
 // on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]; a disc's (the grids that
@@ -26865,8 +26869,7 @@ function renderDrawTools() {
 
   grey($('openPng'), kind !== 'square', 'Only on a grid of squares: one pixel per square.');
   $('brushColours').classList.toggle('off', away);
-  grey($('drawUndo'), !drawHistory.past.length, 'Nothing drawn to undo.');
-  grey($('drawRedo'), !drawHistory.future.length, 'Nothing undone to redo.');
+  for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   // the start's cells: away, back to them (gen 0); there, Clear
   const b = $('startCells'),
     [pic, words, tip] = away
@@ -26876,11 +26879,9 @@ function renderDrawTools() {
   b.title = tip;
   setTile(b, { greyed: !away && !population.size ? 'No cell is drawn.' : '' });
   // Import: the generation shown (away from gen 0), else the one before Draw
-  const i = $('importCells');
-  i.title = away
-    ? 'The generation shown as the cells drawn (gen 0)'
-    : 'The generation shown before Draw as the cells drawn';
-  setTile(i, { greyed: !away && !stateBeforeDraw.size ? 'No generation was shown before Draw.' : '' });
+  setTile($('importCells'), {
+    greyed: !away && !drawHistory.past.length ? 'No generation was shown before Draw.' : '',
+  });
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -42066,9 +42067,9 @@ $('startCells').addEventListener('click', () => {
   lifeReseed(); // (the plane's or a surface's)
 });
 $('importCells').addEventListener('click', () => {
-  const cells = drawAway() ? cellsShown() : stateBeforeDraw; // (see renderDrawTools)
+  const cells = drawAway() ? cellsShown() : populationOf(drawHistory.past[0]); // (see renderDrawTools)
   rememberDrawing();
-  population = new Map(cells);
+  population = cells;
   lifeReseed();
 });
 $('colourMode').addEventListener('change', () => {
@@ -42245,12 +42246,13 @@ $('lifeStartTabs').append(
 for (const b of $('lifeStartTabs').querySelectorAll('button')) {
   b.addEventListener('click', () => {
     if (plane.start === b.dataset.start) return;
+    forgetDrawing();
     if (b.dataset.start === 'draw' && walk.life) {
-      stateBeforeDraw = cellsShown(); // (the generation in view, for Import: a blank page to draw on)
-      population = new Map();
+      population = cellsShown(); // (the generation in view, its first edit's: Undo or Import brings it back)
+      rememberDrawing();
+      population = new Map(); // (a blank page to draw on)
     }
     plane.start = b.dataset.start;
-    forgetDrawing();
     compute();
   });
 }
@@ -42313,22 +42315,9 @@ $('startTextInput').addEventListener('change', () => {
 // (the plane's sizes: from 16 × 16, every rule's), in the middle; Export PNG: the generation shown, its live cells black
 // Draw's row tiles (see tile's row): Undo and Redo (see drawHistory); the brush's turn and Mirror; Open and Export PNG
 $('drawHistoryTools').append(
-  tile({
-    id: 'drawUndo',
-    row: true,
-    pic: icon('undo'),
-    text: 'Undo',
-    title: 'The cells drawn before the last edit',
-    click: () => drawStep(drawHistory.past, drawHistory.future),
-  }),
-  tile({
-    id: 'drawRedo',
-    row: true,
-    pic: icon('redo'),
-    text: 'Redo',
-    title: 'The edit undone again',
-    click: () => drawStep(drawHistory.future, drawHistory.past),
-  }),
+  ...DRAW_STEPS.map(([id, pic, text, title, from, to]) =>
+    tile({ id, row: true, pic: icon(pic), text, title, click: () => drawStep(from, to) }),
+  ),
 );
 $('brushTurns').append(
   tile({ id: 'brushTurn', row: true, text: '↻ 0°', title: 'A quarter turn more' }),

@@ -1,6 +1,6 @@
 # Tessera
 
-An automata atlas and walking on digits.
+Game of Life on tilings and surfaces · Walking on numbers.
 
 A walk driven by the digits of **π**, other famous numbers, formulas and large primes. The walker moves on square, triangle or hexagon tiles, through a 3D lattice, around the Ulam spiral, or across a torus, a Möbius strip, a cube and other polyhedra. The same digits can also seed a **Game of Life** on those surfaces.
 

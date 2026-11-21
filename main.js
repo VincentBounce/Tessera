@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.510';
+const VERSION = '0.5.511';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27691,6 +27691,7 @@ const PLANE_MARKS = {
 const PLANE_OF_MARK = Object.fromEntries(Object.entries(PLANE_MARKS).map(([k, m]) => [m, k]));
 for (const k of Object.keys(ROSETTE_SPHERES)) SURFACE_CELLS[`${k}Sphere`] = PLANE_MARKS[k]; // (a rosette surface: its rosette's cells, rules and all)
 for (const [s, S] of Object.entries(SURFACES)) if (S.tiling) SURFACE_CELLS[s] = PLANE_MARKS[S.tiling]; // (a surface of a tiling's cells: its rules, the twisted sphere's, the Penrose sphere's)
+for (const [s, base] of Object.entries(BOY_BASES)) SURFACE_CELLS[s] = SURFACE_CELLS[base] ?? '▲'; // (Boy's surface: its solid's cells, rules and all)
 const blocksGrid = (variant) => variant.blocks ?? variant.plane; // (a block rule's grid: the plane's, or a surface's, its cells' shape)
 const LOOPS_MARK = '⟲'; // (the loops' rules' mark)
 // a rule's card on a grid: its entry among its own rules (see RULES: those of its cells' mark, as its rule cards, see

@@ -2,8 +2,8 @@
   --tile-width: 57px; /* a tile's width, every tile alike: .nav-shapes, as many a row as fit (4 in the settings' column) */
   --tile-height: 55px; /* a tile's height, every tile alike */
   --button-height: 34px; /* a button of one line (a stepper's − +, a field) or of an icon alone (see .icon-tabs) */
-  --tile-gap: 4px; /* between two tiles */
-  --block-gap: 10px; /* between two blocks one under the other: grids of tiles, rows, fields */
+  --short-gap: 4px; /* within a block: between two of its controls (tiles, rows, cards, a wide button) */
+  --long-gap: 10px; /* between two blocks one under the other: grids of tiles, rows, fields */
   --section-gap: 10px; /* round a section's line, over it and under it (see .form-section) */
   --track-background: color-mix(
     in srgb,
@@ -197,7 +197,7 @@ main {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 2px 0 var(--block-gap);
+  margin: 2px 0 var(--long-gap);
   font-size: var(--text-size);
   font-weight: 600;
   color: var(--text-color);
@@ -231,7 +231,7 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 .walk-head h2 {
   flex: 1;
@@ -240,7 +240,7 @@ main {
 
 label {
   display: block;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 label.check {
   display: flex;
@@ -363,7 +363,7 @@ input[type='range'] {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 } /* a choice among a few on a row: Cut, Area (see pillRow) */
 .pill-row h3 {
   width: 3.2em;
@@ -494,7 +494,7 @@ button.primary {
 .row {
   display: flex;
   gap: 6px;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 h3 {
   margin: 0 0 4px;
@@ -505,7 +505,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 /* a size among the usual ones, across: the browser's slider in the page's gold (as the old seek bar, Flat ↔ Rolled), its
    knob the size in use, a notch each under it (see sizeGauge), inset by the knob's half, where its middle goes */
@@ -583,7 +583,7 @@ h3 {
   display: block;
 }
 .formula-field {
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 .formula-field input.custom {
   font-weight: 600;
@@ -673,19 +673,19 @@ h3 {
 }
 button.wide {
   width: 100%;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 .clean-storage .wide {
   max-width: var(--panel-width);
 } /* (its wide button the settings' column's width, as How it works) */
 button.wide.on-list {
-  margin-bottom: var(--tile-gap);
+  margin-bottom: var(--short-gap);
 } /* a wide button over a list (How it works): the list's gap */
 #huntSection:not(:has(> div:not([hidden]))) {
   display: none;
 } /* (a mode with no hunt: none of its blocks shown) */
 #ruleTabs {
-  margin-bottom: var(--tile-gap);
+  margin-bottom: var(--short-gap);
 } /* a wide button right under its tiles (How it works), as close as a row of them */
 
 /* Walk mode: one tab per category, then every choice of that category */
@@ -771,8 +771,8 @@ h4 {
 .nav-shapes {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--tile-width));
-  gap: var(--tile-gap);
-  margin-bottom: var(--block-gap);
+  gap: var(--short-gap);
+  margin-bottom: var(--long-gap);
 } /* the tiles, as many a row as fit (4 in the settings' column) */
 .nav-shapes:not(:has(> :not(.tile-group, [hidden]))) {
   grid-template-columns: 1fr;
@@ -847,13 +847,13 @@ h4 {
 .tab-row {
   grid-column: 1 / -1;
   display: flex;
-  gap: var(--tile-gap);
+  gap: var(--short-gap);
   & > .tile-group {
     flex: 1;
   }
 } /* groups of tabs side by side across a grid of tiles, a row of their own, each its share (see tabRow) */
 :not(.nav-shapes, .tab-row) > .tile-group {
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 } /* (in a section's flow, not a grid of tiles nor a row of groups: spaced as a wide button) */
 .tile-group > button {
   flex: 1 1 calc(100% / var(--tiles-per-row));
@@ -920,15 +920,15 @@ button.switch.active:hover:not(:disabled) {
 .mode-list {
   display: flex;
   flex-direction: column;
-  gap: var(--tile-gap);
-  margin-bottom: var(--block-gap);
+  gap: var(--short-gap);
+  margin-bottom: var(--long-gap);
 }
 /* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
 .gallery-tools-row {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: var(--tile-gap);
+  gap: var(--short-gap);
 } /* on the left the Gallery's tools, then the selection's; in the middle the setup in view's: Share link, its picture, Star
    (the right as wide as the left, the middle in the band's middle; the right gone first when the band lacks room) */
 .gallery-tools,
@@ -940,13 +940,13 @@ button.switch.active:hover:not(:disabled) {
   gap: var(--badged-tile-gap);
 } /* (Select as one more of them: their gap, the cards selected's badge) */
 .gallery-in-view {
-  gap: var(--tile-gap);
+  gap: var(--short-gap);
   min-width: 0;
 } /* (narrower when the band lacks room: its picture cut, see #inViewPicture; the tools never) */
 .gallery-tools-row .nav-shapes {
   display: flex;
-  gap: var(--tile-gap);
-  margin-bottom: var(--tile-gap);
+  gap: var(--short-gap);
+  margin-bottom: var(--short-gap);
 } /* (each group's tiles side by side, each a tile's width, as the display box's head tiles) */
 .gallery-tools > .nav-shapes {
   gap: var(--badged-tile-gap);
@@ -955,7 +955,7 @@ button.switch.active:hover:not(:disabled) {
   width: var(--tile-width);
 }
 #inViewPicture {
-  height: calc(var(--tile-height) + var(--tile-gap) + 18px);
+  height: calc(var(--tile-height) + var(--short-gap) + 18px);
   aspect-ratio: 1;
   min-width: 0; /* (narrower when the band lacks room: cut, its picture covering it) */
   margin: -12px 0 -6px;
@@ -965,7 +965,7 @@ button.switch.active:hover:not(:disabled) {
   position: relative;
   overflow: hidden;
   background: var(--page-background);
-} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (--tile-gap) and the band's paddings
+} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (--short-gap) and the band's paddings
    (12px, 6px: see .gallery-band); its width by a thumbnail's, square (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
 #inViewPicture img {
   position: absolute;
@@ -1003,7 +1003,7 @@ button.switch.active:hover:not(:disabled) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 10px;
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 }
 .gallery-grid button {
   display: flex;
@@ -1215,8 +1215,8 @@ button.active .bubble.active {
 .number-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: var(--tile-gap);
-  margin-bottom: var(--block-gap);
+  gap: var(--short-gap);
+  margin-bottom: var(--long-gap);
 }
 .number-grid button {
   padding: 6px 2px;
@@ -1259,7 +1259,7 @@ button.active .bubble.active {
 
 .muted {
   color: var(--muted-text-color);
-  margin: 0 0 var(--block-gap);
+  margin: 0 0 var(--long-gap);
   font-size: var(--label-text-size);
 } /* a status line (a hunt's): a block as any, its gap under it */
 .fill-note {
@@ -1340,23 +1340,23 @@ button.active .bubble.active {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 2px 0 var(--block-gap);
+  margin: 2px 0 var(--long-gap);
 } /* Draw's colours, a row of swatches */
 .start-panel {
-  margin: 0 0 var(--block-gap);
+  margin: 0 0 var(--long-gap);
 }
 .tool-block {
   display: flex;
   flex-direction: column;
-  gap: var(--tile-gap);
-  margin-bottom: var(--block-gap);
-} /* one block, its controls one under the other: the tile gap between them, the block gap after it (Draw's brushes and their tools; its pictures and Clear), whatever their order */
+  gap: var(--short-gap);
+  margin-bottom: var(--long-gap);
+} /* one block, its controls one under the other: the short gap between them, the long gap after it (Draw's brushes and their tools; its pictures and Clear), whatever their order */
 .tool-block > *,
 .tool-block > button {
   margin: 0;
 } /* (their own margins none: the block's gap only; a button's too, button.wide's) */
 .start-panel > .field {
-  margin-bottom: var(--tile-gap);
+  margin-bottom: var(--short-gap);
 } /* (Text's lines, over their Cancel and OK: the gap of How it works over its list) */
 .light {
   display: inline-block;
@@ -1391,21 +1391,21 @@ button.active .bubble.active {
 .rule-build {
   display: flex;
   flex-direction: column;
-  gap: var(--tile-gap);
-  margin: 0 0 var(--tile-gap);
+  gap: var(--short-gap);
+  margin: 0 0 var(--short-gap);
 } /* your own's: one block under its card, as close as the cards */
 .rule-build > :not([hidden]) {
   margin-bottom: 0;
 } /* (its parts shown spaced by its gap alone, whatever they are: the tabs, the frames, the states) */
 .rule-cards:has(+ .rule-build:not([hidden])) {
-  margin-bottom: var(--tile-gap);
+  margin-bottom: var(--short-gap);
 } /* your own's block under them: all one (else a list's 10 px) */
 .stack .field {
-  margin-bottom: var(--tile-gap);
+  margin-bottom: var(--short-gap);
 } /* fields one under another, as close as cards (a battle's formulas) */
 #battleNumbers {
-  margin-top: var(--block-gap);
-} /* its tiles under its fields, apart as a list's (the last field's --tile-gap merged into it): a battle's first numbers and Roll */
+  margin-top: var(--long-gap);
+} /* its tiles under its fields, apart as a list's (the last field's --short-gap merged into it): a battle's first numbers and Roll */
 .build-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1413,7 +1413,7 @@ button.active .bubble.active {
 } /* Birth, Survive: a frame each */
 .share-row {
   display: flex;
-  gap: var(--tile-gap);
+  gap: var(--short-gap);
 } /* a share rule's, in the chips' place: its intervals' sliders, a column of chips each, the counts they give right of them */
 .share-counts {
   font-size: var(--caption-text-size);
@@ -1620,12 +1620,12 @@ button.active .bubble.active {
   }
 }
 .display-menu {
-  --block-gap: var(
-    --tile-gap
+  --long-gap: var(
+    --short-gap
   ); /* (its blocks as close as its tiles: rows, pills; its sections' lines aired as everywhere) */
   top: var(--view-gap);
   right: var(--view-gap);
-  --display-open-width: calc(4 * var(--tile-width) + 3 * var(--tile-gap) + 2 * 9px);
+  --display-open-width: calc(4 * var(--tile-width) + 3 * var(--short-gap) + 2 * 9px);
 } /* open: 4 tiles a row, and its frame (.stage-box: 8px padding, 1px border, each side) */
 /* the number (Full number), in place of the whole view as how a rule works (.rule-tuto): its digits */
 .number-view .number-digits {
@@ -1679,7 +1679,7 @@ button.active .bubble.active {
   }
 }
 .display-menu .stage-more {
-  margin: var(--block-gap) 0 calc(-1 * var(--block-gap));
+  margin: var(--long-gap) 0 calc(-1 * var(--long-gap));
 } /* below the themes; each row's gap under the last one taken back, so the bottom matches the top */
 .form-section {
   margin-top: var(--section-gap);
@@ -1696,8 +1696,8 @@ button.active .bubble.active {
 .choice-list {
   display: flex;
   flex-direction: column;
-  gap: var(--tile-gap);
-  margin-bottom: var(--block-gap);
+  gap: var(--short-gap);
+  margin-bottom: var(--long-gap);
 }
 .choice-list button {
   text-align: left;
@@ -2299,7 +2299,7 @@ button.active .bubble.active {
   text-align: center;
 }
 .tut-shapes {
-  margin-bottom: var(--block-gap);
+  margin-bottom: var(--long-gap);
 } /* a tiling's shapes: a bubble each, a click shows it; two of them as wide as a rule's bubble
    (two pictures of 88 px, the arrow between: 214 px) with the row's gap between them, as high */
 .tut-shapes figure {
@@ -2443,7 +2443,7 @@ button.switch.active,
   font-size: var(--text-size);
 } /* a word (Letters, a switch; Share, Home) */
 .tut-note {
-  margin: -4px 0 var(--block-gap);
+  margin: -4px 0 var(--long-gap);
   font-size: var(--label-text-size);
   color: var(--muted-text-color);
 } /* one shape in several bubbles, said */

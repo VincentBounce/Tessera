@@ -38,7 +38,7 @@ const DEBUG_STYLE = `
 #debugPanel label { display: grid; grid-template-columns: 78px 1fr 34px; align-items: center; gap: 6px; }
 #debugPanel input[type='range'] { width: 100%; }
 #debugPanel output { font-family: var(--mono-font); text-align: right; }
-#debugPanel .debug-colours { display: flex; flex-wrap: wrap; gap: var(--tile-gap); margin-top: 8px; }
+#debugPanel .debug-colours { display: flex; flex-wrap: wrap; gap: var(--short-gap); margin-top: 8px; }
 #debugPanel .debug-colours button {
   width: 20px; height: 20px; padding: 0; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;
 }

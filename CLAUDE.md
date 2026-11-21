@@ -230,8 +230,8 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   sides of a seam, never a second copy (v0.4.952: the plane's torus took a side across its seam for a corner only, its own
   copy of the surfaces' meshSide, and a Tetrakis glider died crossing it).
 - **Every night, the CSS against its own conventions**: style.css read rule by rule against what its comments set (a button's
-  fill its `background-color`, never the `background` shorthand, which takes the hover's veil away; the tile gap within a
-  block, the block gap between blocks…), and every kind of button hovered with its hover forced (`CSS.forcePseudoState`):
+  fill its `background-color`, never the `background` shorthand, which takes the hover's veil away; the short gap within a
+  block, the long gap between blocks…), and every kind of button hovered with its hover forced (`CSS.forcePseudoState`):
   each shows its veil or its own hover (v0.5.550: no row tile, picked tile, picked card nor rule chip had one).
 - **Every night, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
   its kind, in words (`--text-color`, `--text-size`, `--page-background`, `--border-color`), never a bare `--text`, `--bg`,

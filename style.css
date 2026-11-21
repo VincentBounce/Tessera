@@ -853,12 +853,11 @@ h4 {
   gap: var(--tile-gap);
   & > .tile-group {
     flex: 1;
-    margin-bottom: 0;
   }
 } /* groups of tabs side by side across a grid of tiles, a row of their own, each its share (see tabRow) */
-:not(.nav-shapes) > .tile-group {
+:not(.nav-shapes, .tab-row) > .tile-group {
   margin-bottom: var(--block-gap);
-} /* (in a section's flow, not a grid of tiles: spaced as a wide button) */
+} /* (in a section's flow, not a grid of tiles nor a row of groups: spaced as a wide button) */
 .tile-group > button {
   flex: 1 1 calc(100% / var(--tiles-per-row));
   margin: 0 -1px -1px 0;

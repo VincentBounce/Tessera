@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.540';
+const VERSION = '0.5.541';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43611,7 +43611,7 @@ const AUTHOR =
 const CREDITS = [
   [
     'Life and its kin',
-    "John Conway's Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)",
+    `${externalLink('https://en.wikipedia.org/wiki/John_Horton_Conway', "John Conway's")} Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)`,
   ],
   [
     'Numbers',
@@ -43652,7 +43652,7 @@ function credits(open) {
   showPage($('ruleTuto'));
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here. <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">GitHub with README</a></p>` +
+    `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here. ${externalLink('https://github.com/VincentBounce/Tessera', 'GitHub with README')}</p>` +
     CREDITS.map(([title, who]) => `<h3>${title}</h3><p>${who}.</p>`).join('') +
     `<h3>Made with 🩷</h3><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
     `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table id="urlWords" class="tut-commands"></table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)

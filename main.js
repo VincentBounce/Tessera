@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.502';
+const VERSION = '0.5.503';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26246,7 +26246,6 @@ function planeFromSetup(s) {
   plane.shape = ['square', 'rhombus'].includes(s.gridOutline) ? s.gridOutline : 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
   if (s.gridSize !== undefined) picked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
   spaceTime = Number(s.popStacked) === 1 && !plane.torus; // (3D: with walls only)
-  plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none';
   startFromSetup(s);
 }
 // a link's start (pop=), the plane's or a surface's: a soup or a zone's, from its seed; Draw (p=, the plane's), the digits, a text
@@ -34482,6 +34481,7 @@ function getSetup() {
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
   if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now()) s[field] = 1; // (its place in its tabs: the first, 0, in no link)
+  if (walk.life && startSymmetry() !== 'none') s.popSymmetry = startSymmetry(); // (the plane's, a solid's Opposite)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
@@ -34489,7 +34489,6 @@ function getSetup() {
     if (!plane.torus) s.gridWalls = 1;
     const ol = outlineOf(VARIANTS[w].plane);
     if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
-    if (walk.life && startSymmetry() !== 'none') s.popSymmetry = startSymmetry();
     if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
   }
   if (life && plane.start === 'draw' && population.size) s.popCells = populationRle(population); // (a surface's: its tiles, see populationKey)
@@ -34572,6 +34571,7 @@ function applySetup(s) {
     // (Life: its size and start without a rule too, the grid's first then)
     if (VARIANTS[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
+    plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none'; // (the plane's, a solid's Opposite)
     lifeTeams = Number(s.teams) || 1;
     teamsMix = Number(s.popMixed) === 1;
     duelCut = Number(s.duelCut) === 1 ? 1 : 0;

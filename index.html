@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.499">
+  <link rel="stylesheet" href="style.css?v=0.5.500">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -284,7 +284,7 @@
               <input id="cellsFinish" type="hidden" value="0">  <!-- Cells: how a painted cell is lit (see CELLS_FINISHES) -->
             </div>
             <div id="gridFinishRow"></div>  <!-- Off, the lines' opacities and Tiles' palettes: pills (see pillRow, GRID_LINES) -->
-            <div id="cellsFinishRow" hidden></div>  <!-- Off, Halo, Neon…: pills (see pillRow, CELLS_FINISHES) -->
+            <div id="cellsFinishRow" hidden></div>  <!-- Off, Halo, LED…: pills (see pillRow, CELLS_FINISHES) -->
           </div>
           <div id="viewSection" class="form-section">  <!-- the view (View: its pills; its switches as tiles), then its form -->
             <div id="viewModes" hidden></div>  <!-- View: Default, Free, Upright, S, E, Up: pills (see pillRow, renderViewModes) -->
@@ -339,11 +339,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.499"></script>
-  <script src="punks.js?v=0.5.499"></script>
-  <script src="loops.js?v=0.5.499"></script>
-  <script src="emoji.js?v=0.5.499"></script>
-  <script src="debug.js?v=0.5.499"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.499"></script>
+  <script src="pixelarticons.js?v=0.5.500"></script>
+  <script src="punks.js?v=0.5.500"></script>
+  <script src="loops.js?v=0.5.500"></script>
+  <script src="emoji.js?v=0.5.500"></script>
+  <script src="debug.js?v=0.5.500"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.500"></script>
 </body>
 </html>

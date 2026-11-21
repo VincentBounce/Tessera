@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.537';
+const VERSION = '0.5.538';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42561,11 +42561,13 @@ function paletteChanged() {
   needsFull = statsDirty = true; // (Life's gauges and curve in the theme's colours too)
 }
 applyTheme(themeName());
-// what lies over the view keeps its presses, double clicks and wheel (the view's: a drag, a recentre, a zoom): the animation
-// bar (its step slider), Display's box, how a rule works and the number (their text selected, their scroll)
+// what lies over the view keeps its presses, double clicks, wheel and right click (the view's: a drag, a recentre, a zoom, a
+// pan): the animation bar (its step slider), Display's box, how a rule works and the number (their text selected, their
+// scroll, a link's menu)
 // a view's box too: the debug panel, see debugPanel)
 function keepsItsPresses(box) {
-  for (const type of ['pointerdown', 'dblclick', 'wheel']) box.addEventListener(type, (e) => e.stopPropagation());
+  for (const type of ['pointerdown', 'dblclick', 'wheel', 'contextmenu'])
+    box.addEventListener(type, (e) => e.stopPropagation());
 }
 for (const id of ['animBar', 'viewTools', 'ruleTuto', 'numberPreview']) keepsItsPresses($(id));
 $('light').addEventListener('change', () => {

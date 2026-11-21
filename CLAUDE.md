@@ -187,6 +187,13 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   function, table, test or count they added, grep main.js for its notion (its words, its numbers) and read what answers
   it already; two found: keep one, its callers moved to it, the other removed, in its own commit (v0.5.333:
   `faceAdjective` measured a face's diagonals where the solid's declaration knew it).
+- **Every night, code grown for nothing (« pourrissement »)**: read the day's commits whose solde grew for a move, a
+  rename or a look (`python3 tools/lines.py vA vB` on each), and redo each with the construction already there, at the
+  least cost: v0.5.559 moved Clear under Open and Export as a `tile({…})` with its click inside (+9, Prettier's 14 lines)
+  where moving its `<button>` line in index.html cost 0. Then hunt the same everywhere, not only in the day's commits:
+  every control built in JS (`tile(`, `card(`, `createElement('button')`) whose text, icon and title never change, that
+  index.html could hold as it is (its listener kept apart in main.js), and every handler inlined into a maker's object
+  that a plain listener would write shorter; each found, moved to its cheapest form, in its own commit, its solde given.
 - **Every night, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
   names, style.css's classes, ids and variables, and a key written twice in one object, as esbuild warns: ICONS' turtle,
   v0.4.840), each at its file:line, a helper's helper too in one run; each removed at

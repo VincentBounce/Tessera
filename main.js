@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.486';
+const VERSION = '0.5.487';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11123,7 +11123,8 @@ const variantChanges = (v, w) =>
   (tilingNameOf(v) !== tilingNameOf(w));
 const changes = (a, b) => variantChanges(a.w, b.w) + SETUP_FIELDS.filter((f) => a[f] !== b[f]).length;
 // The shortest paths from the setup in use to one fits takes, at n clicks: breadth first, each setup once, layer by layer
-// till one holds some; of these the fewest settings changed, each its clicks [key, words] (budget: setups tried at most).
+// till one holds some; of these the fewest settings changed click by click (a detour, a setting changed and changed again by
+// the next click, costs both: Pyramid › Globe for a Duel, v0.5.487), each its clicks [key, words] (budget: setups tried at most).
 // Only the clicks that change what fits reads: its fields, as it reads them (the variant always), so a control judged by few
 // fields searches those only (a hunt's zone, judged on the grid built: none but its variant's)
 // The buttons out of the graph, by their choice's key: greyed, their tooltip says why and nothing is sought for what would
@@ -11196,22 +11197,26 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
         .sort((a, b) => Math.abs(Math.log(a / start.steps)) - Math.abs(Math.log(b / start.steps)))
         .slice(0, 8)
         .map((steps) => ['steps', { ...start, steps }, steps < start.steps ? 'fewer steps' : 'more steps']);
-  let layer = [[start, []]],
+  let layer = [[start, [], 0]],
     tried = 0;
   while (layer.length && tried < budget) {
     const hits = [],
-      next = [];
-    for (const [s, path] of layer) {
+      next = [],
+      nextAt = new Map(); // (a setup of the next layer: its place in it; reached again, the path changing least kept)
+    for (const [s, path, changed] of layer) {
       for (const [key, t, words] of [...edges(s), ...(path.length ? [] : [...sizes, ...stepsNear])]) {
         const k = setupKey(t);
         if (seen.has(k) || !readChanged(s, t) || (judgedAt && t.w !== judgedAt) || ++tried > budget) continue;
-        seen.add(k);
-        (judged(t) ? hits : next).push([t, [...path, [key, words]]]);
+        const reached = [t, [...path, [key, words]], changed + changes(s, t)];
+        if (judged(t)) hits.push(reached);
+        else if (!nextAt.has(k)) nextAt.set(k, next.push(reached) - 1);
+        else if (reached[2] < next[nextAt.get(k)][2]) next[nextAt.get(k)] = reached;
       }
     }
+    for (const k of nextAt.keys()) seen.add(k); // (seen once its layer is done: a setup reached by two paths as short, both weighed)
     if (hits.length) {
-      const least = Math.min(...hits.map(([t]) => changes(start, t)));
-      return hits.filter(([t]) => changes(start, t) === least).map(([, path]) => path);
+      const least = Math.min(...hits.map(([, , c]) => c));
+      return hits.filter(([, , c]) => c === least).map(([, path]) => path);
     }
     layer = next;
   }

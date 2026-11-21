@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.495';
+const VERSION = '0.5.496';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15268,14 +15268,14 @@ function glassBottleAt(q, u) {
 }
 // The bagel (the figure 8 Klein bottle): a ring (radius 1) whose tube is a figure 8 (TORUS_TUBE wide), turned half a turn
 // round it, so it meets itself turned over (u to π − u, the 8's v = u + π / 2), crossing itself along the circle through
-// its middle; q ∈ [0, 3] round the ring, upright in the x–z plane (y its thickness), as Jeener's
+// its middle; q ∈ [0, 3] round the ring, lying in the x–y plane (z its thickness)
 function bagelAt(q, u) {
   const t = (2 * Math.PI * q) / 3,
     v = u + Math.PI / 2,
     c = Math.cos(t / 2),
     s = Math.sin(t / 2),
     r = 1 + TORUS_TUBE * (c * Math.sin(v) - s * Math.sin(2 * v));
-  return [r * Math.sin(t), -TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v)), -r * Math.cos(t)];
+  return [r * Math.sin(t), -r * Math.cos(t), TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v))];
 }
 // a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, Jeener's triple
 const KLEIN_SHAPES = [
@@ -15296,8 +15296,8 @@ const KLEIN_SHAPES = [
 const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt];
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its top;
-// Jeener's: a neck's narrowest) and its frame (centred, 3 high)
+// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its back;
+// Jeener's: a neck's narrowest) and its frame (centred, 3 at its largest: the bottles' height, the bagel's width)
 const kleinTables = {};
 function kleinBottle(shape = kleinShapeOn()) {
   if (kleinTables[shape]) return kleinTables[shape];
@@ -15332,7 +15332,7 @@ function kleinBottle(shape = kleinShapeOn()) {
   const ends = [
     (N * 2.75) / 3,
     N / 6,
-    N / 2, // (the bagel's: the ring's top)
+    N / 2, // (the bagel's: the ring's back)
     Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
   ];
   return (kleinTables[shape] = {
@@ -15341,10 +15341,10 @@ function kleinBottle(shape = kleinShapeOn()) {
     along,
     bottom: along[ends[shape]] / along[N],
     centre: lo.map((v, d) => (v + hi[d]) / 2),
-    scale: 3 / (hi[2] - lo[2]),
+    scale: 3 / Math.max(...hi.map((v, d) => v - lo[d])),
   });
 }
-// The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 high, turned half a turn round
+// The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 at its largest, turned half a turn round
 // the vertical: its neck's arch east
 function kleinBottlePoint(s, u) {
   const { at: shapeAt, N, along, centre, scale } = kleinBottle(),

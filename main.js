@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.484';
+const VERSION = '0.5.485';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6944,6 +6944,13 @@ function iconTabs(buttons) {
   const g = tileGroup(buttons);
   g.classList.add('icon-tabs');
   return g;
+}
+// a row of groups of tabs across a grid of tiles, side by side, each its share (see .tab-row: Start's under its zones)
+function tabRow(...groups) {
+  const row = document.createElement('div');
+  row.className = 'tab-row';
+  row.append(...groups);
+  return row;
 }
 // the menu's tabs of words only, one choice among several in one frame, each its share of the row (see .text-tabs: the
 // Number's ℚ ℝ ℙ, a battle's starts' ways)
@@ -27747,7 +27754,7 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
   if (K < 3 || !r) return false;
   return countsOn(r, r.B).some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
-// a choice among a few (Teams' DUEL_CUTS, Start's PIECES and WILD_ZONES: [words, title] each, see PART_CHOICES), its tabs: the
+// a choice among a few (Start's DUEL_CUTS, PIECES and WILD_ZONES: [words, title] each, see PART_CHOICES), its tabs: the
 // one picked (now) on, its first the default, each its choice's key (field:k, see choicesAt), all greyed where whyNot(setup)
 // says why; a click on another picks it (pick), then plays the game again (then)
 const choiceTabs = (field, list, now, pick, whyNot, then = compute) =>
@@ -27844,8 +27851,6 @@ function renderTeams() {
           ? `${TEAM_NAMES[lifeTeams - 1] ?? `${lifeTeams - 1} teams`} as it starts, and ${teamName(lifeTeams - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)`
           : "The teams below's start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)",
     }),
-    // a Duel's cut, its row under the teams (see DUEL_CUTS)
-    partChoiceTabs('duelCut'),
   );
 }
 // a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
@@ -31122,10 +31127,14 @@ const partChoiceTabs = (field) => {
   const c = PART_CHOICES[field];
   return choiceTabs(field, c.list, c.now(), c.pick, c.whyNot, c.then);
 };
-// Start's tabs, a row under the zones: a colour's pieces and Wild's face, side by side (in place of the last ones drawn)
+// Start's tabs under the zones (in place of the last ones drawn): a Duel's cut its row, then a colour's pieces and Wild's
+// face side by side
 function renderPartTabs() {
-  for (const g of $('huntZones').querySelectorAll(':scope > .tile-group')) g.remove();
-  $('huntZones').append(partChoiceTabs('teamsApart'), partChoiceTabs('wildFace'));
+  for (const row of $('huntZones').querySelectorAll(':scope > .tab-row')) row.remove();
+  $('huntZones').append(
+    tabRow(partChoiceTabs('duelCut')),
+    tabRow(partChoiceTabs('teamsApart'), partChoiceTabs('wildFace')),
+  );
 }
 const COLOUR_PARTS = {
   2: '2 halves',

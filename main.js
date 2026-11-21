@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.515';
+const VERSION = '0.5.516';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15362,10 +15362,11 @@ function jeenerAt(q, u) {
 // lip half a torus (ring 1, tube 0.5) turning it in to 0.5; its neck down from there, 0.5 − 0.25 y, its axis bent west by
 // 1 − cos (2 at its foot); its handle half a torus (ring 1, tube 0.25) under, from the neck's foot to the body's: glued as
 // ours, its end its start turned over (u to π − u). q ∈ [0, 3] along it: the body [0, 1), the lip [1, 1.5), the neck
-// [1.5, 2.5), the handle [2.5, 3]; its height h, then turned half a turn round x: its lip at its foot, as ours's bowl
+// [1.5, 2.5), the handle [2.5, 3]; its height h, upside down: its lip at its foot, as ours's bowl (its sheet's middle,
+// its pictures, to the south, as ours's: the bottle the same, mirrored across its x–z plane)
 function glassBottleAt(q, u) {
   const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
-    level = (x, r, h) => [x + r * Math.cos(u), -r * Math.sin(u), -h]; // (a level circle round (x, 0, h), turned over)
+    level = (x, r, h) => [x + r * Math.cos(u), r * Math.sin(u), -h]; // (a level circle round (x, 0, h), upside down)
   if (q < 1) {
     const h = -2 + 3 * q;
     return level(0, 1.5 - 1.25 * share(h), h);
@@ -15380,7 +15381,7 @@ function glassBottleAt(q, u) {
   }
   const a = Math.PI * (2 * q - 4), // (under the handle's ring, π to 2π)
     r = 0.25 * Math.cos(Math.PI - u); // (its circle across the ring, turned over from the neck's)
-  return [-1 + (1 + r) * Math.cos(a), -0.25 * Math.sin(u), 2 - (1 + r) * Math.sin(a)];
+  return [-1 + (1 + r) * Math.cos(a), 0.25 * Math.sin(u), 2 - (1 + r) * Math.sin(a)];
 }
 // The bagel (the figure 8 Klein bottle): a ring (radius 1) whose tube is a figure 8 (TORUS_TUBE wide), turned half a turn
 // round it, so it meets itself turned over (u to π − u, the 8's v = u + π / 2), crossing itself along the circle through

@@ -261,8 +261,9 @@ solids measured alike). Their mirrors too (v0.5.412, `surfaceSymmetries`: a mirr
 turns after it; Life only, the walks' turns alone): Tetra, Icosa and Dodeca in 8, the Pyramid in 8. The flat torus by a
 lattice of index K (v0.5.413, `torusLattice`); the walled figures by C_n and D_n (v0.5.414, `wallTurns`; Penrose's and
 Kites & darts' discs measured not quite mirrored: no 2, no 10); the rosette spheres by their turns and halves (v0.5.415,
-`rosetteHalves`). Left: the hull solids' own colourings (`hullColourings`, still first where they have the count); a Klein
-bottle's least sizes, whose rows do not take its half turn (greyed there, as a count is at a size).
+`rosetteHalves`). The hull solids' parts their colourings' whole (v0.5.520: a colour's two opposite faces both, its part
+two pieces, as the rule has it; its first face only before, Formula's parts 25 to 63 cells on the rhombic dodecahedron in
+6). Left: a Klein bottle's least sizes, whose rows do not take its half turn (greyed there, as a count is at a size).
 
 The plan's items, done: 3, Seed one tile, its radius a slider (v0.5.417, `pop=seed4`); 4, Opposite a tab of Symmetry on a
 solid, over any start (v0.5.418: the plane's Symmetry row's, rather than a switch of its own; the zone Opposite gone); 5,

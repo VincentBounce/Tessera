@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.519';
+const VERSION = '0.5.520';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -32086,15 +32086,14 @@ const FIGURE_PARTS = {
       return g.baseTiles.map((t) => own[t]);
     },
   },
-  // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: its first, Opposite: both), the
-  // others' cells each to the nearest colour's face's middle, as near two none's
+  // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: both, its part two pieces, as
+  // TEAMS.md's rule has it), the others' cells each to the nearest colour's face's middle, as near two none's
   hull: {
     parts: (K, opposite) => {
       const g = walk.surface,
         hull = hullColours(VARIANTS[walk.variant].surface, K),
-        mine = (gr) => (hull.pairs && !opposite ? [gr[0]] : gr),
-        own = hull.groups.flatMap((gr, k) => mine(gr).map((q) => [hull.mids[q], k])),
-        owner = new Map(hull.groups.flatMap((gr, k) => mine(gr).map((q) => [q, k])));
+        own = hull.groups.flatMap((gr, k) => gr.map((q) => [hull.mids[q], k])),
+        owner = new Map(hull.groups.flatMap((gr, k) => gr.map((q) => [q, k])));
       return Int32Array.from({ length: g.n }, (_, t) => {
         const q = g.cellFaces[t];
         if (owner.has(q)) return owner.get(q);

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.511';
+const VERSION = '0.5.512';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16936,13 +16936,17 @@ function boyMesh(base, f) {
     }
     return ids.get(key);
   };
-  const tiles = [];
+  const tiles = [],
+    baseTiles = []; // (each tile's on the solid: its colours there, see FIGURE_PARTS)
   for (let t = 0; t < g.n; t++)
-    if (up([0, 1, 2].map((d) => g.cen[3 * t + d])))
+    if (up([0, 1, 2].map((d) => g.cen[3 * t + d]))) {
       tiles.push(Array.from({ length: k }, (_, q) => corner(g.poly[k * t + q])));
+      baseTiles.push(t);
+    }
   return (meshCache[key] = Object.assign(finishMesh(verts, tiles, k, f, null), {
     projective: true,
     flatVerts: new Float64Array(flat),
+    baseTiles: Int32Array.from(baseTiles),
   }));
 }
 
@@ -27860,7 +27864,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
     return true; // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
   }
   if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
-  if (g?.mobius || g?.globe || g?.rosette) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
+  if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
   if (g?.nu) return true; // a torus: its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
@@ -27938,9 +27942,11 @@ const pickedFigure = (w, size = null) => {
 };
 // A surface's frame at a size, all its teams are judged on (teamsFit, teamsFair, torusBlocks): what it is and a torus's
 // rows, without its tiles (a mesh of a million cells built in 1.5 s for each variant next to it, by a greyed tile's search, see
-// choicesAt); the flags its mesh carries the same (see finishTorus, kleinTilingMesh, mobiusMesh, globeMesh, rosetteSphereMesh)
+// choicesAt); the flags its mesh carries the same (see finishTorus, kleinTilingMesh, mobiusMesh, globeMesh, rosetteSphereMesh,
+// boyMesh)
 function surfaceFrame(kind, size) {
   if (kind === 'globe') return { globe: true };
+  if (BOY_BASES[kind]) return { projective: true };
   if (SURFACES[kind].disc) return { rosette: true, turns: figureTurns(kind.replace(/Sphere$/, '')) }; // (as its mesh's, see rosetteTurns)
   if (MOBIUS_KINDS.includes(kind)) return { torus: true, mobius: true };
   if (kleinStrip(kind)) {
@@ -27980,6 +27986,7 @@ const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
     return [...Array(n).keys()].some((i) => n % (i + 1) === 0 && (K === i + 1 || (mirror && K === 2 * (i + 1))));
   }
   if (solidCounts(variant?.surface)) return solidCounts(variant.surface).includes(K); // (a solid: its groups', see colouring)
+  if (BOY_BASES[variant?.surface]) return oppositeAllowed(BOY_BASES[variant.surface], K); // (Boy's surface: its solid's Opposite colours, see FIGURE_PARTS)
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.rosette) return rosetteTurns(g) % K === 0 || rosetteHalves(g, K); // (a rosette surface: its turns' lunes, or its two discs' each, see rosetteParts)
   if (g?.mobius) return true;
@@ -32041,8 +32048,16 @@ const FIGURE_PARTS = {
   },
   // a rosette sphere: its lunes, or its halves' (see rosetteParts)
   rosette: { parts: (K) => rosetteParts(walk.surface, K), solo: true },
-  // Boy's surface: one colour all over (no colours yet: its parts alike to find, see teamsFit), no patch (no frame)
-  projective: { parts: () => new Int32Array(walk.surface.n) },
+  // Boy's surface: its solid's colours that its centre keeps (Opposite's: a colour's two opposite pieces, one tile here), each
+  // tile its own on the solid; no patch (no frame)
+  projective: {
+    parts: (K) => {
+      const g = walk.surface,
+        base = BOY_BASES[VARIANTS[walk.variant].surface],
+        own = spotColours(colouring(base, K, true), SURFACES[base].mesh(g.size));
+      return g.baseTiles.map((t) => own[t]);
+    },
+  },
   // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: its first, Opposite: both), the
   // others' cells each to the nearest colour's face's middle, as near two none's
   hull: {

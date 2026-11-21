@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.501';
+const VERSION = '0.5.502';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24017,7 +24017,8 @@ function symmetriesHere(
 // on the grid built only (its parts, see huntParts), elsewhere none claimed
 const partMemo = remember('partMemo', new Map());
 function partSymmetries(kind, W, K, outline = outlineOf(kind)) {
-  if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind)) return ['none']; // (its parts known on the grid built only: another grid's not judged, not claimed)
+  if (walk.plane?.kind !== kind || walk.plane.W !== W || outline !== outlineOf(kind) || K !== lifeParts())
+    return ['none']; // (its parts known on the grid built only, for its own colours: another's not judged, not claimed)
   const key = `${gridKey()}|${K}|${teamsMixed() && mixSeed()}|${placementKey()}`; // (Mixed: its parts drawn from its seed)
   if (partMemo.has(key)) return partMemo.get(key);
   const parts = huntParts(0, K),

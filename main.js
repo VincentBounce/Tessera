@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.522';
+const VERSION = '0.5.523';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31341,11 +31341,16 @@ const wildOpposite = () =>
   !!walk.surface &&
   oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts());
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
-// no mesh: a hull solid's its colour's first face (as the cube's, see hullColourings), another's the face whose middle its
-// patch's spot is (an index in FACE_MIDDLES, see cellFaces); null where a patch is off a face's middle, in Solo, off a solid
+// on its least mesh: the faces whose middles are its spots, alike (see fairSpots: a hull solid's of its colours' faces, another's
+// an index in FACE_MIDDLES, see cellFaces); null where none alike, a spot off a face's middle, in Solo, off a solid
 function colourFaces(surface, K, apart = piecesApart()) {
   if (K < 2 || !SOLIDS.includes(surface)) return null;
-  if (hullSolidOf(surface)) return hullColours(surface, K)?.groups.map((gr) => gr[0]) ?? null;
+  if (hullSolidOf(surface)) {
+    const hull = hullColours(surface, K),
+      g = leastMesh(surface),
+      colour = hull?.mids.map((_, q) => hull.groups.findIndex((gr) => gr.includes(q)));
+    return hull ? fairSpots(g, surfaceSymmetries(g), hull.mids.map(unit), colour, K) : null; // (its faces alike, as a solid's spots)
+  }
   const mids = FACE_MIDDLES[surface]?.() ?? [],
     col = colouring(surface, K, false, apart);
   const faces = col?.faces ? col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9)) : [];
@@ -31386,7 +31391,7 @@ const PART_CHOICES = {
   wildFace: {
     list: WILD_ZONES,
     pick: (k) => (wildFace = k),
-    now: () => (wildOpposite() ? 1 : hunt.zone === 'full' && wildFace === 2 ? 2 : 0),
+    now: () => (wildOpposite() ? 1 : hunt.zone === 'full' && !wildOnFaces() ? 2 : 0), // (the one laid: Part where the faces are none)
     then: () => {
       lifeReseed();
       renderHunt();
@@ -31493,6 +31498,28 @@ for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[
 // turns, then the fewest sides between colours (as tools/faceparts.js chose its tables, before v0.5.411). Opposite: each colour's items carried onto its own by the centre's
 // inversion (Symmetry's Opposite). Apart (Teams' Apart, see piecesApart): the most pieces instead, none through the centre
 // but on Opposite (the dodecahedron's 6 colours, two faces apart each). Null: none
+// a colouring's spots, one item a colour, alike: an item's images by a group T of K of the colours' own group G, each of
+// another colour (T carries spot onto spot, colour onto colour: Face's faces, Seed's patches, see TEAMS.md), of those the
+// most towards the first view (CAMERA_START: the cube's 3 a corner seen); null where no T does (the rhombic dodecahedron's
+// 6: any face of each pair, 3 at most alike)
+function fairSpots(g, G, items, colour, K) {
+  const key = (M) => roundedKey(M.flat()),
+    inG = new Set(G.map(key)),
+    at = (q) => items.findIndex((x) => dot3(x, q) > 1 - 1e-9),
+    seen = (orbit) => orbit.reduce((sum, j) => sum + dot3(items[j], CAMERA_START.v), 0);
+  let best = null;
+  for (const T of rotationGroups(g, K, Infinity, null, true))
+    if (T.every((M) => inG.has(key(M))))
+      for (let i = 0; i < items.length; i++) {
+        const orbit = T.map((M) => at(matTimesPoint(M, items[i])));
+        if (orbit.every((j) => j >= 0 && colour[j] >= 0) && new Set(orbit.map((j) => colour[j])).size === K)
+          if (!best || seen(orbit) > seen(best) + 1e-9) best = orbit;
+      }
+  if (!best) return null;
+  const spots = [];
+  for (const j of best) spots[colour[j]] = j;
+  return spots;
+}
 const colouringMemo = remember('colouringMemo', {});
 function colouring(surface, K, opposite = false, apart = piecesApart()) {
   const id = `${surface}|${K}|${opposite}|${apart}`;
@@ -31559,17 +31586,17 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
         score = apart
           ? [byFaces, none, cut.size, across && !opposite ? 1 : 0, -pieces, -G.length, sides]
           : [byFaces, none, cut.size, pieces, -G.length, sides];
-      if (!best || lexicoLess(score, best.score)) best = { score, items, colour };
+      if (!best || lexicoLess(score, best.score)) best = { score, items, colour, G };
     }
   }
   if (!best) return (colouringMemo[id] = null);
-  const patch = Array.from({ length: K }, (_, c) => best.colour.indexOf(c));
+  const patch = fairSpots(g, best.G, best.items, best.colour, K);
   return (colouringMemo[id] = {
     items: best.items,
     colour: best.colour,
     pieces: apart ? -best.score[4] : best.score[3], // (its colours' pieces on the least mesh, see piecesOf)
     patch,
-    faces: patch.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
+    faces: !!patch?.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
   });
 }
 // whether list a comes before list b, by its first number that differs
@@ -31626,7 +31653,7 @@ function spotColours(col, g) {
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {
   const c = colouring(surface, K, wildOpposite()); // (Face opposite's: its parts' colouring, see huntParts)
-  return c.patch.map((i) => c.items[i]);
+  return c.patch?.map((i) => c.items[i]) ?? [];
 };
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
 // each cell to its nearest spot. Spots: on the plane, the middles of a lattice of k blocks (or, for
@@ -32119,7 +32146,7 @@ const FIGURE_PARTS = {
     parts: (K, opposite) => spotColours(colouring(VARIANTS[walk.variant].surface, K, opposite), walk.surface),
     centre: (i, K, opposite) => {
       const col = colouring(VARIANTS[walk.variant].surface, K, opposite);
-      return centreCells(col.items[col.patch[i]]);
+      return col.patch ? centreCells(col.items[col.patch[i]]) : []; // (no spots alike: no patch, see fairSpots)
     },
   },
 };

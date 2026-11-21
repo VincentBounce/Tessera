@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.520';
+const VERSION = '0.5.521';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24092,6 +24092,10 @@ const SYMMETRIES = {
     "Half of the start on each colour's part, copied on its other half through the solid's centre (a solid's: each colour's part two opposite pieces, see colouring): two copies",
   ],
 };
+// out of the menu's graph (see OFF_GRAPH): each symmetry's search asks every grid's parts it crosses, 0.3 to 0.4 s a first
+// hover on a solid (2026-11-21); its words say what it waits for
+for (const y of Object.keys(SYMMETRIES))
+  OFF_GRAPH[`symmetry:${y}`] = "each grid's parts judged: 0.3 to 0.4 s a first hover";
 // A grid's symmetries, known by construction: about its centre, a turn of order N and a mirror. Squares: the grid's middle,
 // quarter turns; a grid in a hexagon (see planeShape): its middle o, a centre of the tiling's sixths, sixth turns, a mirror if
 // its tiles have one (Florets, Snub: none); the others none
@@ -26517,6 +26521,7 @@ function renderSymmetry() {
           on: y === now,
           byDefault: y === 'none' ? 'yes' : '',
           at: walk.variant,
+          choice: `symmetry:${y}`, // (out of the menu's graph, see OFF_GRAPH)
           whyNot: (setup) => (symmetryAllowed(y, setup.w, setup) ? '' : SYMMETRY_WHERE),
           click: () => {
             if (y !== startSymmetry()) {

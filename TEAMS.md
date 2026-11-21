@@ -324,7 +324,7 @@ plane's turns and mirrors, a solid's Opposite).
 |---|---|---|
 | Wild | a soup over all (`soupState`) | each part a soup, one count for all (`soupInParts`); on a solid, Wild › Face: each colour's face only (`faceParts`) |
 | Seed | `lifePatch(r)` at the spot, radius `plane.seedRadius` | the same at each colour's spot, one count for all; near rules (`NEAR_RULES`): patches touching round the middle |
-| Icon, Punk, Emoji | `iconLay` at the spot | `iconLay` at each colour's spot |
+| Icon, Punk, Emoji | `iconLay` at the spot | `iconLay` at each colour's spot; Doubled: copied through the centre as any start (`symmetricStart`), its copy head down (a picture's bottom down its face, `iconWay`; the copy's bottom up) |
 | Famous | `laidChoices` at the spot (discs: `centredChoices`) | the same at each colour's spot |
 | Anywhere | `laidChoices` anywhere | each colour's pattern anywhere in its part |
 | Formula | `numberSeed`: the digits a cell in turn (`digitsOn`) | the same, each live cell its part's colour (`paintOwn`) |

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.518';
+const VERSION = '0.5.519';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31395,6 +31395,10 @@ const PART_CHOICES = {
         : "Only with Wild, on a solid where each colour's part lies round the middle of a face.",
   },
 };
+// out of the menu's graph (see OFF_GRAPH): each tab asks every solid's colourings its search crosses, measured on their
+// meshes, 0.4 to 2.6 s a first hover (2026-11-21); their words say what they wait for
+for (const [field, { list }] of Object.entries(PART_CHOICES))
+  list.forEach((_, k) => (OFF_GRAPH[`${field}:${k}`] = "each solid's colourings measured: 0.4 to 2.6 s a first hover"));
 const partChoiceTabs = (field) => {
   const c = PART_CHOICES[field];
   return choiceTabs(field, c.list, c.now(), c.pick, c.whyNot, c.then);

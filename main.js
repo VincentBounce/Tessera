@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.494';
+const VERSION = '0.5.495';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8192,7 +8192,7 @@ const ICONS = (() => {
       svgPath('M7.5 9.6L10 8.2V15.8L7.5 14.4Z') +
       svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'), // a ball's back half, the cut's line
-    glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'), // a ball, its equator seen through
+    glass: svgPath('M4 8H16V20H4Z') + svgPath('M8 4H20V16H8Z') + svgPath('M4 8L8 4M16 8L20 4M16 20L20 16M4 20L8 16'), // a cube seen through, its edges behind too
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'), // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'), // (up, over a level line)
     free:

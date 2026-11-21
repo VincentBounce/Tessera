@@ -807,7 +807,7 @@ h4 {
 } /* a row of row tiles: each its share of it */
 .nav-shapes:has(> .row-tile):has(+ .nav-shapes > .row-tile, + button.wide) {
   margin-bottom: var(--tile-gap);
-} /* (a row of row tiles over another or over a wide button, one block: Draw's turns over Undo and Redo, its PNGs over Draw from current state) */
+} /* (a row of row tiles over another or over a wide button, one block: Draw's turns over Undo and Redo) */
 .nav-shapes button.row-tile {
   flex: 1;
   flex-direction: row;

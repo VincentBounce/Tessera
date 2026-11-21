@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.550';
+const VERSION = '0.5.551';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26695,7 +26695,21 @@ const startWhyNot = (start, v) =>
           : TEXT_WHERE
       : '';
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
-const PNG_WHERE = 'Only on a grid of squares: one pixel per square.'; // (Export PNG's greyed words)
+// Open and Export: a flat grid of squares only, the plane's or a sheet's (a torus's, a Möbius strip's, a Klein bottle's), a
+// pixel a square (see pictureCells)
+const pngWhyNot = (v) =>
+  VARIANTS[v].life &&
+  PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square' &&
+  (VARIANTS[v].plane || TORI.includes(VARIANTS[v].surface))
+    ? ''
+    : 'Only on a flat grid of squares (the plane, a torus, a Möbius strip, a Klein bottle): one pixel per square.';
+// the grid shown as a picture, a cell a pixel: its width, its height, each cell's pixel (the plane's, its place; a sheet's,
+// its place on it, see sheetPlace: a Möbius strip's round both its faces)
+const pictureCells = () => {
+  if (walk.plane) return { w: walk.plane.row, h: walk.plane.W, at: (t) => walk.plane.xy(t) };
+  const g = walk.surface;
+  return { w: g.mobius ? 2 * g.L : g.nu, h: g.nv, at: (t) => sheetPlace(g, t).map(Math.floor) };
+};
 function renderPlaneRow() {
   const kind = VARIANTS[tabVariant()].plane;
   const blocks = !!VARIANTS[tabVariant()].margolus;
@@ -26714,7 +26728,7 @@ function renderPlaneRow() {
   syncTextButtons();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  $('pngTools').hidden = !kind; // (a picture: the plane's)
+  setTile($('exportPng'), { whyNot: ({ w: v }) => pngWhyNot(v) });
   if (!kind) {
     renderSymmetry(); // (one rule, renderSymmetry's: a solid's Opposite, as the plane's symmetries)
     $('startDraw').hidden = plane.start !== 'draw';
@@ -26724,9 +26738,6 @@ function renderPlaneRow() {
     renderBrushes(PLANE_OF_MARK[lifeMark(VARIANTS[tabVariant()])]); // (a surface: its cells' grid, a tile clicked, see pickedTile)
     return;
   }
-  setTile($('exportPng'), {
-    whyNot: ({ w: v }) => (VARIANTS[v].plane === 'square' && VARIANTS[v].life ? '' : PNG_WHERE),
-  });
   const sides = planeSides(kind);
   const label = (side) => {
     $('planeLabel').innerHTML =
@@ -26867,7 +26878,7 @@ function renderDrawTools() {
     'Not for View or a cell, nor on a grid a pattern cannot mirror on.',
   );
 
-  grey($('openPng'), kind !== 'square', 'Only on a grid of squares: one pixel per square.');
+  grey($('openPng'), false, '', false, ({ w: v }) => pngWhyNot(v));
   $('brushColours').classList.toggle('off', away);
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   // the start's cells: away, back to them (gen 0); there, Clear
@@ -42350,41 +42361,44 @@ $('pngFile').addEventListener('change', async () => {
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, img.width, img.height).data,
     kind = VARIANTS[tabVariant()].plane,
-    sides = planeSides(kind);
-  const side = sides.find((f) => planeW(kind, f) >= Math.max(img.width, img.height));
-  if (side === undefined) {
-    alert(
-      `This picture is ${img.width} × ${img.height}: at most ${planeW(kind, sides.at(-1))} × ${planeW(kind, sides.at(-1))} here.`,
-    );
+    sides = kind && planeSides(kind),
+    side = kind && sides.find((f) => planeW(kind, f) >= Math.max(img.width, img.height)); // (the plane: its size the smallest it fits in)
+  const W = kind && planeW(kind, side ?? sides.at(-1)), // (the plane's grid: the one it fits in, else its largest)
+    { w, h, at } = kind ? { w: W, h: W } : pictureCells();
+  if (img.width > w || img.height > h) {
+    alert(`This picture is ${img.width} × ${img.height}: at most ${w} × ${h} here.`);
     return;
   }
-  const W = planeW(kind, side),
-    x0 = Math.floor((W - img.width) / 2),
-    y0 = Math.floor((W - img.height) / 2);
+  const x0 = Math.floor((w - img.width) / 2),
+    y0 = Math.floor((h - img.height) / 2),
+    cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [at(t).join(), t])); // (a sheet's cell at a pixel)
   rememberDrawing();
   population = new Map();
   for (let y = 0; y < img.height; y++)
     for (let x = 0; x < img.width; x++) {
       const i = 4 * (y * img.width + x);
       if (d[i + 3] >= 128 && 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] < 128)
-        population.set(planeKey(x0 + x, y0 + y), 1);
+        population.set(kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)), 1);
     }
+  if (!kind) return lifeReseed(); // (a sheet: its size kept)
   picked = planeCells(side);
   plane.start = 'draw';
   compute();
 });
 $('exportPng').addEventListener('click', () => {
   const L = walk.life,
-    { W, row } = walk.plane,
+    { w, h, at } = pictureCells(),
     c = document.createElement('canvas'),
     neg = negative(L),
     cells = L.margolus?.cells;
-  [c.width, c.height] = [row, W];
+  [c.width, c.height] = [w, h];
   const g = c.getContext('2d'),
-    im = g.createImageData(row, W);
-  for (let t = 0; t < row * W; t++) {
-    const v = (L.alive[t] > 0 && L.alive[t] <= L.colours) !== (neg && !!cells?.[t]) ? 0 : 255; // (as shown: a block rule's negative)
-    im.data.set([v, v, v, 255], 4 * t);
+    im = g.createImageData(w, h);
+  im.data.fill(255);
+  for (let t = 0; t < L.alive.length; t++) {
+    const v = (L.alive[t] > 0 && L.alive[t] <= L.colours) !== (neg && !!cells?.[t]) ? 0 : 255, // (as shown: a block rule's negative)
+      [x, y] = at(t);
+    im.data.set([v, v, v, 255], 4 * (y * w + x));
   }
   g.putImageData(im, 0, 0);
   c.toBlob((blob) => {

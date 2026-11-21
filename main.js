@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.554';
+const VERSION = '0.5.555';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26858,13 +26858,10 @@ function renderDrawTools() {
   const tooBig = (p) => discPattern(p) && cellsPlane()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
   setTile($('drawView'), { on: brush.view }); // (at any generation)
   for (const b of $('brushCards').children)
-    grey(
-      b,
-      tooBig(DRAW_BY_ID.get(b.dataset.brush)),
-      'Too big for this disc: at a larger size.',
-      b.classList.contains('active'),
-      null,
-    );
+    setTile(b, {
+      on: b.classList.contains('active'),
+      greyed: tooBig(DRAW_BY_ID.get(b.dataset.brush)) ? 'Too big for this disc: at a larger size.' : '',
+    }); // (at any generation: picked, it draws again at gen 0)
   const tool = brush.view || !DRAW_BY_ID.get(brush.id)[1], // (View or a cell: no pattern to turn)
     brushGrid = walk.life ? patternKind() : kind; // (the grid shown's, the plane's or a surface's cells: see brushCells)
   grey(

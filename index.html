@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.561">
+  <link rel="stylesheet" href="style.css?v=0.5.562">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -108,15 +108,19 @@
             <div id="textFonts" class="nav-shapes"></div>  <!-- its font (see TEXT_FONTS) -->
           </div>
           <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
-            <button id="drawView" class="wide on-list" data-icon="eye" data-toggle type="button" title="To look: a click draws nothing, the brush picked kept (on away from gen 0: Play, a step, End; a brush picked draws again, at gen 0)">View</button>
-            <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
-            <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
-            <div id="brushTurns" class="nav-shapes"></div>  <!-- the brush's turn and Mirror (see drawRow) -->
-            <div id="drawHistoryTools" class="nav-shapes"></div>  <!-- Undo and Redo: the drawing's history (see drawHistory) -->
+            <div class="tool-block">
+              <button id="drawView" class="wide" data-icon="eye" data-toggle type="button" title="To look: a click draws nothing, the brush picked kept (on away from gen 0: Play, a step, End; a brush picked draws again, at gen 0)">View</button>
+              <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
+              <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
+              <div id="brushTurns" class="nav-shapes"></div>  <!-- the brush's turn and Mirror (see drawRow) -->
+              <div id="drawHistoryTools" class="nav-shapes"></div>  <!-- Undo and Redo: the drawing's history (see drawHistory) -->
+            </div>
             <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
-            <button id="drawFromCurrent" type="button" class="wide on-list" data-icon="pencil" title="The generation shown as the cells drawn: away from gen 0, the one there; at gen 0, the one before Draw">Draw from current state</button><input id="pngFile" type="file" accept="image/*" hidden>  <!-- the generation shown, or the one before Draw (see renderDrawTools) -->
-            <div id="pngTools" class="nav-shapes"></div>  <!-- a black and white picture, a pixel a square (the plane fitted to it, a sheet its own), or the generation shown as one -->
-            <button id="startCells" type="button" class="wide on-list" data-icon="trash" title="Clears the cells drawn">Clear</button>  <!-- the cells drawn cleared (see renderDrawTools) -->
+            <div class="tool-block">
+              <button id="drawFromCurrent" type="button" class="wide" data-icon="pencil" title="The generation shown as the cells drawn: away from gen 0, the one there; at gen 0, the one before Draw">Draw from current state</button><input id="pngFile" type="file" accept="image/*" hidden>  <!-- the generation shown, or the one before Draw (see renderDrawTools) -->
+              <div id="pngTools" class="nav-shapes"></div>  <!-- a black and white picture, a pixel a square (the plane fitted to it, a sheet its own), or the generation shown as one -->
+              <button id="startCells" type="button" class="wide" data-icon="trash" title="Clears the cells drawn">Clear</button>  <!-- the cells drawn cleared (see renderDrawTools) -->
+            </div>
           </div>
           <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
         </div>
@@ -343,11 +347,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.561"></script>
-  <script src="punks.js?v=0.5.561"></script>
-  <script src="loops.js?v=0.5.561"></script>
-  <script src="emoji.js?v=0.5.561"></script>
-  <script src="debug.js?v=0.5.561"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.561"></script>
+  <script src="pixelarticons.js?v=0.5.562"></script>
+  <script src="punks.js?v=0.5.562"></script>
+  <script src="loops.js?v=0.5.562"></script>
+  <script src="emoji.js?v=0.5.562"></script>
+  <script src="debug.js?v=0.5.562"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.562"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.487';
+const VERSION = '0.5.488';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31061,14 +31061,15 @@ const seedThatFits = (r) => {
 // patchSpots), a hull solid's its first; none in Solo, off a solid, or where a patch is on a corner or an edge (the stella's
 // tips and hollows, the Dodecahedron's 5: a face cut). Realm before v0.5.425, its plane's parts apart (two cells between
 // colours) gone with it
-// Wild's zone, one choice of two (the link's wildFace: its place): each colour's whole part, or its face on a solid, where
-// each colour has one (see colourFaces)
+// Wild's zone, one choice of two (the link's wildFace: its place): each colour's face on a solid, where each colour has one
+// (see colourFaces), or its whole part
 const WILD_ZONES = [
-  ['Part', "Each colour's soup over its whole part"],
   ['Face', "Each colour's soup on its own face of the solid, the one in the middle of its part"],
+  ['Part', "Each colour's soup over its whole part"],
 ];
 let wildFace = 0;
-const wildOnFaces = () => wildFace === 1 && !!walk.life && !!colourFaces(VARIANTS[walk.variant].surface, lifeParts());
+const wildFacesHere = () => !!walk.life && !!colourFaces(VARIANTS[walk.variant].surface, lifeParts()); // (each colour a face of the solid shown)
+const wildOnFaces = () => wildFace === 0 && wildFacesHere();
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
 // no mesh: a hull solid's its colour's first face (as the cube's, see hullColourings), another's the face whose middle its
 // patch's spot is (an index in FACE_MIDDLES, see cellFaces); null where a patch is off a face's middle, in Solo, off a solid
@@ -31115,7 +31116,7 @@ const PART_CHOICES = {
   wildFace: {
     list: WILD_ZONES,
     pick: (k) => (wildFace = k),
-    now: () => (hunt.zone === 'full' && wildOnFaces() ? 1 : 0),
+    now: () => (hunt.zone === 'full' && wildFace === 1 && wildFacesHere() ? 1 : 0),
     then: () => {
       lifeReseed();
       renderHunt();

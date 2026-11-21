@@ -2217,10 +2217,9 @@ button.active .bubble.active {
   overflow: auto;
   padding: 20px 24px 24px;
 } /* what scrolls, under its buttons (pinned to the top right) */
-.tut-body > h2,
-.tut-body > h2 + p:not(.number-digits) {
+.tut-body > h2 {
   margin-right: 96px;
-} /* (beside the buttons) */
+} /* (beside the buttons; the lines under it, under them) */
 .tut-body :is(code, .external-link) {
   color: var(--text-color);
   font-weight: 700;

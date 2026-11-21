@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.497';
+const VERSION = '0.5.498';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38283,10 +38283,10 @@ fn shone(c: vec3f, a: f32, n: vec3f, p: vec3f) -> vec4f {
   let sky = mix(vec3f(0.12, 0.11, 0.1), vec3f(0.75, 0.85, 1.0), dot(r, u.Uu) * 0.5 + 0.5) + pow(max(0.0, dot(r, u.L)), 60.0);
   return vec4f(mix(c, sky, f), mix(a, 1.0, f));
 }
-fn seen(c: vec3f, z: f32, n: vec3f, p: vec3f) -> vec4f { var a = u.alpha; if (u.glass == 0) { a = 1.0; } let s = shone(c, a, n, p); return glass(s.rgb, s.a, z); }  // (Glass: see-through)
+fn seen(c: vec3f, z: f32, n: vec3f, p: vec3f, live: f32) -> vec4f { var a = mix(u.alpha, 1.0, live); if (u.glass == 0) { a = 1.0; } let s = shone(c, a, n, p); return glass(s.rgb, s.a, z); }  // (Glass: see-through, a live cell's share of its life whole: live, 0 to 1)
 @fragment fn shadowedF(i: Lit) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z, facing(normalize(i.n), i.p), i.p);
+  return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z, facing(normalize(i.n), i.p), i.p, 0.0);
 }
 fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; else its tile's colour, its alpha 1 painted)
   if (u.plain.a > 0.0) { return vec4f(u.plain.rgb, 0.5); }
@@ -38350,14 +38350,14 @@ ${lampBranches(L, 'ceiling', (k) => `return ${k};`)}
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   let n = facing(normalize(i.n), i.p);
   if (i.col.a < 0.75 || pieces.y == ${CELLS_FINISH.Halo}u) {  // (none painted, or Halo's tiles: flat; Panel's and Debug's ceiling a little grey)
-    return seen(flatTile(i.col.rgb * select(1.0, ceiling(), i.col.a < 0.75), n, i.sh), i.pos.z, n, i.p);
+    return seen(flatTile(i.col.rgb * select(1.0, ceiling(), i.col.a < 0.75), n, i.sh), i.pos.z, n, i.p, select(lifeLeft(i.col), 0.0, i.col.a < 0.75));
   }
   let piece = inPiece(i.p, i.first);
   let out = piece.xyz - i.p;
   let lit = cellLit(i.col, piece.w, n, out - n * dot(out, n), lightShare(i.sh));
-  if (pieces.y == ${CELLS_FINISH.Tessera}u) { return seen(lit, i.pos.z, n, i.p); }
+  if (pieces.y == ${CELLS_FINISH.Tessera}u) { return seen(lit, i.pos.z, n, i.p, lifeLeft(i.col)); }
   let ground = flatTile(unpack4x8unorm(pieces.z).rgb * ceiling(), n, i.sh);  // (the ground as it is drawn, its ceiling's too)
-  return seen(mix(ground, lit, lifeLeft(i.col)), i.pos.z, n, i.p);  // (a dying cell going out, from lit to the ground drawn, with its life)
+  return seen(mix(ground, lit, lifeLeft(i.col)), i.pos.z, n, i.p, lifeLeft(i.col));  // (a dying cell going out, from lit to the ground drawn, with its life)
 }
 // a painted tile lit by its Cells (pieces.y), w its place from its edge to its middle (see inPiece), n its normal (the
 // viewer's side), side its way to its nearest edge along it, share the lamp's (its shadows'): Neon, LED, Panel, Tube, Debug a

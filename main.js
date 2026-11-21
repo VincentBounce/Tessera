@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.542';
+const VERSION = '0.5.543';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3817,6 +3817,7 @@ const hullIcon = (k) => (typeof HULL_SOLIDS[k].pic === 'string' ? HULL_SOLIDS[k]
 const hullCuts = Object.entries(HULL_SOLIDS).flatMap(([k, S]) =>
   (S.cuts ?? []).map((c) => [k, c, `${k}${HULL_CUTS[c].name}`]),
 );
+const HULL_GRIDS = [...Object.keys(HULL_SOLIDS), ...hullCuts.map(([, , cut]) => cut)]; // (their grids: a solid's f × f a face, and its cuts)
 // the flat solids with hexagons too, folded over their edges (see hexSolidMesh): each one's name, its family's, its size
 // (as its triangles', see SURFACES), its cells (one a corner of its triangles) and those of other sides (where fewer or more
 // than 6 of its triangles meet: cells as the others)
@@ -14205,6 +14206,8 @@ function hullFaces(P) {
       }
   return [...faces.values()];
 }
+// a face's point: its corner A, then u along its side to B and v along its side to D (u, v from 0 to 1)
+const facePoint = (A, B, D, u, v) => [0, 1, 2].map((d) => A[d] + (B[d] - A[d]) * u + (D[d] - A[d]) * v);
 function hullMesh(kind, f) {
   const key = `${kind}${f}`;
   if (meshCache[key]) return meshCache[key];
@@ -14213,7 +14216,7 @@ function hullMesh(kind, f) {
     triFaces = faces.filter((fc) => fc.corners.length === 3);
   const { verts, add } = vertexStore(),
     tiles = [],
-    at = (A, B, C, i, j) => add(...[0, 1, 2].map((d) => A[d] + ((B[d] - A[d]) * i + (C[d] - A[d]) * j) / f));
+    at = (A, B, C, i, j) => add(...facePoint(A, B, C, i / f, j / f));
   for (const {
     corners: [A, B, , D],
   } of squareFaces)
@@ -14429,9 +14432,7 @@ function pinwheelSolidMesh(k, cells) {
   const edge = Math.hypot(...sub(faces[0][1], faces[0][0])),
     scale = (2 * L) / edge;
   const tris = faces.flatMap(([A, B, , D]) =>
-    face.map((T) =>
-      T.map(([u, v]) => [0, 1, 2].map((d) => scale * A[d] + ((B[d] - A[d]) * u + (D[d] - A[d]) * v) / edge)),
-    ),
+    face.map((T) => T.map(([u, v]) => facePoint(A, B, D, u / (2 * L), v / (2 * L)).map((c) => c * scale))),
   );
   const { verts, add } = vertexStore(),
     tiles = cornersOnSides(tris).map((p) => p.map((q) => add(...q.map((v) => v / scale)))),
@@ -14446,7 +14447,6 @@ function pinwheelSolidMesh(k, cells) {
     {
       cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
       solid: { corners: solidCorners(SURFACES[k].mesh(1)), centres: solidFaceCentres(SURFACES[k].mesh(1)) }, // (its solid's)
-      tiling: SURFACES[`${k}Pinwheel`].tiling, // (its cells the pinwheel's: no lattice, see patternsOn)
     },
   ));
 }
@@ -17102,8 +17102,7 @@ const MORPHABLE = [
   'stellaKite',
   'dodecaKite',
   ...hexSolids.map((k) => `${k}Hex`),
-  ...Object.keys(HULL_SOLIDS),
-  ...hullCuts.map(([, , cut]) => cut),
+  ...HULL_GRIDS,
   ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
   'globe',
   ...Object.keys(ROSETTE_SPHERES).map((k) => `${k}Sphere`),
@@ -18339,8 +18338,7 @@ const SOLIDS = [
   'dodecaKite',
   'penroseSphere', // (its dodecahedron declared, see penroseSphereMesh)
   'kitesDartsSphere',
-  ...Object.keys(HULL_SOLIDS),
-  ...hullCuts.map(([, , cut]) => cut),
+  ...HULL_GRIDS,
   ...PINWHEEL_SOLIDS.map((k) => `${k}Pinwheel`),
 ];
 const TORI = [
@@ -32907,14 +32905,13 @@ const triFace = (surface, K, i) =>
 const patternsOn = () => {
   // (by the teams laid, lifeParts: with Newcomer, one fewer than the colours, as patternPlace lays them)
   if (!walk.life) return false;
-  if (!cellsPlane() && APERIODIC[walk.surface?.tiling]) return false; // (a solid of a tiling that never repeats: no lattice to lay a picture by, see patternFrame)
   const m = VARIANTS[walk.variant],
     K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (
     !!cellsPlane() ||
     !!walk.surface?.torus ||
     (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
-    (!!hullSolidOf(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (a cut's: its solid's)
+    (HULL_GRIDS.includes(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (its grid, a cut's too; a pinwheel's faces its solid's, its cells no grid)
     (!!walk.surface?.hexagons && !m.plane) ||
     (!!TRI_FACES[m.surface] && (K === 1 || !!triFace(m.surface, K, 0)))
   );

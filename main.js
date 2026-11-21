@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.507';
+const VERSION = '0.5.508';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15081,8 +15081,8 @@ const TORUS_SHAPES = [
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // A torus knot's point (see TORUS_SHAPES), as the ring's at the same place: x round it (−π to π, along the knot by its
-// length), w out from its middle and h up, the ring's, here across the knot: out from the torus it lies on (its normal
-// towards the knot from that torus's core circle), and up (as the ring's, its turn the same: no mirror)
+// length), w out from its middle and h up, the ring's, here across the knot: its tangent turned level (as Desmos's
+// automata on a trefoil knot, cq17lqjgb7), and up (as the ring's, its turn the same: no mirror)
 function knotPoint(knot, x, w, h) {
   const { p, q, a } = knot,
     curve = (t) => [
@@ -15114,8 +15114,7 @@ function knotPoint(knot, x, w, h) {
   const t = ((2 * Math.PI) / N) * (lo + (at - along[lo]) / (along[hi] - along[lo])),
     C = curve(t),
     T = unit(curve(t + 1e-5).map((v, d) => v - C[d])),
-    out = [Math.cos(q * t) * Math.cos(p * t), Math.cos(q * t) * Math.sin(p * t), Math.sin(q * t)],
-    N0 = unit(out.map((v, d) => v - dot3(out, T) * T[d])),
+    N0 = unit([-T[1], T[0], 0]),
     B = [N0[1] * T[2] - N0[2] * T[1], N0[2] * T[0] - N0[0] * T[2], N0[0] * T[1] - N0[1] * T[0]]; // (N0 × T: up, as the ring's)
   return C.map((v, d) => v * scale + w * N0[d] + h * B[d]);
 }

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.558';
+const VERSION = '0.5.559';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42081,11 +42081,6 @@ $('activity').addEventListener('pointermove', (e) => {
   $('activity').classList.toggle('out', g !== null && !lifeWithin(g));
 });
 $('back').addEventListener('click', () => seekTo(stepShown - 1));
-$('startCells').addEventListener('click', () => {
-  rememberDrawing();
-  population = new Map();
-  lifeReseed(); // (the plane's or a surface's)
-});
 $('drawFromCurrent').addEventListener('click', () => {
   const cells = drawAway() ? cellsShown() : populationOf(drawHistory.past[0]); // (see renderDrawTools)
   rememberDrawing();
@@ -42358,6 +42353,20 @@ $('pngTools').append(
     pic: icon('export'),
     text: 'Export',
     title: 'Saves the generation shown as a black and white PNG picture, a square a pixel',
+  }),
+);
+$('clearTools').append(
+  tile({
+    id: 'startCells',
+    row: true,
+    pic: icon('trash'),
+    text: 'Clear',
+    title: 'Clears the cells drawn',
+    click: () => {
+      rememberDrawing();
+      population = new Map();
+      lifeReseed(); // (the plane's or a surface's)
+    },
   }),
 );
 $('pngFile').addEventListener('change', async () => {

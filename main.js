@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.500';
+const VERSION = '0.5.501';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18015,7 +18015,7 @@ function edgeGraph(g) {
  * starts draw the same walk, turned. A mirror does not count: it swaps left and right. */
 const SOLIDS = [
   ...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`),
-  'cube',
+  ...Object.keys(TETRAKIS_SOLIDS), // (the cube and its carved ones, their squares: as their tetrakis)
   'tetra',
   'octa',
   'stella',

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.493';
+const VERSION = '0.5.494';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6431,7 +6431,6 @@ const DISPLAY_BY_TAB = {
     'gridFinish',
     ...VIEW_3D,
     'glass',
-    'shine',
     'cellsFinish',
     'tiles',
     'ocean',
@@ -6447,7 +6446,6 @@ const DISPLAY_BY_TAB = {
     'gridFinish',
     ...VIEW_3D,
     'glass',
-    'shine',
     'cellsFinish',
     'tiles',
     'ocean',
@@ -6456,7 +6454,7 @@ const DISPLAY_BY_TAB = {
   '2D spirals': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'tiles', 'ocean'], // the 2D walks' menu, some of it greyed out
   Elementary: ['colours', 'mono', 'domain', 'entropy', 'gridFinish'], // (its cells never change once made: no Heatmap, no Trail; Domains its own)
   'Explore on the plane': ['gridFinish'],
-  'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'shine', 'cellsFinish', 'cut'], // (its view's only: its colours its own, see renderExplore)
+  'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'cellsFinish', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
@@ -6513,7 +6511,6 @@ const DISPLAY_DEFAULTS = {
   light: ['light', 'open', true],
   glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
-  shine: ['shine', 'open', false],
   cellsFinish: [
     'cellsFinish',
     ['open', 'tab'],
@@ -6625,7 +6622,6 @@ function updateDisplayMenu() {
     light: 'lightRow',
     glint: 'glintRow',
     glass: 'glassRow',
-    shine: 'shineRow',
     cellsFinish: 'cellsFinishRow',
     ocean: 'oceanRow',
     cut: 'cutRow',
@@ -6672,7 +6668,6 @@ const VIEW_TILES = [
   ],
   ['light', 'lightRow', () => icon('sideLight'), 'Side light'],
   ['glass', 'glassRow', () => icon('glass'), 'Glass'],
-  ['shine', 'shineRow', () => icon('shine'), 'Shine'],
   ['autoRotate', 'autoRotateRow', () => icon('autoRotate'), 'Auto-rotate'],
 ];
 let viewTiles = null;
@@ -6723,7 +6718,6 @@ function renderViewTiles() {
     perspective,
     light: defaultMark('light'),
     glass: defaultMark('glass'),
-    shine: defaultMark('shine'),
     autoRotate: defaultMark('autoRotate'),
   };
   VIEW_TILES.forEach(([id], k) =>
@@ -6731,7 +6725,6 @@ function renderViewTiles() {
       on: $(id).checked,
       byDefault: first[id],
       whyNot: ({ w, stacked }) => viewWhyNot(id, w, stacked),
-      greyed: id === 'shine' && !$('glass').checked ? 'Only with Glass.' : '', // (Glass a state no setup holds)
     }),
   ); // (its row's: see updateDisplayMenu, by shows)
   $('viewTiles').hidden = VIEW_TILES.every(([, row]) => $(row).hidden);
@@ -7933,13 +7926,13 @@ const ICONS = (() => {
         .join('');
   const cube = (fillTop) =>
     svgPath(pathOf(hex)) +
-    [0, 2, 4].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
-    (fillTop ? svgPath(pathOf([[12, 12], hex[4], hex[5], hex[0]]), 'f') : '');
+    [1, 3, 5].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
+    (fillTop ? svgPath(pathOf([[12, 12], hex[5], hex[0], hex[1]]), 'f') : '');
   // the carved cubes, as the cube: on each face seen, its middle third (P) a hole (filled), a pit (its rim), a bump (its top out of
   // it), or a grid of thirds round a hole (the sponge)
   const carved = (each) =>
     cube(false) +
-    [0, 2, 4]
+    [1, 3, 5]
       .map((k) => {
         const F = [[12, 12], hex[k], hex[(k + 1) % 6], hex[(k + 2) % 6]],
           m = [0, 1].map((d) => F.reduce((t, p) => t + p[d], 0) / 4);
@@ -8073,15 +8066,15 @@ const ICONS = (() => {
         .join(''), // a hexagon cut in 6 kites
     cube: cube(false),
     stacks: (() => {
-      // Stacks: the cube seen from above (cube's, upside down), a brick wall on its left face (Walls with it), layers on its
+      // Stacks: the cube seen from above (cube's), a brick wall on its left face (Walls with it), layers on its
       // right (its generations), on its top 5 live cells here and there (its last one)
       const at = (o, a, b) => (u, v) => o.map((x, d) => x + u * (a[d] - x) + v * (b[d] - x)),
-        L = at(hex[4], [12, 12], hex[5]),
-        R = at([12, 12], hex[2], hex[0]),
-        T = at(hex[3], hex[2], hex[4]); // (its faces as cube draws them)
+        L = at(hex[5], [12, 12], hex[4]),
+        R = at([12, 12], hex[1], hex[3]),
+        T = at(hex[0], hex[1], hex[5]); // (its faces as cube draws them)
       const line = (f, u0, v0, u1, v1) => svgPath(segmentPath(f(u0, v0), f(u1, v1))),
         cell = (u, v, s = 1 / 6) => svgPath(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
-      return `<g transform="matrix(1 0 0 -1 0 24)">${
+      return (
         cube(false) +
         [1 / 3, 2 / 3].map((v) => line(L, 0, v, 1, v)).join('') +
         [
@@ -8102,7 +8095,7 @@ const ICONS = (() => {
         ]
           .map(([u, v]) => cell(u, v))
           .join('')
-      }</g>`;
+      );
     })(),
     cubeFilled: cube(true),
     torus,
@@ -8200,12 +8193,11 @@ const ICONS = (() => {
       svgPath('M12.5 8.6L21 4.8M13 12H21.5M12.5 15.4L21 19.2'),
     cut: svgPath('M3 12A9 9 0 0 1 21 12Z') + svgPath('M2 15.5H22'), // a ball's back half, the cut's line
     glass: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M3 12A9 3.5 0 0 0 21 12A9 3.5 0 0 0 3 12Z'), // a ball, its equator seen through
-    shine: svgPath('M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z') + svgPath('M6.5 9.5A6 6 0 0 1 11 6'), // a ball, a glint on its rim
     viewDefault: svgPath('M12 3L20 7.5V16.5L12 21L4 16.5V7.5Z') + svgPath('M4 7.5L12 12L20 7.5M12 12V21'), // (a cube from its usual corner)
     upright: svgPath('M12 3V17M8 7L12 3L16 7M4 20.5H20'), // (up, over a level line)
     free:
       svgPath('M12 7L16.3 9.5V14.5L12 17L7.7 14.5V9.5Z') +
-      svgPath('M12 7V12M7.7 14.5L12 12L16.3 14.5') + // (a cube turned any way by hand: two arrows round it)
+      svgPath('M12 12V17M7.7 9.5L12 12L16.3 9.5') + // (a cube turned any way by hand: two arrows round it)
       svgPath('M2.5 12.8A9.5 9.5 0 0 1 15.2 3.1') +
       svgPath('M13.9 1.1L15.2 3.1L12.9 3.7') +
       svgPath('M21.5 11.2A9.5 9.5 0 0 1 8.8 20.9') +
@@ -36995,7 +36987,6 @@ const paintLevels = (palette, levelOf) => (out, n) => {
 // gone, by a fixed plane through the middle (see CUT_AXES); the two apart: with both, what is left see-through
 const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 36%…)
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
-const shineOn = () => glassOn() && $('shine').checked && !$('shineRow').hidden; // (Glass's rims a mirror, see shone)
 // Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (Neon), a
 // frosted slab lit from under it (LED), a ceiling's LED panel (Panel), a piece of mosaic (Tessera), a tube along its edge,
@@ -38215,7 +38206,6 @@ struct U {
   extent: f32,  // (the figure's radius: a tile's place towards the viewer, its share of it, see pickF)
   firstBorn: i32,  // (the step a line's first instance is walked over, its next one's the next: see lifeOf)
   glintWhite: f32,  // (Glint: from its tile's own colour, a share of the light, 0, to white added on it, 1: see light)
-  shine: i32,  // (Glass's Shine: its rims a mirror, see shone)
 }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> tileCol: array<u32>;
@@ -38283,10 +38273,10 @@ fn lightShare(sh: vec3f) -> f32 {  // (the share of the light: 9 looks round it,
   } }
   return s / 9.0;
 }
-// Glass's Shine: a face seen edge on a mirror, of a sky pale above and dark below as seen (the screen's up) and the lamp's
+// Glass's rims: a face seen edge on a mirror, of a sky pale above and dark below as seen (the screen's up) and the lamp's
 // glint, as glass is (Fresnel, Schlick's: 4 % face on, all of it edge on), its middle clear; n its normal (the viewer's side)
 fn shone(c: vec3f, a: f32, n: vec3f, p: vec3f) -> vec4f {
-  if (u.glass == 0 || u.shine == 0) { return vec4f(c, a); }
+  if (u.glass == 0) { return vec4f(c, a); }
   let e = normalize(toEye(p)); let f = 0.04 + 0.96 * pow(1.0 - abs(dot(n, e)), 5.0);
   let r = reflect(-e, n);
   let sky = mix(vec3f(0.12, 0.11, 0.1), vec3f(0.75, 0.85, 1.0), dot(r, u.Uu) * 0.5 + 0.5) + pow(max(0.0, dot(r, u.L)), 60.0);
@@ -38575,7 +38565,6 @@ function gpuView(words, k, depth, more = {}) {
   f.set(camera.v, 8);
   f[11] = glint();
   f[121] = Number($('glintM').value); // (glintWhite)
-  i[122] = shineOn() ? 1 : 0;
   f.set(L, 12);
   f[15] = depth / 4;
   f.set(halfway(L), 16);
@@ -42233,9 +42222,6 @@ $('light').addEventListener('change', () => {
   needsFull = true;
 });
 $('glass').addEventListener('change', () => {
-  needsFull = true;
-});
-$('shine').addEventListener('change', () => {
   needsFull = true;
 });
 $('ocean').addEventListener('change', () => {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.532';
+const VERSION = '0.5.533';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14079,6 +14079,7 @@ function cubePits(n, up = false) {
   const mesh = finishMesh(verts, quads, 4, n, up ? (m) => m : out); // (a bump's tiles all face away from the middle)
   mesh.concave = true;
   mesh.floors = Int32Array.from(floors); // face f's floor tile (r, c): floors[f a² + r a + c]
+  mesh.onFloor = new Set(floors); // (a tile on a floor: Patterns there only, see cellPlace)
   mesh.floorSize = a;
   mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor((6 * t) / mesh.n)); // (a face's squares, its pit's or bump's with them, as many a face in turn: AXES' order)
   mesh.solid = cubeSolid();
@@ -32959,6 +32960,8 @@ function cellPlace(t) {
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
   if (!cubeRoom(g)) return null; // (no face a grid of squares: no frame, no pattern laid there, see laidChoices)
+  const S = g.uncut ?? g;
+  if (S.onFloor && !S.onFloor.has(g.uncut ? Math.floor(t / g.per) : t)) return null; // (a carved cube's: its floors' cells only, its frame's, see patternFrame)
   return {
     on: 'cube',
     f: AXES.reduce(

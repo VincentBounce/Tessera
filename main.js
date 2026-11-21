@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.538';
+const VERSION = '0.5.539';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43652,9 +43652,8 @@ function credits(open) {
   showPage($('ruleTuto'));
   $('ruleTuto').dataset.shown = 'credits';
   $('ruleTuto').innerHTML =
-    `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here.</p>` +
+    `<div class="tut-body"><h2>${APP_TITLE} <code>v${VERSION}</code></h2><p>Cellular automata on tilings, surfaces and solids, and walks on the digits of numbers: the work of many, here. <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">GitHub with README</a></p>` +
     CREDITS.map(([title, who]) => `<h3>${title}</h3><p>${who}.</p>`).join('') +
-    `<p><a href="https://github.com/VincentBounce/Tessera#readme" target="_blank" rel="noopener">Its README</a> · <a href="https://github.com/VincentBounce/Tessera" target="_blank" rel="noopener">its code</a></p>` +
     `<h3>Made with 🩷</h3><p>${AUTHOR}</p>` + // (its signature, at the end of what it tells)
     `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table id="urlWords" class="tut-commands"></table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)
     `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.513';
+const VERSION = '0.5.514';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11596,7 +11596,16 @@ function renderModePicker() {
   if (ring) {
     $('ringShapeLabel').textContent = `${inFamily.F.name} shape`;
     $('ringShapeTabs').replaceChildren(
-      choiceTabs(`${ring}Shape`, RING_SHAPES[ring], shapeOn(ring, w), (k) => (ringShape[ring] = k), null),
+      choiceTabs(
+        `${ring}Shape`,
+        RING_SHAPES[ring],
+        shapeOn(ring, w),
+        (k) => {
+          seek(surfaceOf(VARIANTS[w])); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
+          ringShape[ring] = k;
+        },
+        null,
+      ),
     );
   }
   if (inFamily) {
@@ -18140,7 +18149,7 @@ function fillGridSizes(kind, initial = SURFACES[kind].initial) {
   const step = blockSizeStep(kind),
     sizes = sizesOf(kind);
   const sel = $('gridSizeField'),
-    key = `${kind} ${initial} ${lifeTeams} ${surfaceWalkers(kind)} ${step}`,
+    key = `${kind}${Object.keys(RING_SHAPES).map((f) => shapeOn(f))} ${initial} ${lifeTeams} ${surfaceWalkers(kind)} ${step}`, // (its shape with it: another, its cells' nearest)
     [was] = (sel.dataset.kind ?? '').split(' '); // (a torus's sizes: its columns as its colours, see ringColumns; its walkers: the sizes played theirs, see walkersSize)
   if (sel.dataset.kind === key && sel.dataset.picked === String(picked)) return; // (a size picked on another grid: its nearest here)
   const rows = was === kind && sel.dataset.picked === String(picked) ? sel.value : null; // (the same surface, its colours changed: its rows kept, its columns its colours')

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.508';
+const VERSION = '0.5.509';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6479,6 +6479,7 @@ const SHAPE_DEFAULTS = {
   Torus: { inflated: 1, perspective: true },
   'Möbius strip': { inflated: 1, perspective: true },
   'Klein bottle': { inflated: 1 },
+  "Boy's surface": { inflated: 1 },
   'Rhombic dodecahedron': { inflated: 0.5 },
   'Rhombic triacontahedron': { inflated: 0.5 },
 };
@@ -8101,6 +8102,12 @@ const ICONS = (() => {
     })(),
     cubeFilled: cube(true),
     torus,
+    boy: [-90, 30, 150]
+      .map((a) => {
+        const [x, y] = [12 + 4 * Math.cos((a * Math.PI) / 180), 12 + 4 * Math.sin((a * Math.PI) / 180)];
+        return `<circle cx="${hundredths(x)}" cy="${hundredths(y)}" r="6"/>`;
+      })
+      .join(''), // (Boy's surface: its three lobes round its triple point)
     loop: svgPath('M19.5 12A7.5 7.5 0 1 1 16.6 6.1') + svgPath('M17.4 2.6L16.9 6.4L13.1 5.9'), // a circle closing on itself, its arrow at the end
     elementary: wolframFromCell(90, 4)
       .flatMap((r, y) => r.flatMap((c, x) => (c ? [svgPath(`M${1.5 + 3 * x} ${6.5 + 3 * y}h2.6v2.6h-2.6Z`, 'f')] : [])))
@@ -10056,6 +10063,17 @@ const LIFE_GRIDS = [
       where: 'a globe: squares between its parallels and meridians, one cell round each pole',
     },
   ],
+  ...[
+    ['Squares', 'boyCube', 'cube', "a cube's squares"],
+    ['Triangles', 'boyIcosa', 'icosahedron', "an icosahedron's triangles"],
+    ['Hex', 'boyHex', 'hexagon', "a sphere of hexagons' hexagons (and its pentagons)"],
+  ].map(([name, surface, icon, of]) => [
+    `lifeBoy${name}`,
+    'Surfaces',
+    "Boy's surface",
+    icon,
+    { surface, where: `Boy's surface (the projective plane): ${of}, each glued to its opposite` },
+  ]),
 ];
 // A grid of Life's, said once: its variant (base 2: a cell alive or dead), its place in the menu, its icon
 function lifeGrid(w, space, shape, icon, fields) {
@@ -10316,7 +10334,7 @@ const SPACES = {
     ],
     '3D': ['Lattice', 'cubeFilled', 'A 3D lattice, the walk going in space'],
   },
-  SHEETS = ['Torus', 'Möbius strip', 'Klein bottle', 'Globe', 'Rosettes']; // (the round surfaces' shapes, their group in 3D solids, in their order: the sheets, then the balls)
+  SHEETS = ['Torus', 'Möbius strip', 'Klein bottle', "Boy's surface", 'Globe', 'Rosettes']; // (the round surfaces' shapes, their group in 3D solids, in their order: the sheets, then the balls)
 // a tiling's icon: its polygons round a cell's middle, fitted in the 24 × 24 box
 function tilingIcon(kind) {
   const m = TILINGS[kind].polys.length,
@@ -10369,6 +10387,7 @@ const SHAPE_GROUPS = [
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
 const SHAPE_ICONS = {
   'Klein bottle': 'klein',
+  "Boy's surface": 'boy',
   Squares: 'grid',
   Triangles: 'triangle',
   Hexagons: 'hexagon',
@@ -10421,6 +10440,7 @@ const SHAPE_ICONS = {
 for (const [kind, t] of Object.entries(TILINGS)) SHAPE_ICONS[t.name] = `tiling-${kind}`;
 const SHAPE_SHORT = {
   'Klein bottle': 'Klein',
+  "Boy's surface": 'Boy',
   'Möbius strip': 'Möbius',
   'Stella octangula': 'Stella',
   Tetrahedron: 'Tetra',
@@ -10609,6 +10629,17 @@ const FAMILIES = [
       [4, true, 'kites', 'Kites', 'Kites, turned by 30° (rows round the tube)'],
       [2, false, 'tilesHex', 'Hexagons', 'Hexagons'],
       [2, true, 'tilesHexTurned', 'Hexagons', 'Hexagons, turned by 30° (flat-topped, columns round the ring)'],
+    ],
+  },
+  // Boy's surface, a tab a solid it is made from (see BOY_BASES: Life only)
+  {
+    name: "Boy's surface",
+    variants: [['lifeBoySquares'], ['lifeBoyTriangles'], ['lifeBoyHex']],
+    tab: 0,
+    tabs: [
+      [0, false, 'tilesSq', 'Squares', "A cube's squares, each glued to its opposite"],
+      [1, false, 'tilesTri', 'Triangles', "An icosahedron's triangles, each glued to its opposite"],
+      [2, false, 'tilesHex', 'Hexagons', 'A sphere of hexagons (and its 12 pentagons), each glued to its opposite'],
     ],
   },
   // the hull solids cut again (see HULL_CUTS): their own cells, then each cut, a tab each (Life only)
@@ -16853,6 +16884,69 @@ function hexSolidMesh(solid, f) {
   return (meshCache[key] = mesh);
 }
 
+/* ---- 7.4c Boy's surface ------------------------------------------------------------------- */
+/* The projective plane: a sphere whose every point is glued to its opposite. Its grids are a solid's whose centre turns it
+ * onto itself (the cube, the octahedron, the icosahedron, the sphere of hexagons), each tile glued to its opposite and each
+ * corner to its opposite: half its tiles, their neighbours across the glue known by the corners they share, as everywhere
+ * (see finishMesh). In space, Boy's surface (Bryant and Kusner's: a point and its opposite one point, its triple point in
+ * the middle), one-sided, crossing itself. */
+// its surfaces, each on a solid whose centre turns it onto itself
+const BOY_BASES = { boyCube: 'cube', boyIcosa: 'icosa', boyHex: 'hexsphere' };
+// Boy's surface at a point of the unit sphere: its upper half's stereographic w (the lower half by its opposite point: the
+// same), then Bryant and Kusner's g over |g|²
+function boyPoint([x, y, z]) {
+  const s = z < 0 ? -1 : 1,
+    d = 1 + s * z,
+    mul = ([a, b], [c, e]) => [a * c - b * e, a * e + b * c],
+    div = ([a, b], [c, e]) => [(a * c + b * e) / (c * c + e * e), (b * c - a * e) / (c * c + e * e)],
+    w = [(s * x) / d, (s * y) / d],
+    w3 = mul(mul(w, w), w),
+    w4 = mul(w3, w),
+    w6 = mul(w3, w3),
+    den = [w6[0] + Math.sqrt(5) * w3[0] - 1, w6[1] + Math.sqrt(5) * w3[1]],
+    g1 = -1.5 * div(mul(w, [1 - w4[0], -w4[1]]), den)[1],
+    g2 = -1.5 * div(mul(w, [1 + w4[0], w4[1]]), den)[0],
+    g3 = div([1 + w6[0], w6[1]], den)[1] - 0.5,
+    g = g1 * g1 + g2 * g2 + g3 * g3;
+  return [g1 / g, g2 / g, g3 / g];
+}
+// a solid's grid at size f as Boy's surface: each tile kept once with its opposite (the one whose middle's first coordinate
+// not 0 is above 0), each corner one with its opposite, at Boy's point of its direction, the solid's size (its radius); its
+// flat form the half solid (Shape's Flat: the tiles kept where the solid has them, see shapeAt)
+function boyMesh(base, f) {
+  const key = `boy${base}${f}`;
+  if (meshCache[key]) return meshCache[key];
+  const g = SURFACES[base].mesh(f),
+    k = g.sides,
+    scale = SURFACES[base].radius(f),
+    up = (p) => {
+      const i = p.findIndex((v) => Math.abs(v) > 1e-6);
+      return p[i] > 0;
+    },
+    ids = new Map(),
+    verts = [],
+    flat = [];
+  const corner = (v) => {
+    const p = [0, 1, 2].map((d) => g.verts[3 * v + d]),
+      q = up(p) ? p : p.map((x) => -x),
+      key = roundedKey(q);
+    if (!ids.has(key)) {
+      ids.set(key, verts.length / 3);
+      verts.push(...boyPoint(unit(q)).map((x) => x * scale));
+      flat.push(...q);
+    }
+    return ids.get(key);
+  };
+  const tiles = [];
+  for (let t = 0; t < g.n; t++)
+    if (up([0, 1, 2].map((d) => g.cen[3 * t + d])))
+      tiles.push(Array.from({ length: k }, (_, q) => corner(g.poly[k * t + q])));
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, k, f, null), {
+    projective: true,
+    flatVerts: new Float64Array(flat),
+  }));
+}
+
 /* ---- 7.5 Flat ↔ round: the same tiles and neighbours, shown flat or inflated -------------- */
 /* walk.shape = { m, target, corners, cen, nrm, extent, bent } for surfaces that can change shape:
  * polyhedra (each vertex slides from its face towards the circumscribed sphere), the torus
@@ -16906,6 +17000,7 @@ const MORPHABLE = [
   'kitesDartsSphere',
   ...MOBIUS_KINDS,
   ...foldedIn('torus'),
+  ...Object.keys(BOY_BASES),
 ];
 
 // a sheet's tiles' corners by their places on it (uv, its seams open: see shapeAt): each place once (places, u v pairs),
@@ -18147,13 +18242,21 @@ const surfaceMeshMemo = remember('surfaceMeshMemo', weakCache());
 const surfaceCellsMemo = {};
 const surfaceCells = (kind) =>
   (surfaceCellsMemo[kind] ??= (() => {
-    const own = Object.keys(TURNED).find((k) => TURNED[k] === kind) ?? kind,
+    const own = BOY_BASES[kind] ?? Object.keys(TURNED).find((k) => TURNED[k] === kind) ?? kind, // (Boy's surface: its solid's cells)
       w = Object.keys(VARIANTS).find((v) => VARIANTS[v].surface === own && familyOf(v)),
       tab = w && tilingNameOf(w),
       flat =
         tab && Object.keys(NAV).find((v) => NAV[v][0] === 'Life' && NAV[v][1].startsWith('2D') && NAV[v][2] === tab);
     return flat ? VARIANTS[flat].plane : 'square';
   })());
+// Boy's surface on each solid whose centre turns it onto itself (see boyMesh): half its tiles, at its sizes
+for (const [kind, base] of Object.entries(BOY_BASES))
+  SURFACES[kind] = {
+    mesh: (f) => boyMesh(base, f),
+    radius: SURFACES[base].radius,
+    tiles: (f) => SURFACES[base].tiles(f) / 2,
+    unit: SURFACES[base].unit,
+  };
 for (const [kind, S] of Object.entries(SURFACES)) {
   const make = S.mesh;
   S.mesh = (s) => {
@@ -31938,6 +32041,8 @@ const FIGURE_PARTS = {
   },
   // a rosette sphere: its lunes, or its halves' (see rosetteParts)
   rosette: { parts: (K) => rosetteParts(walk.surface, K), solo: true },
+  // Boy's surface: one colour all over (no colours yet: its parts alike to find, see teamsFit), no patch (no frame)
+  projective: { parts: () => new Int32Array(walk.surface.n) },
   // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: its first, Opposite: both), the
   // others' cells each to the nearest colour's face's middle, as near two none's
   hull: {
@@ -31968,6 +32073,8 @@ const FIGURE_PARTS = {
     },
   },
 };
+// a surface with no frame yet to lay a patch or a pattern on (see patternPlace): a globe, Boy's surface
+const frameless = (g) => !!(g?.globe || g?.projective);
 // the figure built, its row of FIGURE_PARTS (K colours: the plane's walled grid's slices or blocks by them)
 const figureOf = (K) =>
   walk.plane
@@ -31984,9 +32091,11 @@ const figureOf = (K) =>
           ? 'globe'
           : walk.surface.rosette
             ? 'rosette'
-            : hullColours(VARIANTS[walk.variant].surface, K)
-              ? 'hull'
-              : 'solid';
+            : walk.surface.projective
+              ? 'projective'
+              : hullColours(VARIANTS[walk.variant].surface, K)
+                ? 'hull'
+                : 'solid';
 // each colour's part (r = 0: its cells, by its figure's row, see FIGURE_PARTS; else a patch of radius r round its centre; one
 // colour, the whole figure or a patch at its middle); Mixed's, one colour's place dealt out at random; a reversible sheet's
 // one colour, Trio's second, in view (a torus's middle square, see lifeParts, patternFrame)
@@ -32009,7 +32118,7 @@ function partPlaces(r, K, opposite, mixed) {
     for (let t = 0; t < n; t++) parts[own ? own[t] : 0]?.push(t);
     return parts;
   }
-  if (row === FIGURE_PARTS.globe) return Array.from({ length: K }, () => []); // (no patch: no frame to lay one on)
+  if (frameless(walk.surface)) return Array.from({ length: K }, () => []); // (no patch: no frame to lay one on)
   if (row.centre && K > 1) return Array.from({ length: K }, (_, i) => lifePatch(r, row.centre(i, K, opposite)));
   if (K === 1) return [lifePatch(r)];
   // (a rule whose colours meet only when they start side by side: on the plane's blocks, patches touching round the middle)
@@ -32185,7 +32294,7 @@ function huntFits() {
   hunt.fits = Object.fromEntries(
     Object.keys(HUNT_ZONES).map((zone) => {
       const r = zoneRadius(zone);
-      if (walk.surface?.globe && zone !== 'full' && zone !== 'numbers') return [zone, false]; // (a globe: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
+      if (frameless(walk.surface) && zone !== 'full' && zone !== 'numbers') return [zone, false]; // (a globe, Boy's surface: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
       if (famousZone(zone))
         return [
           zone,
@@ -39128,7 +39237,7 @@ function battlePalette(D) {
 // a surface's tiles seen from both sides: a cut, a Klein bottle (one-sided: its tiles' face inwards in its neck and
 // handle); else their back faces not drawn, facesHidden's (which way its tiles turn: see shapeSign); one rule, the tiles',
 // the picking's and the halo's passes (a Möbius strip's two faces each a cell, the one seen alone, its halo too)
-const bothSides = (g) => cutOn() || !!g.klein;
+const bothSides = (g) => cutOn() || !!g.klein || !!g.projective; // (one-sided: a Klein bottle, Boy's surface)
 const facesHidden = (g) => (shapeSign(g) < 0 ? 'front' : 'back');
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();

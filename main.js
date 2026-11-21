@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.526';
+const VERSION = '0.5.527';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24245,7 +24245,7 @@ const symmetryOf = (kind, W = walk.plane?.W) =>
   plane.sym !== 'none' && W && symmetriesHere(kind, W).includes(plane.sym) ? plane.sym : 'none'; // (none picked: none, the grid's own not looked for)
 // a cell and its copies under the grid's symmetry (index y × row + x)
 const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).map((f) => f(t));
-// whether a solid's start can be copied through its centre (Face opposite, see START_PLACES): in colours, its parts two opposite pieces
+// whether a solid's start can be copied through its centre (Doubled, see START_PLACES): in colours, its parts two opposite pieces
 // a colour (see colouring's mirror; a hull solid's pairs); one colour, the solid its own copy so
 const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
@@ -24254,7 +24254,7 @@ const oppositeAllowed = (surface, K) =>
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
       ));
-// the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Face opposite, see START_PLACES), else none
+// the start's symmetry: the plane's (see symmetryOf), a solid's through its centre (Doubled, see START_PLACES), else none
 const startSymmetry = () => (walk.plane ? symmetryOf(walk.plane.kind) : startOpposite() ? 'opposite' : 'none');
 // a cell and its copies by the start's symmetry: the plane's (see cellCopies), a solid's cell and the one across its centre
 const startCopies = (t) =>
@@ -25776,7 +25776,7 @@ const lazyList = (n, f) =>
 // iconLay) and their places on its frame (see patternFrame): its pictures' sizes only scale them; the wall's cells (a set)
 let iconCellsMemo = null;
 const iconCellsOf = (K) => {
-  const key = `${gridKey()}|${K}|${placementKey()}`; // (its parts' place with it: Face opposite's, see START_PLACES)
+  const key = `${gridKey()}|${K}|${placementKey()}`; // (its parts' place with it: Doubled's, see START_PLACES)
   if (iconCellsMemo?.key === key) return iconCellsMemo;
   const part = new Int32Array(walk.life.seed.length).fill(-1);
   huntParts(0, K, undefined, false).forEach((p, k) => {
@@ -27760,7 +27760,7 @@ const duelAcross = () => lifeTeams === 2 && duelCut === 1 && duelCutsOf(tabVaria
 // Face): one key for every memo of them (partSymmetries, planeSlices, patternChoices, middleCells, iconChoices), never one by
 // hand each (iconChoices' had none of them till v0.5.428); the choices themselves, never what they make (Symmetry's allowed
 // asks for these very parts)
-const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${startPlace}`;
+const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${placeNow()}`;
 // a colour's pieces, one choice of two (PIECES, the link's teamsApart: its place): in one piece, or in several as far apart
 // as can be (a solid's faces, see colouring's apart; a flat torus's blocks, see torusLattice), where its figure has both (see
 // piecesOf); a colour's pieces through the centre are Symmetry's Opposite
@@ -27771,11 +27771,10 @@ const PIECES = [
 const piecesApart = () => teamsApart === 1 && piecesOf(tabVariant());
 // whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
 // apart has more pieces than together
-const piecesOf = (w, K = lifeTeams) => {
+const piecesOf = (w, K = lifeTeams, sym = startOpposite()) => {
   const m = VARIANTS[w];
   if (!m.life || K < 2) return false;
   if (m.plane) return planeTorus(m.plane);
-  const sym = startOpposite();
   return (
     SOLIDS.includes(m.surface) &&
     (colouring(m.surface, K, sym, true)?.pieces ?? 0) > (colouring(m.surface, K, sym, false)?.pieces ?? 0)
@@ -31321,40 +31320,46 @@ const seedThatFits = (r) => {
 // tips and hollows, the Dodecahedron's 5: a face cut). Realm before v0.5.425, its plane's parts apart (two cells between
 // colours) gone with it
 // A start's place on a solid, every start's (TEAMS.md: a start laid on a part, and where it has several pieces on each), one
-// choice of three (the link's startPlace: its place): each colour's start on its own face or spot, the spots alike (see
-// fairSpots; Wild's soup a face, see colourFaces); on it and copied on the opposite one through the solid's centre (its
-// parts two opposite pieces, see oppositeAllowed: its copies' words third); or over its whole part (a start that fills it:
-// Wild's soup, Formula's digits)
+// choice of four (the link's startPlace: its place), the spots alike (see fairSpots; Wild's soup a face, see colourFaces):
+// each colour's start on its own face, the faces side by side; face to face, each across the centre from another colour's;
+// doubled, copied on the opposite face through the solid's centre (its parts two opposite pieces, see oppositeAllowed: its
+// copies' words third); or over its whole part (a start that fills it: Wild's soup, Formula's digits). The one in effect the
+// one picked where allowed, else the first allowed (see placeNow)
 const START_PLACES = [
-  ['Face together', "Each colour's start on its own face of the solid, the faces alike"],
+  ['Side by side', "Each colour's start on its own face, the colours' faces side by side, alike"],
+  ['Face to face', "Each colour's start on its own face, each face across the centre from another colour's"],
   [
-    'Face opposite',
-    "Each colour's start on its face, copied on the opposite face through the solid's centre",
+    'Doubled',
+    "Each colour's start on its face and copied on the opposite face, through the solid's centre",
     'through the centre',
   ],
-  ['Part', "Each colour's start over its whole part: Wild's soup, Formula's digits"],
+  ['Whole part', "Each colour's start over its whole part: Wild's soup, Formula's digits"],
 ];
 let startPlace = 0;
-const facesHere = () => !!walk.life && !!colourFaces(VARIANTS[walk.variant].surface, lifeParts()); // (each colour a face of the solid shown)
 const fillsPart = (start, zone) => start === 'random' && (zone === 'full' || zone === 'numbers'); // (a start over each colour's part)
-const soupOnFaces = () => hunt.zone === 'full' && startPlace === 0 && facesHere();
-const startOpposite = () =>
-  startPlace === 1 && !!walk.surface && oppositeAllowed(VARIANTS[walk.variant].surface, lifeParts());
+const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startPlace.whyNot(s, k)) ?? 0,
+  placeNow = () => placeIn(setupNow()),
+  soupOnFaces = () => hunt.zone === 'full' && placeNow() <= 1, // (Wild's soup on each colour's face)
+  startOpposite = () => !!walk.surface && placeNow() === 2;
+const spotsOf = (col) => (placeNow() === 1 ? col?.facing : col?.patch); // (a colouring's spots as the start's place lays them)
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
-// on its least mesh: the faces whose middles are its spots, alike (see fairSpots: a hull solid's of its colours' faces, another's
-// an index in FACE_MIDDLES, see cellFaces); null where none alike, a spot off a face's middle, in Solo, off a solid
-function colourFaces(surface, K, apart = piecesApart()) {
+// on its least mesh: the faces whose middles are its spots, alike, side by side or face to face (see fairSpots: a hull
+// solid's of its colours' faces, another's an index in FACE_MIDDLES, see cellFaces); null where none alike, a spot off a
+// face's middle, in Solo, off a solid
+function colourFaces(surface, K, apart = piecesApart(), facing = placeNow() === 1) {
   if (K < 2 || !SOLIDS.includes(surface)) return null;
   if (hullSolidOf(surface)) {
     const hull = hullColours(surface, K),
       g = leastMesh(surface),
       colour = hull?.mids.map((_, q) => hull.groups.findIndex((gr) => gr.includes(q)));
-    return hull ? fairSpots(g, surfaceSymmetries(g), hull.mids.map(unit), colour, K) : null; // (its faces alike, as a solid's spots)
+    return hull ? fairSpots(g, surfaceSymmetries(g), hull.mids.map(unit), colour, K, facing) : null; // (its faces alike, as a solid's spots)
   }
   const mids = FACE_MIDDLES[surface]?.() ?? [],
     col = colouring(surface, K, false, apart);
-  const faces = col?.faces ? col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9)) : [];
-  return faces.length && !faces.includes(-1) ? faces : null;
+  const faces = (facing ? col?.facing : col?.patch)?.map((i) =>
+    mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9),
+  );
+  return faces && !faces.includes(-1) ? faces : null;
 }
 // each colour's cells on its face (see colourFaces), on the solid shown
 function faceParts(K) {
@@ -31391,27 +31396,34 @@ const PART_CHOICES = {
   startPlace: {
     list: START_PLACES,
     pick: (k) => (startPlace = k),
-    now: () => (startOpposite() ? 1 : fillsPart(plane.start, hunt.zone) && !soupOnFaces() ? 2 : 0), // (the one laid: Part where the faces are none, Formula's always)
+    now: () => placeNow(), // (the one laid: the one picked where allowed, else the first allowed)
     then: () => {
       lifeReseed();
       renderHunt();
       syncLink();
     },
-    whyNot: (s, k) =>
-      !SOLIDS.includes(VARIANTS[s.w].surface)
-        ? 'Only on a solid.'
-        : k === 0 && s.start === 'random' && s.zone === 'numbers'
-          ? "Not with Formula: its digits fill each colour's part."
-          : k === 0 &&
-              s.start === 'random' &&
-              s.zone === 'full' &&
-              !colourFaces(VARIANTS[s.w].surface, setupParts(s), s.teamsApart === 1 && piecesOf(s.w, s.lifeTeams))
-            ? "Only where each colour's part lies round the middle of a face."
-            : k === 1 && !oppositeAllowed(VARIANTS[s.w].surface, setupParts(s))
-              ? 'Only on a solid whose colours can each lie in two opposite pieces.'
-              : k === 2 && !fillsPart(s.start, s.zone)
-                ? "Only with Wild or Formula: a start that fills each colour's part."
-                : '',
+    whyNot: (s, k) => {
+      const surface = VARIANTS[s.w].surface,
+        K = setupParts(s),
+        apart = s.teamsApart === 1 && piecesOf(s.w, s.lifeTeams, false),
+        soup = s.start === 'random' && s.zone === 'full',
+        hull = hullSolidOf(surface);
+      if (!SOLIDS.includes(surface)) return 'Only on a solid.';
+      if (k <= 1 && s.start === 'random' && s.zone === 'numbers')
+        return "Not with Formula: its digits fill each colour's part.";
+      if (k === 0 && soup && !colourFaces(surface, K, apart, false))
+        return "Only where the colours' faces can lie side by side, alike.";
+      if (
+        k === 1 &&
+        (K % 2 || !(soup || hull ? colourFaces(surface, K, apart, true) : colouring(surface, K, false, apart)?.facing))
+      )
+        return 'Only with an even count of colours whose faces can stand across the centre from one another, alike.';
+      if (k === 2 && !oppositeAllowed(surface, K))
+        return 'Only on a solid whose colours can each lie in two opposite pieces.';
+      if (k === 3 && !fillsPart(s.start, s.zone))
+        return "Only with Wild or Formula: a start that fills each colour's part.";
+      return '';
+    },
   },
 };
 // out of the menu's graph (see OFF_GRAPH): each tab asks every solid's colourings its search crosses, measured on their
@@ -31505,10 +31517,11 @@ for (const [k, of] of Object.entries(FACE_BASE)) FACE_MIDDLES[k] = FACE_MIDDLES[
 // inversion (Symmetry's Opposite). Apart (Teams' Apart, see piecesApart): the most pieces instead, none through the centre
 // but on Opposite (the dodecahedron's 6 colours, two faces apart each). Null: none
 // a colouring's spots, one item a colour, alike: an item's images by a group T of K of the colours' own group G, each of
-// another colour (T carries spot onto spot, colour onto colour: Face's faces, Seed's patches, see TEAMS.md), of those the
-// most towards the first view (CAMERA_START: the cube's 3 a corner seen); null where no T does (the rhombic dodecahedron's
-// 6: any face of each pair, 3 at most alike)
-function fairSpots(g, G, items, colour, K) {
+// another colour (T carries spot onto spot, colour onto colour: a start's faces, Seed's patches, see TEAMS.md), side by side
+// (no two across the centre) or face to face (each across the centre from another: facing), of those the most towards the
+// first view (CAMERA_START: the cube's 3 a corner seen); null where no T does (the rhombic dodecahedron's 6: any face of each
+// pair, 3 at most alike)
+function fairSpots(g, G, items, colour, K, facing = false) {
   const key = (M) => roundedKey(M.flat()),
     inG = new Set(G.map(key)),
     at = (q) => items.findIndex((x) => dot3(x, q) > 1 - 1e-9),
@@ -31517,9 +31530,11 @@ function fairSpots(g, G, items, colour, K) {
   for (const T of rotationGroups(g, K, Infinity, null, true))
     if (T.every((M) => inG.has(key(M))))
       for (let i = 0; i < items.length; i++) {
-        const orbit = T.map((M) => at(matTimesPoint(M, items[i])));
+        const orbit = T.map((M) => at(matTimesPoint(M, items[i]))),
+          across = (j) => orbit.some((m) => dot3(items[m], items[j]) < -1 + 1e-9);
         if (orbit.every((j) => j >= 0 && colour[j] >= 0) && new Set(orbit.map((j) => colour[j])).size === K)
-          if (!best || seen(orbit) > seen(best) + 1e-9) best = orbit;
+          if ((facing ? orbit.every(across) : !orbit.some(across)) && (!best || seen(orbit) > seen(best) + 1e-9))
+            best = orbit;
       }
   if (!best) return null;
   const spots = [];
@@ -31596,13 +31611,14 @@ function colouring(surface, K, opposite = false, apart = piecesApart()) {
     }
   }
   if (!best) return (colouringMemo[id] = null);
-  const patch = fairSpots(g, best.G, best.items, best.colour, K);
+  const patch = fairSpots(g, best.G, best.items, best.colour, K),
+    facing = fairSpots(g, best.G, best.items, best.colour, K, true);
   return (colouringMemo[id] = {
     items: best.items,
     colour: best.colour,
     pieces: apart ? -best.score[4] : best.score[3], // (its colours' pieces on the least mesh, see piecesOf)
     patch,
-    faces: !!patch?.every((i) => mids.some((m) => dot3(unit(m), best.items[i]) > 1 - 1e-9)),
+    facing, // (its spots face to face, see fairSpots: patch side by side)
   });
 }
 // whether list a comes before list b, by its first number that differs
@@ -31658,8 +31674,8 @@ function spotColours(col, g) {
 }
 // the patches' spots: the colours' patch items
 const patchSpots = (surface, K) => {
-  const c = colouring(surface, K, startOpposite()); // (Face opposite's: its parts' colouring, see huntParts)
-  return c.patch?.map((i) => c.items[i]) ?? [];
+  const c = colouring(surface, K, startOpposite()); // (Doubled's: its parts' colouring, see huntParts)
+  return spotsOf(c)?.map((i) => c.items[i]) ?? [];
 };
 // Each colour's part of the grid: radius r, a patch round each spot; else (r = 0) the whole grid,
 // each cell to its nearest spot. Spots: on the plane, the middles of a lattice of k blocks (or, for
@@ -32152,7 +32168,7 @@ const FIGURE_PARTS = {
     parts: (K, opposite) => spotColours(colouring(VARIANTS[walk.variant].surface, K, opposite), walk.surface),
     centre: (i, K, opposite) => {
       const col = colouring(VARIANTS[walk.variant].surface, K, opposite);
-      return col.patch ? centreCells(col.items[col.patch[i]]) : []; // (no spots alike: no patch, see fairSpots)
+      return spotsOf(col) ? centreCells(col.items[spotsOf(col)[i]]) : []; // (no spots alike: no patch, see fairSpots)
     },
   },
 };

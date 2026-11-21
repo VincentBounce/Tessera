@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.514';
+const VERSION = '0.5.515';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41231,7 +41231,15 @@ function updateStats() {
   // Jump to start and Step back greyed at the start (a reversible one's, as far back as it goes), Step at the end (a loop's:
   // round it on)
   const atStart = (reversibleRun() ? stepShown === 0 : stepShown <= runStart()) ? 'Already at the start.' : '';
-  setTile($('restart'), { greyed: atStart }); // (a reversible one's start: gen 0, its past before it)
+  setTile($('restart'), { greyed: atStart, turn: away() < 0 ? 180 : 0 }); // (a reversible one's start: gen 0, its past before it)
+  // Begin and ±10k each on its way's side: in a reversible one's past, Begin on the right (forth to 0), −10k on the left
+  const row = $('restart').parentElement,
+    [first, last] = away() < 0 ? ['jump10k', 'restart'] : ['restart', 'jump10k'];
+  if (row.firstElementChild !== $(first)) row.prepend($(first));
+  if (row.lastElementChild !== $(last)) row.append($(last));
+  $('jump10k').textContent = away() < 0 ? '−10k' : '+10k';
+  $('jump10k').title =
+    `10,000 generations ${away() < 0 ? 'further into the past' : 'ahead'} (E, while its end is not known)`;
   // (a Game of Life's step back: round its loop forth, at once; else played again from its start, greyed when too long)
   const tooFar = !lifeWithin(stepShown - 1);
   const backAtStart = stepShown <= runStart() && !loopBack() ? 'Already at the start.' : '';
@@ -41741,7 +41749,10 @@ $('step').addEventListener('click', () => {
   advanceTo(stepShown + 1);
 });
 $('reverse').addEventListener('click', () => playerButton('reverse').go());
-$('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000));
+$('jump10k').addEventListener('click', () => advanceTo(stepShown + 10000 * away()));
+// the way away from gen 0: forth, but in a reversible one's past (below 0), back; Begin goes the other way (to 0), ±10k this
+// one (see updateStats: each on its way's side)
+const away = () => (reversibleRun() && stepShown < 0 ? -1 : 1);
 // Begin (⏮): back to its start (0), then to its first (a reversible one's past's furthest); its loop and its ordered moments
 // by their links instead (see loopLink, stepLink). Its start, written at once (restart), not played to
 const runStops = () => [...new Set([runStart(), 0, seekFar()])].filter(Number.isFinite).sort((x, y) => x - y);
@@ -41755,7 +41766,7 @@ function goStop(dir) {
   if (g === 0) restart();
   else if (g !== undefined) advanceTo(g);
 }
-$('restart').addEventListener('click', () => goStop(-1));
+$('restart').addEventListener('click', () => goStop(-away()));
 $('end').addEventListener('click', () => goStop(1));
 // the slider's end: a walk's last step; a run's (a Game of Life's, a reversible one's), its loop's last once known, else the
 // furthest played (its record's: Begin keeps it, see lifeReset)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.563';
+const VERSION = '0.5.564';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15661,32 +15661,24 @@ function torusCairoMesh(nv, nu) {
 // when unrolled (m < 1) its seams open, so shapeAt places corners per tile, not per vertex
 function finishTorus(verts, tiles, sides, nu, nv, uv, mids = null, placed = false) {
   // mids: the tiles' own middles (their corners repeated: not their mean); placed: its tiles already a sheet's (placeCells')
-  // outwards = away from the line running through the middle of the tube: the ring's circle, a knot's curve (its nearest
-  // point of 512 along it: a hair apart, its tube far thicker)
-  const knot = TORUS_SHAPES[shapeOn('torus')][2],
-    axis =
-      knot.p && Array.from({ length: 512 }, (_, i) => knotPoint(knot, ((i + 0.5) / 512 - 0.5) * 2 * Math.PI, 0, 0));
-  const fromTubeAxis = ([x, y, z]) => {
-    if (axis) {
-      const near = axis.reduce((b, a) =>
-        Math.hypot(a[0] - x, a[1] - y, a[2] - z) < Math.hypot(b[0] - x, b[1] - y, b[2] - z) ? a : b,
-      );
-      return [x - near[0], y - near[1], z - near[2]];
-    }
-    const l = Math.hypot(x, y) || 1;
-    return [x - x / l, y - y / l, z];
-  };
-  const mesh = finishMesh(verts, tiles, sides, nv, fromTubeAxis);
-  // a tile its corners turned the other way (to face outwards, see finishMesh): its sheet corners as well
+  // outwards by construction, whatever its shape (a ring, a knot): a tile turning clockwise on the sheet faces out once
+  // rolled up (each of the ring's, the trefoil's and the cinquefoil's 178,000 tiles, every tiling, measured v0.5.564); one
+  // turning the other way listed backwards, its sheet corners with it (its first corner kept, as finishMesh turns one)
   tiles.forEach((c, t) => {
-    if (c.some((v, q) => v !== mesh.poly[sides * t + q]))
-      for (let q = 1; 2 * q < sides; q++)
-        for (const d of [0, 1]) {
-          const a = 2 * (sides * t + q) + d,
-            b = 2 * (sides * t + sides - q) + d;
-          [uv[a], uv[b]] = [uv[b], uv[a]];
-        }
+    const o = 2 * sides * t;
+    let area = 0;
+    for (let q = 0; q < sides; q++) {
+      const r = (q + 1) % sides;
+      area += uv[o + 2 * q] * uv[o + 2 * r + 1] - uv[o + 2 * r] * uv[o + 2 * q + 1];
+    }
+    if (area <= 0) return;
+    for (let q = 1; 2 * q < sides; q++) {
+      [c[q], c[sides - q]] = [c[sides - q], c[q]];
+      for (const d of [0, 1])
+        [uv[o + 2 * q + d], uv[o + 2 * (sides - q) + d]] = [uv[o + 2 * (sides - q) + d], uv[o + 2 * q + d]];
+    }
   });
+  const mesh = finishMesh(verts, tiles, sides, nv, null);
   // on the sheet, each tile on the side of a seam its middle is on (a triangle across the end, its middle past
   // it, drawn at the start once unrolled, with the tiles it belongs with)
   if (!placed)

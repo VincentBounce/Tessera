@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.547">
+  <link rel="stylesheet" href="style.css?v=0.5.548">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -115,8 +115,8 @@
             <div id="brushTurns" class="nav-shapes"></div>  <!-- the brush's turn and Mirror (see drawRow) -->
             <div id="drawHistoryTools" class="nav-shapes"></div>  <!-- Undo and Redo: the drawing's history (see drawHistory) -->
             <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
-            <div id="pngTools" class="nav-shapes"></div><input id="pngFile" type="file" accept="image/*" hidden>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
-            <button id="importCells" type="button" class="wide on-list" data-icon="import" title="The generation shown as the cells drawn: away from gen 0, the one there; at gen 0, the one before Draw">Import last state</button>  <!-- the generation shown, or the one before Draw (see renderDrawTools) -->
+            <div id="pngTools" class="nav-shapes"></div>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
+            <button id="drawFromCurrent" type="button" class="wide on-list" data-icon="import" title="The generation shown as the cells drawn: away from gen 0, the one there; at gen 0, the one before Draw">Draw from current state</button><input id="pngFile" type="file" accept="image/*" hidden>  <!-- the generation shown, or the one before Draw (see renderDrawTools) -->
           </div>
           <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
         </div>
@@ -343,11 +343,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.547"></script>
-  <script src="punks.js?v=0.5.547"></script>
-  <script src="loops.js?v=0.5.547"></script>
-  <script src="emoji.js?v=0.5.547"></script>
-  <script src="debug.js?v=0.5.547"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.547"></script>
+  <script src="pixelarticons.js?v=0.5.548"></script>
+  <script src="punks.js?v=0.5.548"></script>
+  <script src="loops.js?v=0.5.548"></script>
+  <script src="emoji.js?v=0.5.548"></script>
+  <script src="debug.js?v=0.5.548"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.548"></script>
 </body>
 </html>

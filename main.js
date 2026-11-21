@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.547';
+const VERSION = '0.5.548';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23171,7 +23171,7 @@ const plane = {
 const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 // the drawing's history: the cells drawn before each edit (Draw picked: the generation shown then, its first; a click, Clear,
-// Import, Open PNG), Undo's, and those undone, Redo's
+// Draw from current state, Open PNG), Undo's, and those undone, Redo's
 // (each as a link writes them, see populationRle: a few bytes, a soup imported too); a start of another kind forgets it
 let drawHistory = { past: [], future: [] };
 const rememberDrawing = () => {
@@ -26878,8 +26878,8 @@ function renderDrawTools() {
   b.innerHTML = `${icon(pic)}${words}`;
   b.title = tip;
   setTile(b, { greyed: !away && !population.size ? 'No cell is drawn.' : '' });
-  // Import: the generation shown (away from gen 0), else the one before Draw
-  setTile($('importCells'), {
+  // Draw from current state: the generation shown (away from gen 0), else the one before Draw
+  setTile($('drawFromCurrent'), {
     greyed: !away && !drawHistory.past.length ? 'No generation was shown before Draw.' : '',
   });
 }
@@ -42066,7 +42066,7 @@ $('startCells').addEventListener('click', () => {
   population = new Map();
   lifeReseed(); // (the plane's or a surface's)
 });
-$('importCells').addEventListener('click', () => {
+$('drawFromCurrent').addEventListener('click', () => {
   const cells = drawAway() ? cellsShown() : populationOf(drawHistory.past[0]); // (see renderDrawTools)
   rememberDrawing();
   population = cells;
@@ -42248,7 +42248,7 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
     if (plane.start === b.dataset.start) return;
     forgetDrawing();
     if (b.dataset.start === 'draw' && walk.life) {
-      population = cellsShown(); // (the generation in view, its first edit's: Undo or Import brings it back)
+      population = cellsShown(); // (the generation in view, its first edit's: Undo or Draw from current state brings it back)
       rememberDrawing();
       population = new Map(); // (a blank page to draw on)
     }

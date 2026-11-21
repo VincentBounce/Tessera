@@ -868,8 +868,15 @@ h4 {
   height: var(--button-height);
   flex-direction: row;
   justify-content: center;
-  padding: 6px 2px;
-} /* tabs of words only (the Number's, Symmetry's): each its share, as tiles, whatever its word, a button high (among tiles too) */
+  align-items: center;
+  padding: 2px;
+  line-height: 1.15;
+  & span {
+    white-space: normal;
+    text-align: center;
+  }
+} /* tabs of words only (the Number's, Symmetry's): each its share, as tiles, whatever its word, a button high (among tiles
+too); a long word on two lines in it (Face together), the one-line ones centred as before */
 .tile-group.icon-tabs {
   --tiles-per-row: 6;
   & > button {

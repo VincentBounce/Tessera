@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.544';
+const VERSION = '0.5.545';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22592,6 +22592,7 @@ function lifeReseed() {
   L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts(), L.C));
   startColours(L.seed);
   setLifeSeed(L.seed.slice(), null);
+  renderPlaneRow(); // (its start's tools, as the plane's: Clear's and Import's Undo)
 }
 // A start as the Start says, once the grid is built: in Hunt, a soup's colours each in its part of the
 // grid (see huntParts)
@@ -23168,7 +23169,8 @@ const plane = {
 // view: View on, a click draws nothing (at first: a click draws once a brush is picked; see drawsHere), its brush kept
 const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
-let cleared = null; // the cells Clear took away, back with Undo until something else is drawn or started
+let undoCells = null; // the cells Clear or Import replaced ({ by: 'clear' or 'import', cells }), back with its Undo until something else is drawn or started
+let stateBeforeDraw = new Map(); // the generation shown as Draw was picked (its cells, a drawing's: see cellsShown), what Import lays
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,
 // rules, name, RLE (the plane's rows: two triangles or pentagons a square, its first square an even one
 // on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]; a disc's (the grids that
@@ -26852,12 +26854,22 @@ function renderDrawTools() {
   const b = $('startCells'),
     [pic, words, tip] = away
       ? ['start', 'Go to gen 0 to draw', "The cells drawn are its start's (gen 0): there, to see them as they are"]
-      : cleared
+      : undoCells?.by === 'clear'
         ? ['undo', 'Undo clear', 'The cells cleared back']
         : ['trash', 'Clear', 'Clears the cells drawn (Undo clear then brings them back)'];
   b.innerHTML = `${icon(pic)}${words}`;
   b.title = tip;
-  setTile(b, { greyed: !away && !cleared && !population.size ? 'No cell is drawn.' : '' });
+  setTile(b, { greyed: !away && undoCells?.by !== 'clear' && !population.size ? 'No cell is drawn.' : '' });
+  // Import: the generation shown (away from gen 0), else the one before Draw; then Undo import, Import again
+  const i = $('importCells'),
+    undoImport = !away && undoCells?.by === 'import';
+  i.innerHTML = `${icon(undoImport ? 'undo' : 'import')}${undoImport ? 'Undo import' : 'Import last state'}`;
+  i.title = undoImport
+    ? 'The cells drawn before the import back'
+    : away
+      ? 'The generation shown as the cells drawn (gen 0)'
+      : 'The generation shown before Draw as the cells drawn';
+  setTile(i, { greyed: !away && !undoImport && !stateBeforeDraw.size ? 'No generation was shown before Draw.' : '' });
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -34751,10 +34763,11 @@ function lifePatch(r, centre = centreCells()) {
 /* ---- 9.3 Loading a start ------------------------------------------------------------------ */
 // Replace the starting pattern of the current Life run and go back to generation 0. how: where it
 // comes from, for the description — { radius, cells } (a zone filled with the number's first
-// digits), 'hunt', 'duel' or 'saved' (a link or a saved setup). The link keeps the cells.
+// digits), 'hunt', 'duel' or 'saved' (a link or a saved setup); null, the Start's own again (a surface's, see lifeReseed).
+// The link keeps the cells.
 function setLifeSeed(seed, how) {
   const L = walk.life;
-  cleared = null; // another start: no Undo
+  if (how) undoCells = null; // another start: no Undo (the Start's own again, Clear's or Import's: its Undo kept, as the plane's)
   L.seed.set(seed);
   const picked = seed.pick && famousZone(hunt.zone); // (a hunt's Famous or Anywhere start: its patterns, its link's)
   if (picked) plane.picks = seed.pick.map((c, i) => choiceWord(patternChoices(hunt.zone === 'centred')[i], c));
@@ -42037,8 +42050,17 @@ $('startCells').addEventListener('click', () => {
     seekTo(0);
     return;
   }
-  [population, cleared] = cleared ? [cleared, null] : [new Map(), population];
+  [population, undoCells] =
+    undoCells?.by === 'clear' ? [undoCells.cells, null] : [new Map(), { by: 'clear', cells: population }];
   lifeReseed(); // (the plane's or a surface's)
+});
+$('importCells').addEventListener('click', () => {
+  // (see renderDrawTools: the generation shown, or the one before Draw; Undo import)
+  [population, undoCells] =
+    !drawAway() && undoCells?.by === 'import'
+      ? [undoCells.cells, null]
+      : [drawAway() ? cellsShown() : stateBeforeDraw, { by: 'import', cells: population }];
+  lifeReseed();
 });
 $('colourMode').addEventListener('change', () => {
   needsFull = true;
@@ -42215,23 +42237,26 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
   b.addEventListener('click', () => {
     if (plane.start === b.dataset.start) return;
     if (b.dataset.start === 'draw' && walk.life) {
-      // (the generation in view, to draw on: Clear for an empty one)
-      // (a block rule's: the one at its first phase nearest it towards its start, where its cells are as shown and go on as a
-      // start's: one of another phase, or shown negative, would play on as another run, its past not this one's; in its past,
-      // forth, its far end no further)
-      const L = walk.life,
-        off = L.margolus
-          ? stepShown < 0
-            ? -mod(-stepShown, L.margolus.turns.length)
-            : mod(stepShown, L.margolus.turns.length)
-          : 0;
-      if (off) seekTo(stepShown - off);
-      population = new Map([...L.alive].flatMap((c, t) => (c ? [[populationKey(t), L.margolus ? 1 : c]] : [])));
+      stateBeforeDraw = cellsShown(); // (the generation in view, for Import: a blank page to draw on)
+      population = new Map();
     }
     plane.start = b.dataset.start;
-    cleared = null;
+    undoCells = null;
     compute();
   });
+}
+// the generation shown as a drawing's cells (see population); a block rule's: the one at its first phase nearest it towards its
+// start, where its cells are as shown and go on as a start's (one of another phase, or shown negative, would play on as another
+// run, its past not this one's; in its past, forth, its far end no further), each alive
+function cellsShown() {
+  const L = walk.life,
+    off = L.margolus
+      ? stepShown < 0
+        ? -mod(-stepShown, L.margolus.turns.length)
+        : mod(stepShown, L.margolus.turns.length)
+      : 0;
+  if (off) seekTo(stepShown - off);
+  return new Map([...L.alive].flatMap((c, t) => (c ? [[populationKey(t), L.margolus ? 1 : c]] : [])));
 }
 // Text's fonts, one choice: a tab group of tiles, Aa in each (see TEXT_FONTS)
 $('textFonts').append(
@@ -42327,7 +42352,7 @@ $('pngFile').addEventListener('change', async () => {
     }
   picked = planeCells(side);
   plane.start = 'draw';
-  cleared = null;
+  undoCells = null;
   compute();
 });
 $('exportPng').addEventListener('click', () => {
@@ -42492,7 +42517,7 @@ stage.addEventListener('pointerup', (e) => {
     // patternOnCell; none on a cell folded over an edge, see cellPlace)
     const t = pickedTile;
     if (t < 0 || t >= walk.life.seed.length) return;
-    cleared = null; // drawn again: no Undo
+    undoCells = null; // drawn again: no Undo
     if (brush.id === 'cell' && brush.colour) toggleDrawn(populationKey(t));
     else if (brush.id === 'cell') brushOn(populationKey(t), 1);
     else {
@@ -42518,7 +42543,7 @@ stage.addEventListener('pointerup', (e) => {
     // Life: alive, then each dying state, back to dead; inside the grid only
     const cell = planeCellAt(walk.plane.kind, walk.plane.W, wx, wy);
     if (!cell) return;
-    cleared = null; // drawn again: no Undo
+    undoCells = null; // drawn again: no Undo
     if (brush.id !== 'cell' || !brush.colour)
       for (const [x0, y0, v] of brushAt(cell)) brushOn(planeKey(...firstCell([x0, y0])), v); // (drawn at its first copy: anywhere, all of them)
     else toggleDrawn(planeKey(...firstCell(cell)));

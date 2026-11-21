@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.509';
+const VERSION = '0.5.510';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16886,29 +16886,28 @@ function hexSolidMesh(solid, f) {
 
 /* ---- 7.4c Boy's surface ------------------------------------------------------------------- */
 /* The projective plane: a sphere whose every point is glued to its opposite. Its grids are a solid's whose centre turns it
- * onto itself (the cube, the octahedron, the icosahedron, the sphere of hexagons), each tile glued to its opposite and each
+ * onto itself (the cube, the icosahedron, the sphere of hexagons), each tile glued to its opposite and each
  * corner to its opposite: half its tiles, their neighbours across the glue known by the corners they share, as everywhere
- * (see finishMesh). In space, Boy's surface (Bryant and Kusner's: a point and its opposite one point, its triple point in
+ * (see finishMesh). In space, Boy's surface (Apéry's: a point and its opposite one point, its triple point in
  * the middle), one-sided, crossing itself. */
 // its surfaces, each on a solid whose centre turns it onto itself
 const BOY_BASES = { boyCube: 'cube', boyIcosa: 'icosa', boyHex: 'hexsphere' };
-// Boy's surface at a point of the unit sphere: its upper half's stereographic w (the lower half by its opposite point: the
-// same), then Bryant and Kusner's g over |g|²
+// Boy's surface at a point of the unit sphere: Apéry's (1986, as mathcurve.com draws it), even in x, y, z (a point and its
+// opposite one point), its three-fold axis (1, 1, 1) its third coordinate, laid along the first view's (CAMERA_START: its
+// right, its up, towards the eye), so it opens seen down that axis, its three loops round it
 function boyPoint([x, y, z]) {
-  const s = z < 0 ? -1 : 1,
-    d = 1 + s * z,
-    mul = ([a, b], [c, e]) => [a * c - b * e, a * e + b * c],
-    div = ([a, b], [c, e]) => [(a * c + b * e) / (c * c + e * e), (b * c - a * e) / (c * c + e * e)],
-    w = [(s * x) / d, (s * y) / d],
-    w3 = mul(mul(w, w), w),
-    w4 = mul(w3, w),
-    w6 = mul(w3, w3),
-    den = [w6[0] + Math.sqrt(5) * w3[0] - 1, w6[1] + Math.sqrt(5) * w3[1]],
-    g1 = -1.5 * div(mul(w, [1 - w4[0], -w4[1]]), den)[1],
-    g2 = -1.5 * div(mul(w, [1 + w4[0], w4[1]]), den)[0],
-    g3 = div([1 + w6[0], w6[1]], den)[1] - 0.5,
-    g = g1 * g1 + g2 * g2 + g3 * g3;
-  return [g1 / g, g2 / g, g3 / g];
+  const r = x * x + y * y + z * z,
+    s = x + y + z,
+    X =
+      ((2 * x * x - y * y - z * z) * r +
+        2 * y * z * (y * y - z * z) +
+        z * x * (x * x - z * z) +
+        x * y * (y * y - x * x)) /
+      2,
+    Y = (Math.sqrt(3) / 2) * ((y * y - z * z) * r + z * x * (z * z - x * x) + x * y * (y * y - x * x)),
+    Z = (s * (s * s * s + 4 * (y - x) * (z - y) * (x - z))) / 8,
+    { r: right, u: up, v: eye } = CAMERA_START;
+  return [0, 1, 2].map((d) => X * right[d] + Y * up[d] + Z * eye[d]);
 }
 // a solid's grid at size f as Boy's surface: each tile kept once with its opposite (the one whose middle's first coordinate
 // not 0 is above 0), each corner one with its opposite, at Boy's point of its direction, the solid's size (its radius); its

@@ -272,7 +272,10 @@ a start's place (v0.5.522–527: Symmetry the plane's grids' only; on a solid, e
 of K of its colours' own (`fairSpots`), side by side (no two across the centre: the cube in 3 a corner) or face to face
 (each across the centre from another colour's: the cube in 2, ±z; in 4, ±y ±z; never an odd count); Doubled any start
 copied through the centre; Whole part the starts that fill a part, Wild and Formula, laid on their first copies only. The
-one in effect the one picked where allowed, else the first allowed); 5,
+one in effect the one picked where allowed, else the first allowed. The colouring by the place, on every solid: Doubled's
+each colour a face and its opposite (`colouring`'s opposite; a hull solid's groups in pairs), the others' none (a hull
+solid's first grouping with no colour holding both, `hullColours`, v0.5.534: the cuboctahedron, rhombicuboctahedron and
+bicupola in 4 Face to face, their 4 colours' two triangles one above the other, Doubled's across the centre)); 5,
 Famous with it (v0.5.419); 2, a Duel cut Up / Down or Left / Right (v0.5.420, `duelCut`); 1, a colour's pieces Together or
 Apart (v0.5.421, `teamsApart`: a solid's colouring apart, a flat torus's 2K blocks; Opposite is Symmetry's, not a third tab).
 A walled figure's slices apart are left: a colour's two slices would be its opposite ones (Opposite on the plane, Half

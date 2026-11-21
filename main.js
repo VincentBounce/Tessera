@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.533';
+const VERSION = '0.5.534';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14296,17 +14296,22 @@ function hullColourings(surface) {
       }),
     );
   };
+  const across = (q) => faceAt.get(key3(mids[q].map((v) => -v))); // (its opposite face)
+  // (every fair grouping of K colours, in turn, of its first's kind of face, so its patterns' grid by K alone, whatever the
+  // start's place: see patternKind; pairs: each colour a face and its opposite, Doubled's; crossed: a colour holding a face and
+  // its opposite, so none faces another colour across the centre: see hullColours)
   const add = (kind, groups, pairs = false) => {
-    if (groups.length > 1 && !out[groups.length] && fair(groups))
-      out[groups.length] = { kind, groups: pairs ? groups : spread(groups), mids, pairs, squares: kinds[0][1].length };
+    if (groups.length < 2 || (out[groups.length] && out[groups.length][0].kind !== kind) || !fair(groups)) return;
+    const all = pairs ? groups : spread(groups),
+      crossed = all.some((gr) => gr.some((q) => gr.includes(across(q))));
+    (out[groups.length] ??= []).push({ kind, groups: all, mids, pairs, crossed, squares: kinds[0][1].length });
   };
   const offer = (kind, qs) => {
     add(
       kind,
       qs.map((q) => [q]),
     );
-    const across = (q) => qs.find((p) => mids[p].every((v, d) => Math.abs(v + mids[q][d]) < 1e-9)); // (its opposite face)
-    if (qs.every((q) => across(q) !== undefined))
+    if (qs.every((q) => qs.includes(across(q))))
       add(
         kind,
         qs.filter((q) => q < across(q)).map((q) => [q, across(q)]),
@@ -14351,8 +14356,13 @@ function hullColourings(surface) {
 }
 // the hull solid a surface is (itself, or the solid it cuts: see FACE_BASE), else null
 const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (FACE_BASE[surface] ?? surface) : null);
-const hullColours = (surface, K) =>
-  hullSolidOf(surface) && K > 1 ? (hullColourings(hullSolidOf(surface))[K] ?? null) : null;
+// a hull solid's colouring for K colours by the start's place (see hullColourings), as a solid's by colouring: Doubled's
+// (opposite), its first in pairs, each colour a face and its opposite; the others', its first with no colour holding both
+// (its colours' faces may face each other: Face to face), else its first; null where none
+const hullColours = (surface, K, opposite = false) => {
+  const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null;
+  return (all && (opposite ? all.find((c) => c.pairs) : (all.find((c) => !c.crossed) ?? all[0]))) ?? null;
+};
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
 // a face's cells (see cellFaces)
 const faceCells = (g, q) => [...g.cellFaces.keys()].filter((t) => g.cellFaces[t] === q);
@@ -24249,7 +24259,7 @@ const cellCopies = (kind, W, t) => symmetryMaps(kind, W, symmetryOf(kind, W)).ma
 const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
   (K > 1
-    ? !!colouring(surface, K, true) || !!hullColours(surface, K)?.pairs
+    ? !!colouring(surface, K, true) || !!hullColours(surface, K, true)
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
       ));
@@ -32152,7 +32162,7 @@ const FIGURE_PARTS = {
   hull: {
     parts: (K, opposite) => {
       const g = walk.surface,
-        hull = hullColours(VARIANTS[walk.variant].surface, K),
+        hull = hullColours(VARIANTS[walk.variant].surface, K, opposite),
         own = hull.groups.flatMap((gr, k) => gr.map((q) => [hull.mids[q], k])),
         owner = new Map(hull.groups.flatMap((gr, k) => gr.map((q) => [q, k])));
       return Int32Array.from({ length: g.n }, (_, t) => {
@@ -32872,7 +32882,7 @@ function patternPlace(i, K) {
     surface = VARIANTS[walk.variant].surface; // (the walk shown's, as g)
   if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
-  const hull = hullColours(surface, K),
+  const hull = hullColours(surface, K, startOpposite()),
     squares = (g.uncut ?? g).squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings; a cut's, its solid's)
   if (hull) {
     const f = hull.groups[i][0];

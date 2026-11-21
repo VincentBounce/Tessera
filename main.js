@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.489';
+const VERSION = '0.5.490';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -31326,10 +31326,12 @@ const colourGroups = (g, K) =>
 // the counts of colours a solid takes, its parts alike: those it has groups for (see colourGroups), on its least mesh: K
 // alike parts, |G| / |H| of them, G its turns and mirrors, H a part's own (a part a region: H may keep it on itself, the
 // dodecahedron's 6 colours of its 60 turns); a battle's walkers the same rule, H none (see solidTeamCounts)
-const solidCounts = (surface) =>
-  SURFACES[surface]?.sizes && SOLIDS.includes(surface)
-    ? TEAM_COUNTS.filter((K) => K > 1 && colourGroups(leastMesh(surface), K).length)
-    : null;
+// (once a solid: a greyed control's search asks it at every edge)
+const solidCountsMemo = remember('solidCountsMemo', {}),
+  solidCounts = (surface) =>
+    SURFACES[surface]?.sizes && SOLIDS.includes(surface)
+      ? (solidCountsMemo[surface] ??= TEAM_COUNTS.filter((K) => K > 1 && colourGroups(leastMesh(surface), K).length))
+      : null;
 // each cell's colour by a colouring's items (see colouring): its middle's nearest item's, -1 as near two colours (no
 // one's). By its own middle, never its face's (a cell across two faces, a Penrose sphere's rhombus, given one of them: its
 // parts 927 to 972 cells for 6 colours); a face's cells whole all the same where its items are faces' middles, a face's

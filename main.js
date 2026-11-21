@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.552';
+const VERSION = '0.5.553';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41552,7 +41552,7 @@ function updateStats() {
   });
   $('step').enablers = toLength;
   $('end').hidden = lifePlayer() && !runLoop(); // (Life, a reversible one: +10k till its end is known)
-  if (drawing && walk.plane && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
+  if (drawing && walk.life && drawAway() !== drawToolsAway) renderDrawTools(); // (Draw: its tools at gen 0 only; drawn again as play leaves it or comes back, not each frame: 785 cards)
   setTile($('end'), {
     greyed: runStops().some((g) => g > stepShown)
       ? ''

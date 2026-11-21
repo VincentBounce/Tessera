@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.498';
+const VERSION = '0.5.499';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38243,7 +38243,7 @@ fn glass(c0: vec3f, a: f32, z: f32) -> vec4f {
   if (u.glass == 1) { return vec4f(c * a * w, a * w); }
   return vec4f(a);
 }
-struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32, @location(4) n: vec3f, @location(5) p: vec3f }
+struct Lit { @builtin(position) pos: vec4f, @location(0) dark: vec3f, @location(1) lit: vec3f, @location(2) sh: vec3f, @location(3) cutv: f32, @location(4) n: vec3f, @location(5) p: vec3f, @location(6) live: f32 }
 // the lamp's share of a colour on a face of normal n (facing the viewer): its light and its glint
 fn shine(col: vec3f, n: vec3f) -> vec3f {
   let d = max(0.0, dot(n, u.L)); let g = u.glint * pow(max(0.0, dot(n, u.H)), ${LIGHT_SHINE}.0);
@@ -38286,14 +38286,17 @@ fn shone(c: vec3f, a: f32, n: vec3f, p: vec3f) -> vec4f {
 fn seen(c: vec3f, z: f32, n: vec3f, p: vec3f, live: f32) -> vec4f { var a = mix(u.alpha, 1.0, live); if (u.glass == 0) { a = 1.0; } let s = shone(c, a, n, p); return glass(s.rgb, s.a, z); }  // (Glass: see-through, a live cell's share of its life whole: live, 0 to 1)
 @fragment fn shadowedF(i: Lit) -> @location(0) vec4f {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
-  return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z, facing(normalize(i.n), i.p), i.p, 0.0);
+  return seen(i.dark + i.lit * lightShare(i.sh), i.pos.z, facing(normalize(i.n), i.p), i.p, i.live);
 }
 fn tileColour(id: u32) -> vec4f {  // (the back of an open sheet, as a ground; else its tile's colour, its alpha 1 painted)
   if (u.plain.a > 0.0) { return vec4f(u.plain.rgb, 0.5); }
   return unpack4x8unorm(tileCol[id]);
 }
 @vertex fn tileV(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) id: u32) -> Lit {
-  return light(tileColour(id).rgb, nrm, pos, 0.0);
+  let c = tileColour(id);
+  var o = light(c.rgb, nrm, pos, 0.0);
+  o.live = select(lifeLeft(c), 0.0, c.a < 0.75);  // (a live cell opaque in Glass, as tesseraF's)
+  return o;
 }
 // Cells (Display): each tile painted lit pixel by pixel (none painted: flat, its alpha half, see texelRgba), by how far it
 // is from its edge to its middle (pieces.y: its CELLS_FINISH): Tessera, a piece of mosaic, rounded down to its edges (its normal tilted

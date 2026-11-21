@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.545">
+  <link rel="stylesheet" href="style.css?v=0.5.546">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -110,12 +110,13 @@
           <div id="startDraw" class="start-panel">  <!-- Draw: a brush (a cell, or a pattern turned as chosen), in a colour or the eraser -->
             <button id="drawView" class="wide on-list" data-icon="eye" data-toggle type="button" title="To look: a click draws nothing, the brush picked kept (on while Play plays)">View</button>
             <div id="brushCards" class="mode-list rule-cards" role="listbox"></div>
-            <button id="startCells" type="button" class="wide on-list"></button>  <!-- the start's cells: Go to gen 0, Clear, Undo clear (see renderDrawTools), between the patterns and their turns -->
+            <button id="startCells" type="button" class="wide on-list"></button>  <!-- the start's cells: Go to gen 0, Clear (see renderDrawTools), between the patterns and their turns -->
             <p id="drawNote" class="caption" hidden>No known patterns for this rule on this grid</p>  <!-- a surface, a rule with none -->
             <div id="brushTurns" class="nav-shapes"></div>  <!-- the brush's turn and Mirror (see drawRow) -->
+            <div id="drawHistoryTools" class="nav-shapes"></div>  <!-- Undo and Redo: the drawing's history (see drawHistory) -->
             <div class="draw-row"><span id="brushColours" class="colour-swatches"></span></div>
             <div id="pngTools" class="nav-shapes"></div><input id="pngFile" type="file" accept="image/*" hidden>  <!-- a black and white picture, a pixel a square (the grid fitted to it), or the generation shown as one -->
-            <button id="importCells" type="button" class="wide on-list"></button>  <!-- Import last state, Undo import (see renderDrawTools) -->
+            <button id="importCells" type="button" class="wide on-list" data-icon="import">Import last state</button>  <!-- the generation shown, or the one before Draw (see renderDrawTools) -->
           </div>
           <div id="startDigits" class="start-panel" hidden></div>  <!-- Digits: the number whose digits lay the cells (see numberPicker) -->
         </div>
@@ -342,11 +343,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.545"></script>
-  <script src="punks.js?v=0.5.545"></script>
-  <script src="loops.js?v=0.5.545"></script>
-  <script src="emoji.js?v=0.5.545"></script>
-  <script src="debug.js?v=0.5.545"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.545"></script>
+  <script src="pixelarticons.js?v=0.5.546"></script>
+  <script src="punks.js?v=0.5.546"></script>
+  <script src="loops.js?v=0.5.546"></script>
+  <script src="emoji.js?v=0.5.546"></script>
+  <script src="debug.js?v=0.5.546"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.546"></script>
 </body>
 </html>

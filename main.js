@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.505';
+const VERSION = '0.5.506';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7969,7 +7969,7 @@ const ICONS = (() => {
   // the Klein bottle as Thin shows it (glassBottleAt: its lip at its foot, its handle on top): its body's sides, its neck's,
   // its foot's rim, its handle's two arcs
   const klein = svgPath(
-    'M16.84 20.06C16.84 15.76 11.46 11.46 11.46 7.16M3.94 20.06C3.94 15.76 9.31 11.46 9.31 7.16M15.14 14.9C17.39 12.32 20.06 9.74 20.06 7.16M11.58 14.9C14.47 12.32 17.91 9.74 17.91 7.16M3.94 20.06A6.45 1.5 0 1 0 16.84 20.06A6.45 1.5 0 1 0 3.94 20.06M9.31 7.16A5.38 5.38 0 0 1 20.06 7.16M11.46 7.16A3.22 3.22 0 0 1 17.91 7.16',
+    'M16.84 20.06C16.84 15.76 11.46 11.46 11.46 7.16M3.94 20.06C3.94 15.76 9.31 11.46 9.31 7.16M15.05 15.01C17.31 12.39 20.06 9.78 20.06 7.16M13.77 13.02C16.04 11.07 17.91 9.12 17.91 7.16M3.94 20.06A6.45 1.5 0 0 0 16.84 20.06M9.31 7.16A5.38 5.38 0 0 1 20.06 7.16M11.46 7.16A3.22 3.22 0 0 1 17.91 7.16',
   ); // (made by tools/klein_icon.mjs from the bottle's equations: run it again as they change)
   const [a, b, c, d] = [
     [12, 3],

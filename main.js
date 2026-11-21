@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.483';
+const VERSION = '0.5.484';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10908,7 +10908,8 @@ const variantsUnder = (...place) => Object.keys(NAV).filter((u) => place.every((
 // The menu as a graph (the setup a node, a click an edge): a setup, what the app holds as a link does ({ w: the variant, size:
 // null for the one it opens at, its colours, a walk's teams, its battle rule, its starts' way, a Life's start, its hunt's
 // zone and its rule, as typed: the one a variant plays from it, lifeRuleAt; its look, colourMode's; Stacks on; a walk's rule, see
-// walkRuleAt; A's start's number, a variant's list's at most; Newcomer picked, see newcomerCan; a plane's outline, see outlineIn), the
+// walkRuleAt; A's start's number, a variant's list's at most; Newcomer picked, see newcomerCan; a plane's outline, see outlineIn; the choices placing each colour's part, see
+// PART_CHOICES), the
 // one in use first
 const setupNow = () => ({
   w: tabVariant(),
@@ -10927,6 +10928,9 @@ const setupNow = () => ({
   startNo: startNo(),
   newcomer,
   outline: `${plane.shape}|${plane.torus ? 1 : 0}`,
+  duelCut,
+  teamsApart,
+  wildFace,
 });
 const SETUP_FIELDS = [
   'size',
@@ -10944,6 +10948,9 @@ const SETUP_FIELDS = [
   'startNo',
   'newcomer',
   'outline',
+  'duelCut',
+  'teamsApart',
+  'wildFace',
 ];
 // a plane grid's outline at kind k (as stored: its variant's plane) from a setup's (its outline tiles' shape and torus, 'hex|0'),
 // as outlineOf makes it there
@@ -11074,6 +11081,10 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
       newcomerCan(s.lifeTeams, w, s.size, s.start, s.rule) ? '' : 'none',
       'Newcomer',
     ); // (a switch where it can be)
+  // the choices that place each colour's part, each tab a click (see PART_CHOICES)
+  if (m.life)
+    for (const [field, { list, whyNot }] of Object.entries(PART_CHOICES))
+      if (wants(field)) list.forEach(([name], k) => set(`${field}:${k}`, field, k, whyNot(s), name));
   const starts = wants('startNo') && w === tabVariant() && variantStarts(); // (a start's −, +: at the variant shown, its starts' list known there)
   if (starts) {
     set('startNo:-1', 'startNo', startStep(s.startNo, -1, starts.length), '', 'Previous start');
@@ -26197,12 +26208,15 @@ function startFromSetup(s) {
 // the rule, the start and its zone (see renderPlaneRow, renderHunt)
 // a symmetry at a variant: the walk shown's, by its grid (and its block rule, see symmetriesHere); another's, on the plane, by its
 // grid at the side picked (a block rule's known once its grid is built: none there)
+// a setup's colours' parts: its teams, Newcomer's one fewer (see lifeParts)
+const setupParts = ({ w, lifeTeams: teams = lifeTeams, newcomer: n = newcomer, size = null, start, rule }) =>
+  teams - (n && newcomerCan(teams, w, size, start ?? plane.start, rule) ? 1 : 0);
 const symmetryAllowed = (
   y,
   v,
   { start, zone, lifeTeams: teams = lifeTeams, newcomer: n = newcomer, size = null, outline: outlineSet, rule } = {},
 ) => {
-  const parts = teams - (n && newcomerCan(teams, v, size, start ?? plane.start, rule) ? 1 : 0); // (a setup's teams' parts: Newcomer's, one fewer)
+  const parts = setupParts({ w: v, lifeTeams: teams, newcomer: n, size, start, rule });
   const m = VARIANTS[v],
     outline = m.plane && outlineIn(outlineSet, m.plane),
     k = m.plane && planeKind(m.plane, outline),
@@ -27473,7 +27487,7 @@ const DUEL_CUTS = [
     "The two colours side by side: a sphere's two lunes, pole to pole, a walled figure's left and right",
   ],
 ];
-const duelAcross = () => lifeTeams === 2 && duelCut === 1; // (Left / Right picked, in a Duel)
+const duelAcross = () => lifeTeams === 2 && duelCut === 1 && duelCutsOf(tabVariant()); // (Left / Right picked, in a Duel, where it cuts both ways)
 // what each colour's parts and spots hang on besides the grid and its colours, as picked (Symmetry, a Duel's cut, Apart, Wild's
 // Face): one key for every memo of them (partSymmetries, planeSlices, patternChoices, middleCells, iconChoices), never one by
 // hand each (iconChoices' had none of them till v0.5.428); the choices themselves, never what they make (Symmetry's allowed
@@ -27486,12 +27500,11 @@ const PIECES = [
   ['Together', "Each colour's part in one piece"],
   ['Apart', "Each colour's part in pieces as far apart as can be: a solid's faces, a torus's blocks"],
 ];
-const piecesApart = () => teamsApart === 1 && lifeTeams > 1;
-// whether a figure takes its colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
+const piecesApart = () => teamsApart === 1 && piecesOf(tabVariant());
+// whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
 // apart has more pieces than together
-const piecesOf = (w) => {
-  const m = VARIANTS[w],
-    K = lifeTeams;
+const piecesOf = (w, K = lifeTeams) => {
+  const m = VARIANTS[w];
   if (!m.life || K < 2) return false;
   if (m.plane) return planeTorus(m.plane);
   const sym = plane.sym === 'opposite';
@@ -27734,9 +27747,10 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
   if (K < 3 || !r) return false;
   return countsOn(r, r.B).some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
 };
-// a choice among a few (Teams' DUEL_CUTS, PIECES; Wild's WILD_ZONES: [words, title] each), its tabs: the one picked (now) on,
-// its first the default; a click on another picks it (pick), then plays the game again (then)
-const choiceTabs = (list, now, pick, then = compute) =>
+// a choice among a few (Teams' DUEL_CUTS, Start's PIECES and WILD_ZONES: [words, title] each, see PART_CHOICES), its tabs: the
+// one picked (now) on, its first the default, each its choice's key (field:k, see choicesAt), all greyed where whyNot(setup)
+// says why; a click on another picks it (pick), then plays the game again (then)
+const choiceTabs = (field, list, now, pick, whyNot, then = compute) =>
   textTabs(
     list.map(([text, title], k) =>
       tile({
@@ -27744,6 +27758,8 @@ const choiceTabs = (list, now, pick, then = compute) =>
         title,
         on: now === k,
         byDefault: k ? '' : 'yes',
+        choice: `${field}:${k}`,
+        whyNot,
         click: () => {
           if (now !== k) {
             pick(k);
@@ -27809,9 +27825,6 @@ function renderTeams() {
         compute();
       },
     }),
-    // a Duel's cut and a colour's pieces, each one choice of two, where its figure has both (see DUEL_CUTS, PIECES)
-    ...(lifeTeams === 2 && duelCutsOf(w) ? [choiceTabs(DUEL_CUTS, duelCut, (k) => (duelCut = k))] : []),
-    ...(piecesOf(w) ? [choiceTabs(PIECES, teamsApart, (k) => (teamsApart = k))] : []),
     // Newcomer, a switch (see newcomerCan)
     tile({
       pic: teamBlock(Math.max(3, lifeTeams), true),
@@ -27831,6 +27844,8 @@ function renderTeams() {
           ? `${TEAM_NAMES[lifeTeams - 1] ?? `${lifeTeams - 1} teams`} as it starts, and ${teamName(lifeTeams - 1)} a newcomer: none at first, born of a tie between the others (the colour missing)`
           : "The teams below's start, and the last colour a newcomer: none at first, born of a tie between the others (the colour missing)",
     }),
+    // a Duel's cut, its row under the teams (see DUEL_CUTS)
+    partChoiceTabs('duelCut'),
   );
 }
 // a walk's teams: Solo, Duel, Trio… as Life's (a battle: how many numbers walk; greyed, a count its surface's symmetries
@@ -31033,49 +31048,84 @@ const seedThatFits = (r) => {
   return false;
 };
 // Wild's Face (see WILD_ZONES): on a solid, each colour's whole face, the one its patch is in the middle of (see
-// patchSpots), a hull solid's its first; none (null: the tab hidden) in Solo, off a solid, or where a patch is on a corner or
-// an edge (the stella's tips and hollows, the Dodecahedron's 5: a face cut). Realm before v0.5.425, its plane's parts apart
-// (two cells between colours) gone with it
+// patchSpots), a hull solid's its first; none in Solo, off a solid, or where a patch is on a corner or an edge (the stella's
+// tips and hollows, the Dodecahedron's 5: a face cut). Realm before v0.5.425, its plane's parts apart (two cells between
+// colours) gone with it
 // Wild's zone, one choice of two (the link's wildFace: its place): each colour's whole part, or its face on a solid, where
-// each colour has one (see faceParts)
+// each colour has one (see colourFaces)
 const WILD_ZONES = [
   ['Part', "Each colour's soup over its whole part"],
   ['Face', "Each colour's soup on its own face of the solid, the one in the middle of its part"],
 ];
 let wildFace = 0;
-const wildOnFaces = () => wildFace === 1 && !!walk.life && !!faceParts(lifeParts());
-// Wild's tabs, under the zones, Wild's alone and where a face can be each colour's (see faceParts)
-function renderWild() {
-  const can = hunt.zone === 'full' && !!walk.life && !!faceParts(lifeParts());
-  $('wildField').hidden = !can;
-  if (can)
-    $('wildField').replaceChildren(
-      choiceTabs(
-        WILD_ZONES,
-        wildFace,
-        (k) => (wildFace = k),
-        () => {
-          lifeReseed();
-          renderHunt();
-          syncLink();
-        },
-      ),
-    );
+const wildOnFaces = () => wildFace === 1 && !!walk.life && !!colourFaces(VARIANTS[walk.variant].surface, lifeParts());
+// each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
+// no mesh: a hull solid's its colour's first face (as the cube's, see hullColourings), another's the face whose middle its
+// patch's spot is (an index in FACE_MIDDLES, see cellFaces); null where a patch is off a face's middle, in Solo, off a solid
+function colourFaces(surface, K, apart = piecesApart()) {
+  if (K < 2 || !SOLIDS.includes(surface)) return null;
+  if (hullSolidOf(surface)) return hullColours(surface, K)?.groups.map((gr) => gr[0]) ?? null;
+  const mids = FACE_MIDDLES[surface]?.() ?? [],
+    col = colouring(surface, K, false, apart);
+  const faces = col?.faces ? col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9)) : [];
+  return faces.length && !faces.includes(-1) ? faces : null;
 }
+// each colour's cells on its face (see colourFaces), on the solid shown
 function faceParts(K) {
   const surface = VARIANTS[walk.variant].surface,
     g = walk.surface,
-    L = walk.life;
-  if (K < 2 || walk.plane || !SOLIDS.includes(surface)) return null;
-  if (hullSolidOf(surface)) return hullColours(surface, K)?.groups.map((gr) => faceCells(g, gr[0])) ?? null; // (a hull solid: each colour's first face, as the cube's, see hullColourings)
-  const mids = FACE_MIDDLES[surface]?.() ?? [],
-    col = colouring(surface, K);
-  // (each colour's patch face: the face whose middle its patch's spot is, if all are)
-  const faces = col?.faces ? col.patch.map((i) => mids.findIndex((m) => dot3(unit(m), col.items[i]) > 1 - 1e-9)) : [];
-  if (!faces.length || faces.includes(-1)) return null;
+    L = walk.life,
+    faces = colourFaces(surface, K);
+  if (!faces) return null;
+  if (hullSolidOf(surface)) return faces.map((f) => faceCells(g, f));
   const parts = faces.map(() => []);
   for (let t = 0; t < g.n; t++) if (L.nbr.start[t] < L.nbr.start[t + 1]) parts[faces.indexOf(g.cellFaces[t])]?.push(t); // (a cell by its face, see cellFaces; a wall's none)
   return parts;
+}
+// The choices of two that place each colour's part (a Duel's cut, a colour's pieces, Wild's face), each its link's field:
+// its tabs, the setter of the one picked, the one in use (none where greyed: its first) and its greyed words from a setup
+// (see whyNot); their tabs drawn by partChoiceTabs, their edges by choicesAt
+const PART_CHOICES = {
+  duelCut: {
+    list: DUEL_CUTS,
+    pick: (k) => (duelCut = k),
+    now: () => (duelAcross() ? 1 : 0),
+    whyNot: ({ w, lifeTeams: K }) =>
+      K === 2 && duelCutsOf(w)
+        ? ''
+        : 'Only in a Duel, on a globe, a rosette sphere of an even turn or a walled grid of the plane.',
+  },
+  teamsApart: {
+    list: PIECES,
+    pick: (k) => (teamsApart = k),
+    now: () => (piecesApart() ? 1 : 0),
+    whyNot: ({ w, lifeTeams: K }) =>
+      piecesOf(w, K) ? '' : 'Only in a battle, on a flat torus or a solid whose colours can lie in pieces apart.',
+  },
+  wildFace: {
+    list: WILD_ZONES,
+    pick: (k) => (wildFace = k),
+    now: () => (hunt.zone === 'full' && wildOnFaces() ? 1 : 0),
+    then: () => {
+      lifeReseed();
+      renderHunt();
+      syncLink();
+    },
+    whyNot: (s) =>
+      s.zone === 'full' &&
+      colourFaces(VARIANTS[s.w].surface, setupParts(s), s.teamsApart === 1 && piecesOf(s.w, s.lifeTeams))
+        ? ''
+        : "Only with Wild, on a solid where each colour's part lies round the middle of a face.",
+  },
+};
+const partChoiceTabs = (field) => {
+  const c = PART_CHOICES[field];
+  return choiceTabs(field, c.list, c.now(), c.pick, c.whyNot, c.then);
+};
+// Start's tabs, a row under the zones: a colour's pieces and Wild's face, side by side (in place of the last ones drawn)
+function renderPartTabs() {
+  for (const g of $('huntZones').querySelectorAll(':scope > .tile-group')) g.remove();
+  $('huntZones').append(partChoiceTabs('teamsApart'), partChoiceTabs('wildFace'));
 }
 const COLOUR_PARTS = {
   2: '2 halves',
@@ -32087,9 +32137,9 @@ function renderHunt() {
   } // (a battle's in teams)
   renderSymmetry(); // (Famous: none)
   renderSeed();
-  renderWild();
+  renderPartTabs();
   const fits = huntFits();
-  for (const b of $('huntZones').querySelectorAll('button')) {
+  for (const b of $('huntZones').querySelectorAll(':scope > button')) {
     b.dataset.choice = `zone:${b.dataset.zone}`; // (its choice's key, see choicesAt)
     setTile(b, {
       on: b.dataset.zone === hunt.zone,
@@ -34358,9 +34408,7 @@ function getSetup() {
         .join(''); // (its starts' order: so=acb)
   }
   if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (life && duelAcross() && duelCutsOf(tabVariant())) s.duelCut = 1; // (its place in DUEL_CUTS: Up / Down, 0, in no link)
-  if (life && piecesApart() && piecesOf(tabVariant())) s.teamsApart = 1;
-  if (life && hunt.zone === 'full' && wildOnFaces()) s.wildFace = 1; // (its place in WILD_ZONES: Part, 0, in no link) // (its place in PIECES: Together, 0, in no link)
+  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now()) s[field] = 1; // (its place in its tabs: the first, 0, in no link)
   if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)

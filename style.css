@@ -847,6 +847,12 @@ h4 {
 .tile-group:has(+ :not([hidden])):has(> :nth-child(3 of :not([hidden]))) {
   grid-column: span 3;
 } /* (its buttons shown only: a group's hidden ones never count) */
+.tile-group:has(+ .tile-group) {
+  grid-column: 1 / span 2;
+}
+.tile-group:has(+ .tile-group) + .tile-group {
+  grid-column: span 2;
+} /* two groups side by side, a row of their own: each its half (Start's pieces and Wild's face) */
 :not(.nav-shapes) > .tile-group {
   margin-bottom: var(--block-gap);
 } /* (in a section's flow, not a grid of tiles: spaced as a wide button) */

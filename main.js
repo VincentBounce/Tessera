@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.543';
+const VERSION = '0.5.544';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22560,13 +22560,16 @@ const civColours = (K, C) => [
 
 // the base the number is written in for Life: K + 1, a digit a cell, 0 dead, k alive in colour k (a start has live cells only)
 
+// a cell drawn (its state c in the population) as a state of K colours and C states: its own, else alive in its colour (a
+// colour of another count of colours as one of these; one colour: alive), as the plane's and a surface's starts take it
+const drawnState = (c, K, C) => (c <= K * (C - 1) ? c : K > 1 ? ((c - 1) % K) + 1 : 1);
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
-function surfaceSeed(seq, n, K) {
+function surfaceSeed(seq, n, K, C) {
   const seed = new Uint8Array(n);
   if (plane.start === 'digits') digitsOn(seed, seq);
   else if (plane.start === 'draw')
-    for (const [k, c] of population) seed[cellXY(k)[0]] = c; // (its tiles drawn, see populationKey)
+    for (const [k, c] of population) seed[cellXY(k)[0]] = drawnState(c, K, C); // (its tiles drawn, see populationKey)
   else for (let t = 0; t < n; t++) seed[t] = soupState(t, K);
   return seed;
 }
@@ -22586,7 +22589,7 @@ function lifeReseed() {
     return;
   }
   const L = walk.life;
-  L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts()));
+  L.seed.set(surfaceSeed(walk.digits, L.seed.length, lifeParts(), L.C));
   startColours(L.seed);
   setLifeSeed(L.seed.slice(), null);
 }
@@ -23076,7 +23079,7 @@ function buildLife(seq, variant) {
     rule = parseRule('B3/S23');
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
-  const seed = surfaceSeed(seq, g.n, rule.colours);
+  const seed = surfaceSeed(seq, g.n, rule.colours, rule.C);
   startLife(seq, rule, g.n, {
     nbr,
     ring: rule.loops ? loopRing(rule, meshSides(meshCorners(g))) : rule.iso && rule.iso !== 'vertex' ? ring : null,
@@ -26125,8 +26128,7 @@ function planeSeed(kind, seq, C, K = 1) {
   if (plane.start === 'digits') digitsOn(seed, seq);
   else if (plane.start === 'random') for (let t = 0; t < n; t++) seed[t] = soupState(place(t), K);
   else {
-    // cells drawn: a colour of another count of colours as one of these (one colour: alive), a dying state kept
-    for (const [k, c] of population) put(...cellXY(k), c <= K * (C - 1) ? c : K > 1 ? ((c - 1) % K) + 1 : 1); // a state of these colours and states, else alive
+    for (const [k, c] of population) put(...cellXY(k), drawnState(c, K, C)); // (cells drawn, see drawnState)
   }
   return seed;
 }

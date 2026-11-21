@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.524';
+const VERSION = '0.5.525';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25776,10 +25776,10 @@ const lazyList = (n, f) =>
 // iconLay) and their places on its frame (see patternFrame): its pictures' sizes only scale them; the wall's cells (a set)
 let iconCellsMemo = null;
 const iconCellsOf = (K) => {
-  const key = `${gridKey()}|${K}`;
+  const key = `${gridKey()}|${K}|${placementKey()}`; // (its parts' place with it: Face opposite's, see START_PLACES)
   if (iconCellsMemo?.key === key) return iconCellsMemo;
   const part = new Int32Array(walk.life.seed.length).fill(-1);
-  huntParts(0, K, false, false).forEach((p, k) => {
+  huntParts(0, K, undefined, false).forEach((p, k) => {
     for (const t of p) part[t] = k;
   });
   const of = Array.from({ length: K }, (_, i) => {

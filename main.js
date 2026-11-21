@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.492';
+const VERSION = '0.5.493';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6778,8 +6778,8 @@ function renderViewModes() {
       [centersPattern() ? 'Centered' : 'Default', $('centeredRow').title],
       ['Free', 'The view as turned by hand (a drag frees it)'],
       ['Upright', $('uprightRow').title, ({ w, stacked }) => viewWhyNot('upright', w, stacked)],
-      ['S', 'From the south, level'],
-      ['E', 'From the east, level'],
+      ['South', 'From the south, level'],
+      ['East', 'From the east, level'],
       ['Up', 'From above, north up'],
     ],
     viewFrom >= 0 ? 3 + viewFrom : c ? 0 : u ? 2 : 1,
@@ -15254,10 +15254,10 @@ function jeenerAt(q, u) {
 // lip half a torus (ring 1, tube 0.5) turning it in to 0.5; its neck down from there, 0.5 − 0.25 y, its axis bent west by
 // 1 − cos (2 at its foot); its handle half a torus (ring 1, tube 0.25) under, from the neck's foot to the body's: glued as
 // ours, its end its start turned over (u to π − u). q ∈ [0, 3] along it: the body [0, 1), the lip [1, 1.5), the neck
-// [1.5, 2.5), the handle [2.5, 3]; its height z
+// [1.5, 2.5), the handle [2.5, 3]; its height h, then turned half a turn round x: its lip at its foot, as ours's bowl
 function glassBottleAt(q, u) {
   const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
-    level = (x, r, h) => [x + r * Math.cos(u), r * Math.sin(u), h]; // (a level circle round (x, 0, h))
+    level = (x, r, h) => [x + r * Math.cos(u), -r * Math.sin(u), -h]; // (a level circle round (x, 0, h), turned over)
   if (q < 1) {
     const h = -2 + 3 * q;
     return level(0, 1.5 - 1.25 * share(h), h);
@@ -15272,25 +15272,40 @@ function glassBottleAt(q, u) {
   }
   const a = Math.PI * (2 * q - 4), // (under the handle's ring, π to 2π)
     r = 0.25 * Math.cos(Math.PI - u); // (its circle across the ring, turned over from the neck's)
-  return [-1 + (1 + r) * Math.cos(a), 0.25 * Math.sin(u), -2 + (1 + r) * Math.sin(a)];
+  return [-1 + (1 + r) * Math.cos(a), -0.25 * Math.sin(u), 2 - (1 + r) * Math.sin(a)];
 }
-// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): ours, Jeener's triple, the glass bottle
+// The bagel (the figure 8 Klein bottle): a ring (radius 1) whose tube is a figure 8 (TORUS_TUBE wide), turned half a turn
+// round it, so it meets itself turned over (u to π − u, the 8's v = u + π / 2), crossing itself along the circle through
+// its middle; q ∈ [0, 3] round the ring, upright in the x–z plane (y its thickness), as Jeener's
+function bagelAt(q, u) {
+  const t = (2 * Math.PI * q) / 3,
+    v = u + Math.PI / 2,
+    c = Math.cos(t / 2),
+    s = Math.sin(t / 2),
+    r = 1 + TORUS_TUBE * (c * Math.sin(v) - s * Math.sin(2 * v));
+  return [r * Math.sin(t), -TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v)), -r * Math.cos(t)];
+}
+// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, Jeener's triple
 const KLEIN_SHAPES = [
-  ['Classic', 'The Klein bottle as blown in glass: a bowl, a pear of a body, its neck through its side into the bowl'],
+  [
+    'Thin',
+    "Shadertoy's glass Klein bottle (4ltSW8): a body round, its lip turned in, its neck bent through its side, a handle round back to its foot",
+  ],
+  ['Thick', 'The Klein bottle as blown in glass: a bowl, a pear of a body, its neck through its side into the bowl'],
+  [
+    'Bagel',
+    'A ring whose tube is a figure 8 turning half a turn round it, crossing itself along the circle through its middle',
+  ],
   [
     'Triple',
     "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
   ],
-  [
-    'Glass bottle',
-    "Shadertoy's glass Klein bottle (4ltSW8): a body round, its lip turned in, its neck bent down through its side, a handle round back to its foot",
-  ],
 ];
-const KLEIN_AT = [kleinAt, jeenerAt, glassBottleAt];
+const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt];
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (ours: the bowl's lowest; Jeener's: a neck's narrowest; the glass bottle's: its handle's middle)
-// and its frame (centred, 3 high)
+// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its top;
+// Jeener's: a neck's narrowest) and its frame (centred, 3 high)
 const kleinTables = {};
 function kleinBottle(shape = kleinShapeOn()) {
   if (kleinTables[shape]) return kleinTables[shape];
@@ -15300,7 +15315,7 @@ function kleinBottle(shape = kleinShapeOn()) {
     along = new Float64Array(N + 1);
   const mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
     step = (i) => {
-      if (!shape) {
+      if (at === kleinAt) {
         const a = q(i) >= 2 && q(i - 1) < 2 ? kleinNeck(0) : mid(i - 1),
           b = mid(i);
         return Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -15323,9 +15338,10 @@ function kleinBottle(shape = kleinShapeOn()) {
         hi[d] = Math.max(hi[d], v);
       });
   const ends = [
-    N / 6,
-    Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
     (N * 2.75) / 3,
+    N / 6,
+    N / 2, // (the bagel's: the ring's top)
+    Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
   ];
   return (kleinTables[shape] = {
     at,
@@ -34453,7 +34469,7 @@ function getSetup() {
   if (variant.surface) s.gridSize = $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
-  if (kleinShapeOn(w)) s.kleinShape = kleinShapeOn(w); // (its place in KLEIN_SHAPES: Classic, 0, in no link)
+  if (kleinShapeOn(w)) s.kleinShape = kleinShapeOn(w); // (its place in KLEIN_SHAPES: Thin, 0, in no link)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
   if (battleOn()) {
@@ -34534,7 +34550,7 @@ function applySetup(s) {
   set('variant', w);
   $('startNo').value = s.walkStart ?? 1;
   torusTurned = Number(s.gridTurned) === 1;
-  kleinShape = [1, 2].includes(Number(s.kleinShape)) ? Number(s.kleinShape) : 0;
+  kleinShape = KLEIN_SHAPES[s.kleinShape] && Number(s.kleinShape) > 0 ? Number(s.kleinShape) : 0;
   if (VARIANTS[w].surface) {
     const kind = surfaceOf(VARIANTS[w]);
     fillGridSizes(kind, VARIANTS[w].initial);

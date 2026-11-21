@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.504';
+const VERSION = '0.5.505';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7966,10 +7966,11 @@ const ICONS = (() => {
     ) +
     svgPath('M6.8 6.6C11 6.8 16 8 19.5 10.2C16.5 13.5 13 16.5 9.8 18.1Z') +
     svgPath('M6.7 3.1Q6.1 5 6.8 6.6M20.1 6.8L19.5 10.2M9.8 18.1Q7.5 18.2 5.7 18.7');
-  // the Klein bottle in profile, as shown (its neck east): its body's outline, its neck's two sides outside it
+  // the Klein bottle as Thin shows it (glassBottleAt: its lip at its foot, its handle on top): its body's sides, its neck's,
+  // its foot's rim, its handle's two arcs
   const klein = svgPath(
-    'M12.6 7.9L12.6 8.6L12.8 9.2L13.0 9.9L13.4 10.5L13.7 11.2L14.2 11.8L14.6 12.5L15.1 13.1L15.6 13.8L16.0 14.5L16.4 15.1L16.7 15.8L16.9 16.4L17.1 17.1L17.2 17.7L17.3 18.4L17.2 19.1L17.1 19.8L16.9 20.4L16.6 20.9L16.2 21.4L15.8 21.7L15.4 21.9L14.9 22.0L7.6 22.0L7.1 21.9L6.7 21.7L6.3 21.4L5.9 20.9L5.6 20.4L5.4 19.8L5.3 19.1L5.2 18.4L5.3 17.7L5.4 17.1L5.6 16.4L5.8 15.8L6.1 15.1L6.5 14.5L6.9 13.8L7.4 13.1L7.9 12.5L8.3 11.8L8.8 11.2L9.1 10.5L9.5 9.9L9.7 9.2L9.8 8.6L9.9 7.9M9.9 7.9L9.9 7.6L9.9 7.3L9.9 6.9L9.9 6.6L10.0 6.2L10.0 5.8L10.1 5.5L10.2 5.1L10.4 4.7L10.5 4.4L10.7 4.0L10.9 3.7L11.1 3.4L11.4 3.1L11.7 2.9L12.0 2.6L12.3 2.4L12.7 2.3L13.1 2.2L13.4 2.1L13.8 2.0L14.2 2.0L14.6 2.0L14.9 2.1L15.3 2.2L15.7 2.3L16.0 2.4L16.4 2.6L16.7 2.8L17.0 3.1L17.3 3.3L17.6 3.6L17.8 3.9L18.0 4.3L18.2 4.6L18.4 5.0L18.5 5.4L18.6 5.8L18.7 6.2L18.7 6.6L18.8 7.0L18.7 7.5L18.7 7.9L18.6 8.3L18.5 8.8L18.4 9.2L18.3 9.6L18.1 10.1L17.9 10.5L17.7 10.9L17.5 11.3L17.2 11.8L16.9 12.2L16.6 12.6L16.3 13.0L15.9 13.4L15.6 13.7M12.6 7.9L12.6 7.6L12.6 7.3L12.6 7.1L12.6 6.8L12.7 6.6L12.7 6.3L12.7 6.1L12.8 5.9L12.9 5.7L12.9 5.6L13.0 5.4L13.1 5.3L13.2 5.2L13.3 5.1L13.4 5.0L13.5 4.9L13.6 4.8L13.7 4.8L13.8 4.7L13.9 4.7L14.1 4.7L14.2 4.7L14.3 4.7L14.5 4.7L14.6 4.7L14.7 4.8L14.9 4.9L15.0 4.9L15.1 5.0L15.3 5.1L15.4 5.2L15.5 5.3L15.6 5.5L15.7 5.6L15.8 5.8L15.9 6.0L15.9 6.2L16.0 6.4L16.0 6.6L16.1 6.8L16.1 7.0L16.1 7.3L16.0 7.6L16.0 7.8L15.9 8.1L15.8 8.4L15.7 8.7L15.6 9.0L15.5 9.4L15.3 9.7L15.2 10.0L15.0 10.3L14.7 10.6L14.5 10.9L14.3 11.2L14.0 11.5',
-  ); // (made by tools/klein_icon.py from the bottle's profile: run it again as it changes)
+    'M16.84 20.06C16.84 15.76 11.46 11.46 11.46 7.16M3.94 20.06C3.94 15.76 9.31 11.46 9.31 7.16M15.14 14.9C17.39 12.32 20.06 9.74 20.06 7.16M11.58 14.9C14.47 12.32 17.91 9.74 17.91 7.16M3.94 20.06A6.45 1.5 0 1 0 16.84 20.06A6.45 1.5 0 1 0 3.94 20.06M9.31 7.16A5.38 5.38 0 0 1 20.06 7.16M11.46 7.16A3.22 3.22 0 0 1 17.91 7.16',
+  ); // (made by tools/klein_icon.mjs from the bottle's equations: run it again as they change)
   const [a, b, c, d] = [
     [12, 3],
     [3, 19],

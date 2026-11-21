@@ -267,8 +267,9 @@ two pieces, as the rule has it; its first face only before, Formula's parts 25 t
 
 The plan's items, done: 3, Seed one tile, its radius a slider (v0.5.417, `pop=seed4`); 4, Opposite a tab of Symmetry on a
 solid, over any start (v0.5.418: the plane's Symmetry row's, rather than a switch of its own; the zone Opposite gone), then
-Wild's Face opposite (v0.5.522: Symmetry the plane's grids' only, a solid's copy through its centre one of Wild's three: Face
-together, Face opposite, Part); 5,
+a start's place (v0.5.522–524: Symmetry the plane's grids' only; on a solid, every start's place one choice of three, Face
+together · Face opposite · Part, the link's startPlace: Face opposite any start copied through the centre, Part the starts
+that fill a part, Wild and Formula, laid on their first copies only); 5,
 Famous with it (v0.5.419); 2, a Duel cut Up / Down or Left / Right (v0.5.420, `duelCut`); 1, a colour's pieces Together or
 Apart (v0.5.421, `teamsApart`: a solid's colouring apart, a flat torus's 2K blocks; Opposite is Symmetry's, not a third tab).
 A walled figure's slices apart are left: a colour's two slices would be its opposite ones (Opposite on the plane, Half

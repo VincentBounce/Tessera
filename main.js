@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.530';
+const VERSION = '0.5.531';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25784,6 +25784,7 @@ const iconCellsOf = (K) => {
     const F = patternFrame(i, K),
       cells = [],
       uv = [];
+    if (!F) return { cells: Int32Array.from(cells), uv: Float64Array.from(uv) }; // (no place: no cell, no picture fits)
     for (let t = 0; t < part.length; t++)
       if (part[t] === i && (F.on?.(t) ?? true)) {
         cells.push(t);
@@ -25802,8 +25803,9 @@ const roundWalls = (K) =>
 // landing there seen from the other side). Its bottom: down as drawn on the plane; out in a hexagon's walls; on a solid's
 // face or a sheet (unrolled: a level face), down it as a marble rolls (a level face: south); on squares, the grid's nearest way
 function iconWay(i, K) {
-  const frame = patternFrame(i, K),
-    { ex, ey, n } = frame;
+  const frame = patternFrame(i, K);
+  if (!frame) return null; // (no place: no way, see patternPlace)
+  const { ex, ey, n } = frame;
   if (cellsPlane()) {
     // (as drawn: the plane turned by planeTurn; out, its bottom to its slice's wall, a rosette sphere's to its lune's way out from the pole)
     const w = roundWalls(K) && planeSlices(K),
@@ -25846,6 +25848,7 @@ function iconRoom(K) {
       : (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3)); // (where it is: on the plane, on the sheet unrolled, in space)
   return Math.min(
     ...Array.from({ length: K }, (_, i) => {
+      if (!iconWay(i, K)) return 0; // (no place: no room)
       const { ex, ey, tilt, on = () => true } = iconWay(i, K),
         place = patternPlace(i, K),
         go = ([u, v]) => ex.map((c, d) => u * c + v * ey[d]); // (on: its face's cells)
@@ -25897,6 +25900,7 @@ function iconLay(N, P = 24) {
   const k = (N / P) * cellWidth(kind),
     half = (N * cellWidth(kind)) / 2; // (a pixel's width, the picture's half)
   const lays = Array.from({ length: K }, (_, i) => {
+    if (!patternFrame(i, K)) return { whole: false }; // (no place: it does not fit)
     const { tilt, mirror } = iconWay(i, K),
       F = patternFrame(i, K),
       place = patternPlace(i, K);
@@ -32891,13 +32895,16 @@ function patternPlace(i, K) {
     // (the face most its way, its middle: a stella's tip, a face of it; one colour, the front's)
     const base = FACE_BASE[surface] ?? surface,
       c = K === 1 ? frontCell() : -1,
-      d = unit(K === 1 ? [0, 1, 2].map((a) => g.cen[3 * c + a]) : (triFace(base, K, i) ?? patchSpots(surface, K)[i]));
+      spot = K === 1 ? [0, 1, 2].map((a) => g.cen[3 * c + a]) : (triFace(base, K, i) ?? patchSpots(surface, K)[i]);
+    if (!spot) return null; // (no spots alike: no place, see fairSpots)
+    const d = unit(spot);
     return {
       on: 'hex',
       c0: centreCells(POLYHEDRA[base] ? middles(base).reduce((b, m) => (dot3(m, d) > dot3(b, d) ? m : b)) : d)[0],
     };
   }
   const dir = K === 1 ? AXES[3] : patchSpots('cube', K)[i]; // the cube: its face (a corner's: its first)
+  if (!dir) return null; // (no spots alike: no place)
   return { on: 'cube', f: AXES.reduce((b, d, k) => (dot3(d, dir) > dot3(AXES[b], dir) ? k : b), 0) };
 }
 // a triangle face's middle, as a direction; triangle face k's place: its corners turned so that AB is its side most level
@@ -32996,7 +33003,8 @@ function hexAxes(c0) {
 // rows (i along AB, j along AC, see patternAt's icons)
 let boxMemo = null;
 function patternFrame(i, K, place = patternPlace(i, K)) {
-  // place: another face's (see cellPlace)
+  // place: another face's (see cellPlace); none (no spots alike, see patternPlace): no frame, nothing laid
+  if (!place) return null;
   if (K === 1 && walk.life?.margolus && walk.surface?.torus) return patternFrame(1, 3, place); // (a reversible sheet's one colour: Trio's second, see huntParts)
   const g = walk.surface,
     kind = patternKind(),
@@ -33203,7 +33211,7 @@ const latticeNear = (kind, e) => {
 // a brush's: those there only; else all, or none)
 function patternAt(i, K, cells, partial = false, to = null, round = !partial) {
   // round: round a torus (else cut off at its edges: an icon)
-  if (!cells.length) return []; // (an icon with no cell at that size)
+  if (!cells.length || !patternFrame(i, K)) return []; // (an icon with no cell at that size; no place, see patternPlace)
   const kind = patternKind(),
     F = patternFrame(i, K),
     ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
@@ -34546,8 +34554,9 @@ function middleCells(i = 0, K = 1) {
     const spot = K > 1 ? patchSpots(VARIANTS[walk.variant].surface, K)?.[i] : null;
     return centreCells(spot ?? Array.from(g.cen.subarray(3 * frontCell(), 3 * frontCell() + 3)));
   }
-  const F = patternFrame(i, K),
-    c = F.centre,
+  const F = patternFrame(i, K);
+  if (!F) return []; // (no place: no middle, see patternPlace)
+  const c = F.centre,
     far = new Float64Array(n).fill(Infinity);
   for (let t = 0; t < n; t++) if (start[t] < start[t + 1] && (F.on?.(t) ?? true)) far[t] = F.far(t, c);
   const best = far.reduce((m, v) => Math.min(m, v), Infinity),

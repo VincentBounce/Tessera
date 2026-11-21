@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.516';
+const VERSION = '0.5.517';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -32868,7 +32868,8 @@ function triPlace(face) {
 }
 // cell t's face's place (see patternPlace): the plane, the sheet; on a solid, the face it lies on (a hull solid's square or
 // triangle, a face of triangles, a solid of hexagons' plane: its middle cell, see hexSolidMesh; the cube's: its normal's
-// way); null on none (a solid of hexagons' cell folded over an edge)
+// way); null on none (a solid of hexagons' cell folded over an edge; cells not squares with no face of their own: a hull
+// solid's cut)
 function cellPlace(t) {
   const g = walk.surface;
   if (cellsPlane()) return { on: 'plane' };
@@ -32887,6 +32888,7 @@ function cellPlace(t) {
     } // (its face's middle cell, of its cells: none, its frame none)
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
+  if (cellKind(g) !== 'square') return null; // (the cube's frame a grid of squares: other cells none, no pattern laid there, see laidChoices)
   return {
     on: 'cube',
     f: AXES.reduce(

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.551';
+const VERSION = '0.5.552';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27460,14 +27460,41 @@ function brushAt([cx, cy]) {
   }
   return patternAt(0, 1, brushCells(), true, cellMiddle(kind, cx, cy), true).map(([t, v]) => [...xy(t), v]);
 }
+// a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid on t's face, see patternOnCell);
+// null where none goes (a cell folded over an edge, see cellPlace)
+function brushTilesAt(t) {
+  if (brush.id === 'cell') return [[t, 1]];
+  const place = cellPlace(t);
+  if (!place) return null;
+  const cells = brushCells(),
+    at = patternOnCell(
+      patternFrame(0, 1, place),
+      cells.map(([x, y]) => cellMiddle(patternKind(), x, y)),
+      t,
+    );
+  return cells.flatMap(([, , v], k) => (at[k] >= 0 ? [[at[k], v]] : []));
+}
+// the brush's ink, half seen under the pointer (the plane's, a surface's): its colour (the eraser's, a dead cell's) and its
+// share over what is under it
+const ghostInk = () => [
+  !brush.colour ? UNLIT : walk.life.colours > 1 ? teamColour(brush.colour - 1) : LIFE_ALIVE,
+  brush.colour ? 0.55 : 0.85,
+];
+// a surface's brush under the pointer (see pickedTile): its tiles painted in its ink over their own, after them (see gpuSurface)
+function surfaceGhost(put) {
+  const t = pickedTile,
+    tiles = drawsHere() && pointerPixel && t >= 0 && t < walk.surface.n ? (brushTilesAt(t) ?? []) : [],
+    [ink, share] = ghostInk(),
+    [r, g, b] = rgbOf(faded(ink, share, blankTile()));
+  for (const [u] of tiles) put(u, (r | (g << 8) | (b << 16) | (255 << 24)) >>> 0); // (its colour, painted: see tileColour)
+}
 // the brush under the pointer, half seen
 function drawGhost() {
   const ctx = layers.overlay,
     { scale: s, ox, oy } = view;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   if (!drawing || !ghost || !walk.plane) return;
-  ctx.globalAlpha = brush.colour ? 0.55 : 0.85; // the eraser: the dead cells' colour
-  ctx.fillStyle = !brush.colour ? UNLIT : walk.life.colours > 1 ? teamColour(brush.colour - 1) : LIFE_ALIVE;
+  [ctx.fillStyle, ctx.globalAlpha] = ghostInk();
   turnLayer(ctx);
   ctx.beginPath();
   for (const [x, y] of brushAt(ghost)) {
@@ -39611,6 +39638,7 @@ function gpuSurface(paint, path) {
     D.geoGen = (D.geoGen ?? 0) + 1;
   }
   paint({ put: (col) => device.queue.writeBuffer(D.tileCol, 0, col), buffer: D.tileCol, n }, n);
+  surfaceGhost((t, c) => device.queue.writeBuffer(D.tileCol, 4 * t, Uint32Array.of(c))); // (Draw's brush, over its tiles)
   const depth = 4 * R * Math.max(sh.extent, sh.maxExtent ?? sh.extent),
     tileSize = R * sh.extent * Math.sqrt((4 * Math.PI) / n);
   const edgeBias = (0.07 * tileSize) / depth,
@@ -40000,8 +40028,11 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
         }),
       pixel &&
         P.under.mapAsync(GPUMapMode.READ).then(() => {
-          pickedTile = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
+          const t = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
           P.under.unmap();
+          if (t === pickedTile) return;
+          pickedTile = t;
+          statsDirty = true; // (Draw's brush drawn there, see surfaceGhost)
         }),
     ]).then(() => (D.picking = false));
 }
@@ -42410,6 +42441,8 @@ $('exportPng').addEventListener('click', () => {
   });
 });
 stage.addEventListener('pointerleave', () => {
+  pointerPixel = null; // (a surface's brush gone, see surfaceGhost)
+  statsDirty = true;
   if (ghost) {
     ghost = null;
     drawGhost();
@@ -42547,22 +42580,12 @@ stage.addEventListener('pointerup', (e) => {
   if (walk.surface) {
     // a surface: the tile under the pointer (see pickedTile): a cell as the plane's, a pattern laid on its face (see
     // patternOnCell; none on a cell folded over an edge, see cellPlace)
-    const t = pickedTile;
-    if (t < 0 || t >= walk.life.seed.length) return;
+    const t = pickedTile,
+      tiles = t >= 0 && t < walk.life.seed.length && brushTilesAt(t);
+    if (!tiles) return;
     rememberDrawing();
     if (brush.id === 'cell' && brush.colour) toggleDrawn(populationKey(t));
-    else if (brush.id === 'cell') brushOn(populationKey(t), 1);
-    else {
-      const place = cellPlace(t);
-      if (!place) return;
-      const cells = brushCells(),
-        at = patternOnCell(
-          patternFrame(0, 1, place),
-          cells.map(([x, y]) => cellMiddle(patternKind(), x, y)),
-          t,
-        );
-      cells.forEach(([, , v], k) => at[k] >= 0 && brushOn(populationKey(at[k]), v));
-    }
+    else for (const [u, v] of tiles) brushOn(populationKey(u), v);
     lifeReseed();
     return;
   }

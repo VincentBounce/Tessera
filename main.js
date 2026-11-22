@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.618';
+const VERSION = '0.5.619';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15545,6 +15545,22 @@ function glassBottleAt(p, u) {
     r = 0.25 * Math.cos(Math.PI - u); // (its circle across the ring, turned over from the neck's)
   return [-1 + (1 + r) * Math.cos(a), 0.25 * Math.sin(u), 2 - (1 + r) * Math.sin(a)];
 }
+// The sketch's bottle (a Mathematica sketch's kleinSketch, its sizes its: bottom width a, handle protrusion b, bottom height c,
+// bottle height d): four pieces along v = 4π q / 3 ∈ [0, 4π], u round it, its circles level or square to its way: its bowl, turned
+// round the vertical, from the neck's mouth (radius 1) down and out to its widest (2a − 1, c deep); its body up from there,
+// narrowing back to 1, dπ high; its handle a half ring (b wide, d − 1 high) over; its neck straight down into the bowl, its
+// end its start turned over (u to π − u)
+const KLEIN_SKETCH = { a: 3, b: 2, c: 3, d: 3 };
+function kleinSketchAt(q, u) {
+  const { a, b, c, d } = KLEIN_SKETCH,
+    v = (4 * Math.PI * q) / 3,
+    r = a - (a - 1) * Math.cos(v);
+  if (v < Math.PI) return [r * Math.cos(u), r * Math.sin(u), -c * Math.sin(v)];
+  if (v < 2 * Math.PI) return [r * Math.cos(u), r * Math.sin(u), d * (v - Math.PI)];
+  if (v < 3 * Math.PI)
+    return [-b + (b + Math.cos(u)) * Math.cos(v), Math.sin(u), (d - 1 + Math.cos(u)) * Math.sin(v) + d * Math.PI];
+  return [-b + b * Math.cos(v) - Math.cos(u), Math.sin(u), d * (4 * Math.PI - v)];
+}
 // The rolled bottles' sections across their sheet, at s ∈ [−½, ½) from its middle, rolled up by m from the sheet's straight
 // width (its flat's, 2π·tube) round a ring of radius 1 (see ringRoll), by their place in KLEIN_SHAPES: the bagel's figure 8
 // (TORUS_TUBE wide, the figure 8 Klein bottle: turned half a turn round the ring, it meets itself turned over, s to −s,
@@ -15574,8 +15590,14 @@ const KLEIN_SHAPES = [
     'Möbius',
     'A Möbius strip whose two edges are one: the cells along one edge the neighbours of those along the other, as the bottle glues them',
   ],
+  [
+    'Sketch',
+    "A bottle in four pieces: a bowl, a body narrowing up, a handle's half ring, its neck straight down into the bowl",
+  ],
 ];
-const KLEIN_AT = [glassBottleAt, kleinAt];
+// each bottle's point (q, u) and the q its sheet's ends are at, where the tube turns inside out (the glass bottle's lip's
+// lowest, its foot; ours's and the sketch's bowl's lowest), by its place in KLEIN_SHAPES; the others rolled (see KLEIN_SECTIONS)
+const KLEIN_AT = { 0: [glassBottleAt, 1.75], 1: [kleinAt, 0.5], 4: [kleinSketchAt, 0.375] };
 // a bottle rolled up from its sheet, as a strip is: its section across (see KLEIN_SECTIONS), the others none
 const kleinRolls = () => KLEIN_SECTIONS[shapeOn('klein')];
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
@@ -15587,14 +15609,13 @@ const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
   shapeOn = (family, w = ringVariant()) => (ringFamily(w) === family ? ringShape[family] : 0);
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (the glass bottle's: its lip's lowest, at its foot; ours: the bowl's lowest, both where the tube turns
-// inside out, the sheet split there) and its frame (centred, 3 at its largest: the bottles' height)
+// the sheet's ends' share (where the tube turns inside out, see KLEIN_AT) and its frame (centred, 3 at its largest: the bottles' height)
 const kleinTables = {};
 function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
   const N = 6000,
     q = (i) => (3 * i) / N,
-    at = KLEIN_AT[shape],
+    [at, endsAt] = KLEIN_AT[shape],
     along = new Float64Array(N + 1);
   const mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
     step = (i) => {
@@ -15620,12 +15641,11 @@ function kleinBottle(shape = shapeOn('klein')) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  const ends = [(N * 1.75) / 3, N / 6]; // (the glass bottle's lip's lowest, its foot; ours's bowl's lowest: each split there)
   return (kleinTables[shape] = {
     at,
     N,
     along,
-    bottom: along[ends[shape]] / along[N],
+    bottom: along[Math.round((N * endsAt) / 3)] / along[N],
     centre: lo.map((v, d) => (v + hi[d]) / 2),
     scale: 3 / Math.max(...hi.map((v, d) => v - lo[d])),
   });

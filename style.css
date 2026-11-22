@@ -209,10 +209,10 @@ main {
   color: var(--accent-color);
   vertical-align: 0;
 }
-/* a small action before a text (Copy RLE, before the Play card's description), its icon small */
+/* a small action at a text's top right (Copy RLE, the Play card's description wrapping round it), its icon small */
 .head-btn {
-  margin-right: var(--short-gap);
-  vertical-align: middle;
+  float: right;
+  margin-left: var(--short-gap);
   display: inline-flex;
   align-items: center;
   gap: 4px;

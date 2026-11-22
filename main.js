@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.595';
+const VERSION = '0.5.596';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33310,48 +33310,33 @@ function patternOnCell(F, ms, t) {
   if (patternKind() === 'square') return squaresOnCells(walk.surface, F, first, ms, t);
   return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]])));
 }
-// A pattern of squares laid by steps from cell t (its first cell's middle first on F's plane), as a walk on cells steps (see
-// surfaceStep): each square across the edge it faces, straight on out by the edge across the one it came in by; x first,
-// then y, from its first cell; its heading carried over a solid's edges and a sheet's seams (a Klein bottle's turning over:
-// the edge listed the same way round in both squares, its hand the other way), so a pattern goes on over as many faces as it
-// covers (at a solid's corner, three faces, as this order brings it; a square met again there no place, −1); t's x and y edges those towards its neighbours a step
-// along F's x and y, the face's frame (a pattern turned as before); −1 where a step finds no square (a strip's edge, a
-// triangle among the squares)
+// A pattern of squares laid by steps from cell t (its first cell's middle first on F's plane), a walk on cells's own (see
+// surfaceStep): x first, straight on, then a turn to y and straight on, over a solid's edges and a sheet's seams as a walk
+// goes (a Klein bottle's turning over its hand); the turn's edges from the one come in by, and the edges come in by, t's
+// towards its next squares along F's x and y, the face's frame (a pattern turned as before); a step off the squares (a
+// strip's edge, a triangle among them) or onto a square already taken (past a solid's corner) no place, −1
 function squaresOnCells(g, F, first, ms, t) {
   const k = g.sides,
-    P = g.poly,
-    edgeTo = (u, v) => [...Array(k).keys()].find((e) => v >= 0 && g.nbr[k * u + e] === v),
-    toward = (dx, dy) => {
-      const e = edgeTo(t, F.cellAt(F.at([first[0] + dx, first[1] + dy])));
-      return e !== undefined ? e : mod(edgeTo(t, F.cellAt(F.at([first[0] - dx, first[1] - dy]))) + 2, 4);
-    }, // (its edge towards the next square along x or y, else across from the one back)
-    square = (u) => u >= 0 && P[k * u + 3] !== P[k * u + 2], // (a tile of 4 corners, not a triangle's last repeated)
-    E0 = toward(1, 0),
-    Y0 = toward(0, 1);
-  if (!square(t) || Number.isNaN(E0) || Number.isNaN(Y0)) return ms.map((m, c) => (c ? -1 : t));
-  // a step from [square, its x edge, its hand: its y edge x's + hand] along x (0), y (1), −x (2) or −y (3)
-  const step = ([u, E, hand], dir) => {
-    const Y = mod(E + hand, 4),
-      out = [E, Y, E + 2, Y + 2][dir] % 4,
-      v = g.nbr[k * u + out],
-      a = g.nbrEdge[k * u + out];
-    if (!square(v)) return null;
-    const turned = P[k * v + a] === P[k * u + out] ? -hand : hand, // (the seam turning it over)
-      on = mod(a + 2, 4); // (straight on: across from the edge come in by)
-    return [v, [on, mod(on - turned, 4), a, mod(a - turned, 4)][dir], turned];
+    edgeTo = (v) => [...Array(k).keys()].find((e) => v >= 0 && g.nbr[k * t + e] === v),
+    toward = (dx, dy) =>
+      edgeTo(F.cellAt(F.at([first[0] + dx, first[1] + dy]))) ??
+      mod(edgeTo(F.cellAt(F.at([first[0] - dx, first[1] - dy]))) + 2, 4), // (else across from the one back)
+    [X, Y] = [toward(1, 0), toward(0, 1)],
+    entry = [mod(X + 2, 4), X, mod(Y + 2, 4), Y], // (come in by, heading +x, −x, +y, −y)
+    go = (g.patternStep ??= surfaceStep(g, false, null, [['straight'], ['turn', 1], ['turn', 3]])), // (once a mesh)
+    square = (state) => state && g.poly[k * state[0] + 3] !== g.poly[k * state[0] + 2] && state; // (not a triangle's last corner repeated)
+  if (Number.isNaN(X) || Number.isNaN(Y)) return ms.map((m, c) => (c ? -1 : t));
+  // cell (x, y) from t: |x| steps along x, then a turn to y and |y| − 1 steps more (x 0: |y| along y)
+  const walkTo = (x, y) => {
+    let state = [t, entry[x ? +(x < 0) : 2 + (y < 0)], 0, 0, 1];
+    const turn = x && y ? [mod(entry[2 + (y < 0)] + 2 - entry[+(x < 0)], 4) === 1 ? 1 : 2] : []; // (from ±x to ±y: its edges on)
+    for (const act of [...Array(Math.abs(x)).fill(0), ...turn, ...Array(Math.abs(y) - turn.length).fill(0)])
+      if (!(state = square(go(state, act)))) return -1;
+    return state[0];
   };
-  const at = new Map([['0,0', [t, E0, mod(Y0 - E0, 4) === 1 ? 1 : -1]]]),
-    reach = (x, y) => {
-      const key = `${x},${y}`;
-      if (!at.has(key)) {
-        const from = y ? reach(x, y - Math.sign(y)) : reach(x - Math.sign(x), 0); // (x first, then y)
-        at.set(key, from && step(from, y ? (y > 0 ? 1 : 3) : x > 0 ? 0 : 2));
-      }
-      return at.get(key);
-    };
-  const taken = new Set(); // (a tile a cell: one met again, past a solid's corner, has no place)
+  const taken = new Set(); // (a tile a cell)
   return ms.map(([x, y]) => {
-    const u = reach(Math.round(x - ms[0][0]), Math.round(y - ms[0][1]))?.[0] ?? -1;
+    const u = walkTo(Math.round(x - ms[0][0]), Math.round(y - ms[0][1]));
     return u < 0 || taken.has(u) ? -1 : (taken.add(u), u);
   });
 }

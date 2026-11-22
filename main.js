@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.573';
+const VERSION = '0.5.574';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43553,8 +43553,8 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles (the cards selected, see selectedNames): Import (added to them, a name already used numbered),
-// Export, Delete (the cards selected), Refresh (Erase all: Tessera's page, Clean Tessera's storage in this browser),
+// The Gallery's tools, tiles (the cards selected, see selectedNames): Refresh (Erase all: Tessera's page, Clean Tessera's
+// storage in this browser), Delete (the cards selected), Import (added to them, a name already used numbered), Export,
 // then Share link (the link to what is shown)
 // Select: half or fewer selected, a click selects every card shown; more, it lets them all go (see syncSelection)
 const selectCards = (all) => {
@@ -43567,6 +43567,22 @@ $('gallerySelectTiles').replaceChildren(
   tile({ id: 'gallerySelect', pic: icon('boxEmpty'), text: 'Select', click: () => selectCards(halfOrFewer()) }),
 );
 $('galleryTools').replaceChildren(
+  tile({
+    id: 'refreshThumbnails',
+    pic: icon('autoRotate'),
+    text: 'Refresh',
+    toggle: true,
+    title:
+      'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
+    click: refreshThumbnails,
+  }),
+  tile({
+    id: 'galleryDelete',
+    pic: icon('trash'),
+    text: 'Delete',
+    title: 'The cards selected, with their thumbnails',
+    click: deleteSelected,
+  }),
   tile({
     id: 'galleryImport',
     pic: icon('import'),
@@ -43581,22 +43597,6 @@ $('galleryTools').replaceChildren(
     text: 'Export',
     title: 'The cards selected as a JSON file, else the whole Gallery',
     click: () => exportGallery(),
-  }),
-  tile({
-    id: 'galleryDelete',
-    pic: icon('trash'),
-    text: 'Delete',
-    title: 'The cards selected, with their thumbnails',
-    click: deleteSelected,
-  }),
-  tile({
-    id: 'refreshThumbnails',
-    pic: icon('autoRotate'),
-    text: 'Refresh',
-    toggle: true,
-    title:
-      'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
-    click: refreshThumbnails,
   }),
 );
 $('galleryShareTiles').replaceChildren(

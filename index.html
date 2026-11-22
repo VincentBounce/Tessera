@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.573">
+  <link rel="stylesheet" href="style.css?v=0.5.574">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -222,15 +222,15 @@
     </aside>
     <div id="galleryPane" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
       <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
-        <div class="gallery-tools-row">  <!-- on the left the Gallery's tools, then the selection's; in the middle the setup in view's -->
-          <div class="gallery-tools">
-            <div id="galleryTools" class="nav-shapes"></div>  <!-- Import, Export, Delete, Refresh -->
-            <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- Select: none, some, all (see syncSelection) -->
-          </div>
+        <div class="gallery-tools-row">  <!-- in the middle the setup in view's; on the right the selection's tools, then the Gallery's -->
           <div class="gallery-in-view">
             <div id="galleryShareTiles" class="nav-shapes"></div>  <!-- Share link -->
             <button id="inViewPicture" type="button"></button>  <!-- the setup in view's picture, the band's height: its words in its tooltip -->
             <div id="galleryStarTiles" class="nav-shapes"></div>  <!-- Star -->
+          </div>
+          <div class="gallery-tools">
+            <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- Select: none, some, all (see syncSelection) -->
+            <div id="galleryTools" class="nav-shapes"></div>  <!-- Refresh, Delete, Import, Export -->
           </div>
         </div>
         <input id="galleryFile" type="file" accept="application/json,.json" hidden>
@@ -347,11 +347,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.573"></script>
-  <script src="punks.js?v=0.5.573"></script>
-  <script src="loops.js?v=0.5.573"></script>
-  <script src="emoji.js?v=0.5.573"></script>
-  <script src="debug.js?v=0.5.573"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.573"></script>
+  <script src="pixelarticons.js?v=0.5.574"></script>
+  <script src="punks.js?v=0.5.574"></script>
+  <script src="loops.js?v=0.5.574"></script>
+  <script src="emoji.js?v=0.5.574"></script>
+  <script src="debug.js?v=0.5.574"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.574"></script>
 </body>
 </html>

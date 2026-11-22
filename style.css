@@ -929,17 +929,20 @@ button.switch.active:hover:not(:disabled) {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--short-gap);
-} /* on the left the Gallery's tools, then the selection's; in the middle the setup in view's: Share link, its picture, Star
-   (the right as wide as the left, the middle in the band's middle; the right gone first when the band lacks room) */
+} /* in the middle the setup in view's: Share link, its picture, Star; on the right Select, then the Gallery's tools
+   (the left as wide as the right, empty: the middle in the band's middle) */
 .gallery-tools,
 .gallery-in-view {
   display: flex;
   align-items: center;
 }
 .gallery-tools {
+  grid-column: 3;
+  justify-self: end;
   gap: var(--badged-tile-gap);
 } /* (Select as one more of them: their gap, the cards selected's badge) */
 .gallery-in-view {
+  grid-column: 2;
   gap: var(--short-gap);
   min-width: 0;
 } /* (narrower when the band lacks room: its picture cut, see #inViewPicture; the tools never) */
@@ -950,7 +953,7 @@ button.switch.active:hover:not(:disabled) {
 } /* (each group's tiles side by side, each a tile's width, as the display box's head tiles) */
 .gallery-tools > .nav-shapes {
   gap: var(--badged-tile-gap);
-} /* (Export, Delete, Refresh, Select: the cards selected's badge) */
+} /* (Select, Refresh, Delete, Export: the cards selected's badge) */
 .gallery-tools-row .nav-shapes button {
   width: var(--tile-width);
 }

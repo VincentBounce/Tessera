@@ -1586,9 +1586,11 @@ button.active .bubble.active {
 #stagePreview {
   position: absolute;
   inset: 0 0 0 var(--view-left);
+  width: calc(100% - var(--view-left));
+  height: 100%;
   object-fit: cover;
   background: var(--page-background);
-} /* (the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
+} /* (an image is not stretched by its insets: its width and height the view's, from the same --view-left; the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
 .stage > canvas:not(#hoverLayer):not(#gpuLayer) {

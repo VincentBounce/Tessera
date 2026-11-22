@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.591';
+const VERSION = '0.5.592';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33376,14 +33376,15 @@ function sheetUnits(g, kind) {
   };
 }
 // a tile's place on the sheet (a Möbius strip: on its two sides as one strip, see mobiusLoop), and the
-// tile at a place, across the seams (a Klein bottle's turning over)
+// tile at a place, across the seams (a Klein bottle's turning over: decided as its place rounds, a tile whose middle is on
+// the seam, a turned grid's, found from either side; till v0.5.591 a hair below it wrapped to 0 not turned over)
 const sheetPlace = (g, t) => (g.mobius ? mobiusLoop(g, t) : sheetMiddle(g, t));
 function sheetIndex(g) {
   if (g.famousIndex) return g.famousIndex;
   const key = ([u, v]) => {
     if (g.mobius) u = ((u % (2 * g.L)) + 2 * g.L) % (2 * g.L);
     else {
-      const k = Math.floor(u / g.nu);
+      const k = Math.floor(roundOff(u) / roundOff(g.nu)); // (its side of a seam as its place rounds: a hair below one, past it)
       u -= k * g.nu;
       if (g.klein && k % 2) v = g.nv - v;
       v = mod(v, g.nv);

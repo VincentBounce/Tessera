@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.576';
+const VERSION = '0.5.577';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6810,7 +6810,6 @@ function renderHeadTiles() {
     renderHeadTiles();
   };
   if (!headTiles) {
-    renderSoundButton();
     headTiles = [
       tile({
         pic: icon('fit'),
@@ -6827,11 +6826,17 @@ function renderHeadTiles() {
         toggle: true,
         click: flip('ocean'),
       }), // (its six colours as a Sextet's, the light page's)
+      tile({
+        pic: icon('camera'),
+        text: 'Screenshot',
+        title: "Saves the view as a WebP picture, taken as the Gallery's thumbnails are (no grid lines, no sky)",
+        click: async () =>
+          saveBlob(await wantThumbnail(null), `${APP_TITLE} ${setupTitle({ setup: getSetup() })}.webp`),
+      }),
     ];
-    for (const b of [soundButton, ...headTiles]) b.classList.add('open-only');
-    $('headTiles').replaceChildren(headTiles[1], soundButton, headTiles[0], themeSwitch);
+    for (const b of headTiles) b.classList.add('open-only');
+    $('headTiles').replaceChildren(headTiles[1], headTiles[2], headTiles[0], themeSwitch);
   }
-  renderSoundButton();
   setTile(headTiles[0], { on: $('autoFit').checked, byDefault: defaultMark('autoFit') });
   setTile(headTiles[1], {
     on: $('ocean').checked,
@@ -8325,6 +8330,7 @@ const ICONS = (() => {
     undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
     redo: svgPath('M15 14L20 9L15 4') + svgPath('M20 9H9A5 5 0 0 0 9 19H13'), // (Undo's, mirrored)
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
+    camera: svgPath('M4 8h3.5l2-3h5l2 3H20v11H4zM12 16.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6'),
     trash: svgPath('M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13M10 11v6M14 11v6'),
     link:
       svgPath('M8 16L16 8') +
@@ -35436,9 +35442,13 @@ function exportGallery(list = readGallery().filter((x) => !selecting() || select
   const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 2, setups: list }, null, 2)], {
     type: 'application/json',
   });
+  saveBlob(blob, `${new Date().toLocaleDateString('sv')} Tessera v${VERSION} - Gallery export.json`); // (its day, YYYY-MM-DD, here; the version that wrote it)
+}
+// a file saved by the browser (its downloads), named
+function saveBlob(blob, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${new Date().toLocaleDateString('sv')} Tessera v${VERSION} - Gallery export.json`; // (its day, YYYY-MM-DD, here; the version that wrote it)
+  a.download = name;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -35496,19 +35506,20 @@ const thumbnailStore = (mode, ask) =>
 // (its Cells, its Tiles), without the grid's lines (see gridLineAlpha) nor the sky (the Gallery's theme behind it, its card's
 // background). WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
 // lines, and taken as it ends, the lines then back (see tick); the sky the view's background, never in it (see paintSky)
+// (size: null, the whole view at its pixels: Screenshot's)
 let thumbnailWanted = null;
-const wantThumbnail = () =>
+const wantThumbnail = (size = THUMBNAIL_SIZE) =>
   new Promise((ok) => {
-    thumbnailWanted = ok;
+    thumbnailWanted = { ok, size };
     needsFull = true;
   });
-function stageThumbnail() {
-  const [w, h] = THUMBNAIL_SIZE,
+function stageThumbnail(size) {
+  const { x, w: W, h: H } = viewRect(),
+    dpr = $('gridLayer').width / canvasWidth, // (the view's part of each layer, in its pixels)
+    [w, h] = size ?? [Math.round(W * dpr), Math.round(H * dpr)],
+    k = Math.max(w / W, h / H),
     c = Object.assign(document.createElement('canvas'), { width: w, height: h }),
     g = c.getContext('2d');
-  const { x, w: W, h: H } = viewRect(),
-    k = Math.max(w / W, h / H),
-    dpr = $('gridLayer').width / canvasWidth; // (the view's part of each layer, in its pixels)
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer'])
     g.drawImage($(id), x * dpr, 0, W * dpr, H * dpr, (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
@@ -41659,10 +41670,10 @@ const spinAt = (t) => {
 let linkedAt = null; // the step shown as the link was last written, still (see tick)
 function tick(now = performance.now()) {
   if (thumbnailWanted) {
-    const ok = thumbnailWanted;
+    const { ok, size } = thumbnailWanted;
     queueMicrotask(() => {
       thumbnailWanted = null;
-      ok(stageThumbnail());
+      ok(stageThumbnail(size));
       needsFull = true;
     });
   } // (as this frame ends, all drawn: see wantThumbnail)
@@ -42312,13 +42323,7 @@ $('exportPng').addEventListener('click', () => {
     im.data.set([v, v, v, 255], 4 * (y * w + x));
   }
   g.putImageData(im, 0, 0);
-  c.toBlob((blob) => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${APP_TITLE} gen ${stepShown}.png`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
+  c.toBlob((blob) => saveBlob(blob, `${APP_TITLE} gen ${stepShown}.png`));
 });
 stage.addEventListener('pointerleave', () => {
   pointerPixel = null; // (a surface's brush gone, see surfaceGhost)
@@ -43553,8 +43558,8 @@ function galleryTab() {
   return b;
 }
 
-// The Gallery's tools, tiles (the cards selected, see selectedNames): Refresh (Erase all: Tessera's page, Clean Tessera's
-// storage in this browser), Delete (the cards selected), Import (added to them, a name already used numbered), Export,
+// The Gallery's tools, tiles (the cards selected, see selectedNames): Refresh (Erase Tessera's storage in this browser: Tessera's
+// page, Actions), Delete (the cards selected), Import (added to them, a name already used numbered), Export,
 // then Share link (the link to what is shown)
 // Select: half or fewer selected, a click selects every card shown; more, it lets them all go (see syncSelection)
 const selectCards = (all) => {
@@ -43726,7 +43731,9 @@ function credits(open) {
     `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table id="urlWords" class="tut-commands"></table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)
     `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
     `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
-    `<section class="clean-storage"><h3>Clean Tessera's storage in this browser</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase all</button></section></div></div>`;
+    `<section class="clean-storage"><h3>Actions</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button></section></div></div>`;
+  renderSoundButton();
+  $('eraseAll').before(soundButton); // (Actions: Sound, then Erase)
   $('eraseAll').addEventListener('click', (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) resetApp();

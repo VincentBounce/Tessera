@@ -676,8 +676,11 @@ button.wide {
   margin-bottom: var(--long-gap);
 }
 .clean-storage .wide {
-  max-width: var(--panel-width);
-} /* (its wide button the settings' column's width, as How it works) */
+  display: block;
+  width: max-content;
+  min-width: var(--panel-width);
+  margin-top: var(--short-gap);
+} /* (Actions: its wide button under Sound, at least the settings' column's width, as How it works; longer for its words) */
 button.wide.on-list {
   margin-bottom: var(--short-gap);
 } /* a wide button over a list (How it works): the list's gap */

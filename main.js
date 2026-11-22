@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.630';
+const VERSION = '0.5.631';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17945,15 +17945,19 @@ function syncSizeStepper() {
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
   sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', lastPicked()]));
-  setTile($('sizeDown'), { greyed: sel.selectedIndex <= 0 ? 'Already the smallest size.' : '' });
-  setTile($('sizeUp'), { greyed: sel.selectedIndex >= sel.options.length - 1 ? 'Already the largest size.' : '' });
+  // (its rows: a notch each, the one in use's whatever its width, what a notch leads to shown as it will be: see sizeRows,
+  // sizeTo; its width under it)
+  const { rows: sizes, at } = sizeRows();
+  const now = parseInt(sel.value);
+  setTile($('sizeDown'), { greyed: sizes.some((o) => parseInt(o.value) < now) ? '' : 'Already the smallest size.' });
+  setTile($('sizeUp'), { greyed: sizes.some((o) => parseInt(o.value) > now) ? '' : 'Already the largest size.' });
   sizeGauge(
     $('sizeGauge'),
-    sel.options.length,
-    sel.selectedIndex,
-    (k) => label(sizeOf(sel.options[k].value)),
-    (k) => pickSize(sel.options[k]),
-  ); // (a size of its own, a link's: a notch of its own too, as long as it is picked)
+    sizes.length,
+    at,
+    (k) => label(sizeOf(sizeTo(sizes[k]))),
+    (k) => pickSize(sizes[k]),
+  );
   // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere greyed
   const [rows, width] = TORI.includes(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
     widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 };
@@ -18038,24 +18042,31 @@ function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
 }
 // − / +: the usual size just below or above (a size of its own's too: by its height)
 function stepSize(delta) {
-  const sel = $('gridSizeField'),
-    now = parseInt(sel.value),
-    usual = [...sel.options].filter((o) => !o.dataset.own),
-    to = delta < 0 ? usual.filter((o) => parseInt(o.value) < now).at(-1) : usual.find((o) => parseInt(o.value) > now);
+  const now = parseInt($('gridSizeField').value),
+    { rows } = sizeRows(),
+    to = delta < 0 ? rows.filter((o) => parseInt(o.value) < now).at(-1) : rows.find((o) => parseInt(o.value) > now);
   if (to) pickSize(to);
 }
-// a size of the menu (its option), a torus's width kept as a share of its usual one (its shape: see widthsOf)
-function pickSize(option) {
+// the menu's sizes by their rows (its usual ones: a size of its own, a link's, a width picked, one of them with its width),
+// and the one in use's (the last at most its rows: one of its own between two)
+function sizeRows() {
+  const sel = $('gridSizeField'),
+    now = parseInt(sel.value),
+    rows = [...sel.options].filter((o) => !o.dataset.own);
+  return { rows, at: rows.findLastIndex((o) => parseInt(o.value) <= now) };
+}
+// the size a size of the menu (its option) leads to: a torus's width kept as a share of its usual one (its shape: see widthsOf)
+function sizeTo(option) {
   const sel = $('gridSizeField'),
     kind = surfaceOf(VARIANTS[tabVariant()]);
   const [rows, width] = TORI.includes(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
     share = rows && width / torusDims(kind, rows)[1];
   const now = Number(option.value);
-  useSize(
-    kind,
-    share && !option.dataset.own ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1])) : option.value,
-  );
+  return share && !option.dataset.own
+    ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1]))
+    : option.value;
 }
+const pickSize = (option) => useSize(surfaceOf(VARIANTS[tabVariant()]), sizeTo(option));
 // a size used: the menu's (a size of its own added, see selectSize), the surface built again
 function useSize(kind, size) {
   selectSize(kind, size);

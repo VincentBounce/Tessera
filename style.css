@@ -1542,10 +1542,6 @@ button.active .bubble.active {
   height: 34px;
   border-radius: 6px;
 } /* as tall as the buttons beside */
-.colour-swatches.off {
-  opacity: 0.45;
-  pointer-events: none;
-} /* greyed, as a button disabled (Draw away from gen 0) */
 #brushColours {
   flex: 1;
 } /* Draw: the brush's colour, a square to click */

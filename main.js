@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.606';
+const VERSION = '0.5.607';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26791,10 +26791,10 @@ function renderBrushes(kind) {
   [...$('brushColours').children].forEach((i, k) => {
     // the colours 1, 2…, then the eraser (0)
     const c = i === eraser ? 0 : k + 1;
-    i.classList.toggle('active', brush.colour === c);
+    i.classList.toggle('active', brush.colour === c && !brush.view); // (viewing: no brush in hand, as the cards)
     i.addEventListener('click', () => {
       brush.colour = c;
-      renderPlaneRow();
+      brushInHand();
     });
   });
   $('brushTurn').querySelector('span').textContent = `↻ ${(brush.turn * 360) / gridTurns(kind)}°`;
@@ -26802,8 +26802,8 @@ function renderBrushes(kind) {
   $('drawNote').hidden = [...$('brushCards').children].some((b) => !b.hidden && b.dataset.brush !== 'cell');
   renderDrawTools();
 }
-// Draw's tools on the plane, each as it can (a cell: no turn), all greyed away from gen 0 (the cells drawn are its start's:
-// drawn there only; Go to gen 0, the way back)
+// Draw's tools on the plane, each as it can (a cell: no turn), its turns and steps greyed away from gen 0 (the cells drawn are
+// its start's: drawn there only; a brush, a colour or the eraser picked, the way back, see brushInHand)
 let drawToolsAway = null; // (whether Draw's tools were last drawn away from gen 0, see updateStats)
 function renderDrawTools() {
   const kind = VARIANTS[tabVariant()].plane,
@@ -26835,7 +26835,6 @@ function renderDrawTools() {
     'Not for View or a cell, nor on a grid a pattern cannot mirror on.',
   );
 
-  $('brushColours').classList.toggle('off', away);
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   setTile($('startCells'), { greyed: population.size ? '' : 'No cell is drawn.' }); // (at any generation: back to gen 0)
   // Draw from current state: the generation shown (away from gen 0), else the one before Draw, its name saying which
@@ -42489,20 +42488,27 @@ $('brushCards').replaceChildren(
       byDefault: id === 'cell' ? 'yes' : '',
       click: () => {
         brush.id = id;
-        brush.view = false; // (a brush in hand: View off, back to its start's cells at gen 0)
-        seekTo(0);
-        renderPlaneRow();
+        brushInHand();
       },
     }); // (see brush)
     b.dataset.brush = id;
     return b;
   }),
 );
+// a brush taken in hand (a pattern, a colour or the eraser picked, View turned off), at any generation: View off, back to its
+// start's cells at gen 0, where a click draws
+function brushInHand() {
+  brush.view = false;
+  seekTo(0);
+  renderPlaneRow();
+}
 // View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it, at gen 0 (as a brush picked)
 $('drawView').addEventListener('click', () => {
-  brush.view = !brush.view;
-  if (!brush.view) seekTo(0);
-  renderPlaneRow();
+  if (brush.view) brushInHand();
+  else {
+    brush.view = true;
+    renderPlaneRow();
+  }
 });
 $('brushTurn').addEventListener('click', () => {
   brush.turn = (brush.turn + 1) % gridTurns(patternKind()); // (the grid shown's: see brushCells)

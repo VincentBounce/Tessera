@@ -929,20 +929,18 @@ button.switch.active:hover:not(:disabled) {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--short-gap);
-} /* in the middle the setup in view's: Share link, its picture, Star; on the right Select, then the Gallery's tools
-   (the left as wide as the right, empty: the middle in the band's middle) */
+} /* on the left room kept (.gallery-left); in the middle the setup in view's: Share link, its picture, Star; on the right
+   Select, then the Gallery's tools (the left as wide as the right: the middle in the band's middle) */
 .gallery-tools,
 .gallery-in-view {
   display: flex;
   align-items: center;
 }
 .gallery-tools {
-  grid-column: 3;
   justify-self: end;
   gap: var(--badged-tile-gap);
 } /* (Select as one more of them: their gap, the cards selected's badge) */
 .gallery-in-view {
-  grid-column: 2;
   gap: var(--short-gap);
   min-width: 0;
 } /* (narrower when the band lacks room: its picture cut, see #inViewPicture; the tools never) */

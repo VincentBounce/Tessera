@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.585';
+const VERSION = '0.5.586';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11895,7 +11895,7 @@ function compute() {
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
-  setTile($('copyRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
+  setTile($('saveRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
   if (variant.life)
     plane.start = variant.elementary
       ? ELEMENTARY_STARTS.includes(plane.start)
@@ -26610,7 +26610,7 @@ const startWhyNot = (start, v) =>
           : TEXT_WHERE
       : '';
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
-// the Life grids an RLE file lays as rows of cells (Copy RLE, Paste RLE, Open): the plane's (its cells as its grid numbers
+// the Life grids an RLE file lays as rows of cells (Save RLE, Paste RLE, Open RLE): the plane's (its cells as its grid numbers
 // them, see lifeRle), a sheet's of squares (a torus's, a Möbius strip's, a Klein bottle's, a cell a place: see pictureCells)
 const RLE_WHERE =
   'Only for Life on a grid laid in rows: the plane, or a sheet of squares (a torus, a Möbius strip, a Klein bottle).';
@@ -42666,7 +42666,7 @@ $('lifeRule').addEventListener('change', () => {
   $('lifeRule').value = known?.rule ?? ruleBody(typed.text); // (as read: B35785766 is B35678)
   if (VARIANTS[tabVariant()].life) compute(); // restart from generation 0; a new state count needs a new base
 });
-// Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
+// Save RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
 // characters a line): two states as b and o; more as . A B … (alive, then each dying stage, Golly's Generations); in
 // colours each cell's state as the app holds it (k alive of colour k, k + K × s dying, see parseRule), its rule the app's
 // (/Colours3: Golly has none). Squares are Golly's grid, hexagons its hexagonal one (see gollyRule: our grid mirrored top
@@ -42780,13 +42780,15 @@ function shareView(b) {
   syncLink();
   copyFlash(b, location.href);
 }
-$('copyRle').addEventListener('click', () => {
+$('saveRle').addEventListener('click', () => {
   const text = lifeRle();
-  if (text) copyFlash($('copyRle'), text);
+  if (text)
+    saveBlob(new Blob([text], { type: 'text/plain' }), `${setupTitle({ setup: getSetup() })} gen ${stepShown}.rle`);
 });
-// An RLE file's pattern (Golly's, LifeWiki's, Copy RLE's): its cells [x, y, state] from its top left (Golly's hexagons
+// An RLE file's pattern (Golly's, LifeWiki's, Save RLE's): its cells [x, y, state] from its top left (Golly's hexagons
 // mirrored back, see lifeRle), its size, its rule as the app reads it (Golly's Generations, survival/birth/states, the
-// other way round, see gollyRule) and its grid (H after its rule: hexagons); null: no pattern, or no rule the app reads
+// other way round, see gollyRule) and its grid (H after its rule: hexagons); the app's own (Save RLE's), its setup too, from
+// its link (#C Tessera: …); null: no pattern, or no rule the app reads
 function rleRead(text) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()),
     head = lines.findIndex((line) => /^x\s*=/.test(line));
@@ -42795,35 +42797,49 @@ function rleRead(text) {
     hex = /h$/i.test(said),
     golly = said.match(/^(\d*)\/(\d*)(?:\/(\d+))?h?$/i),
     rule = parseRule(golly ? `B${golly[2]}/S${golly[1]}${golly[3] ? `/C${golly[3]}` : ''}` : said.replace(/h$/i, '')),
-    body = lines.slice(head + 1).filter((line) => !line.startsWith('#'));
+    body = lines.slice(head + 1).filter((line) => !line.startsWith('#')),
+    link = lines.find((line) => line.startsWith('#C Tessera: '));
   const cells = [...populationOf(`0,0:${body.join('')}`)].map(([k, v]) => [...cellXY(k), v]),
     w = 1 + Math.max(...cells.map(([x]) => x)),
     h = 1 + Math.max(...cells.map(([, y]) => y));
   if (!rule || !cells.length) return null;
-  return { rule, grid: hex ? 'hex' : 'square', w, h, cells: cells.map(([x, y, v]) => [x, hex ? h - 1 - y : y, v]) };
+  return {
+    rule,
+    grid: hex ? 'hex' : 'square',
+    w,
+    h,
+    cells: cells.map(([x, y, v]) => [x, hex ? h - 1 - y : y, v]),
+    setup: link && parseHash(link.slice(link.indexOf('#', 1))),
+  };
 }
-// Paste RLE, Open: an RLE file as Draw's cells, in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
+// Paste RLE, Open RLE: an RLE file as Draw's cells, in its own setup (the app's file: its link's, its start the file's
+// cells at gen 0), else in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
 // the file lays (its squares or hexagons, flat: see rleLaid), in its colours, its rule playable there; reached by the
 // menu's own clicks, each in turn; its rule then, its cells once built (see layCells)
 async function openRle(text) {
   const file = rleRead(text);
   if (!file) return alert('No RLE pattern here, or none with a rule the app reads.');
-  const { rule, grid } = file,
-    fits = (s) =>
-      NAV[s.w][0] === 'Life' &&
-      rleLaid(s.w) &&
-      PLANE_OF_MARK[lifeMark(VARIANTS[s.w])] === grid &&
-      s.lifeTeams === rule.colours &&
-      s.start === 'draw' &&
-      !ruleRefusal(ruleBody(rule.text), s.w),
-    [path] = fits(setupNow()) ? [[]] : pathsTo(fits);
-  if (!path) return alert(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
-  for (const [key] of path) {
-    document.querySelector(`[data-choice="${CSS.escape(key)}"]`).click();
-    await new Promise(requestAnimationFrame);
+  if (file.setup) {
+    const { popDraw, popPicks, popText, popCells, step, ...setup } = file.setup; // (its start: the file's cells, at gen 0)
+    applySetup({ ...setup, popStart: 'draw' });
+  } else {
+    const { rule, grid } = file,
+      fits = (s) =>
+        NAV[s.w][0] === 'Life' &&
+        rleLaid(s.w) &&
+        PLANE_OF_MARK[lifeMark(VARIANTS[s.w])] === grid &&
+        s.lifeTeams === rule.colours &&
+        s.start === 'draw' &&
+        !ruleRefusal(ruleBody(rule.text), s.w),
+      [path] = fits(setupNow()) ? [[]] : pathsTo(fits);
+    if (!path) return alert(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
+    for (const [key] of path) {
+      document.querySelector(`[data-choice="${CSS.escape(key)}"]`).click();
+      await new Promise(requestAnimationFrame);
+    }
+    $('lifeRule').value = ruleBody(rule.text);
+    $('lifeRule').dispatchEvent(new Event('change'));
   }
-  $('lifeRule').value = ruleBody(rule.text);
-  $('lifeRule').dispatchEvent(new Event('change'));
   do await whenBuilt();
   while (busy || walk.variant !== tabVariant());
   layCells(file);
@@ -43611,9 +43627,9 @@ $('galleryOpenTiles').replaceChildren(
   tile({
     id: 'openRle',
     pic: icon('import'),
-    text: 'Open',
+    text: 'Open RLE',
     title:
-      "An RLE file (Golly's, LifeWiki's, Copy RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
+      "An RLE file (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
     click: () => $('rleOpenFile').click(),
   }),
   tile({
@@ -43621,7 +43637,7 @@ $('galleryOpenTiles').replaceChildren(
     pic: icon('copy'),
     text: 'Paste RLE',
     title:
-      "The RLE copied (Golly's, LifeWiki's, Copy RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
+      "The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
     click: async () => openRle(await navigator.clipboard.readText()),
   }),
 );

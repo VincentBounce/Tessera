@@ -209,7 +209,7 @@ main {
   color: var(--accent-color);
   vertical-align: middle; /* (the Gallery's, on its name's line; a panel's: a flex row) */
 }
-/* a small action at a text's top right (Copy RLE, the Play card's description wrapping round it), its icon small */
+/* a small action at a text's top right (Save RLE, the Play card's description wrapping round it), its icon small */
 .head-btn {
   float: right;
   margin-left: var(--short-gap);

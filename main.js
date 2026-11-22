@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.604';
+const VERSION = '0.5.605';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3886,7 +3886,7 @@ const sideTurn = (kind, [x, y]) => {
 };
 // Each strip of a tiling: along its lattice's first side a, then the other side b of the strip's lattice cell; turned (as
 // a torus's, by 180° / its turns: 45° on squares, 30° on hexagons, 90° on two turns), along the shortest lattice side
-// that far round from a, when the tiling is mirrored along it (see mobiusMirror); the straight one, of the two, the one
+// that far round from a, when the tiling is mirrored along it (see mobiusMirrors); the straight one, of the two, the one
 // whose tiles lie nearest the plane's way (see sideTurn)
 const MOBIUS_STRIPS = {};
 // (a grid's strips' sides: straight, then turned when mirrored there)
@@ -3907,7 +3907,7 @@ function stripSides(kind) {
     cell = d && cellAlong(kind, d);
   return {
     deg,
-    along: [[a, b], ...(cell && mobiusMirror(kind, cell) ? [cell] : [])].sort(
+    along: [[a, b], ...(cell && mobiusMirrors(kind, cell).length ? [cell] : [])].sort(
       (x, y) => Math.abs(sideTurn(kind, x[0])) - Math.abs(sideTurn(kind, y[0])),
     ),
   };
@@ -15762,12 +15762,13 @@ const kleinStrip = (kindK) => {
  * for them), or rows "x" that count, a length of its own (s=16x240: 16 rows of triangles 120 long). */
 const MOBIUS_ALONG = {
   mobiusCairo: { step: 1, copyLength: 2, width: (nv) => nv, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
-}; // (width: its width for its rows; copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirror; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
-// A tiling's mirror along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: the
+}; // (width: its width for its rows; copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirrors; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
+// A tiling's mirrors along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: each
 // line y = c, and the slide g along it with it (0: a mirror; else a glide), (x, y) → (x + g, 2c − y) mapping its corners
-// and its cells' middles onto theirs; the nearest the origin, a mirror before a glide, between tiles first (between: no
-// tile across it)
-function mobiusMirror(kind, [a, b] = gridMotif(kind).basis) {
+// and its cells' middles onto theirs; every one a row of b holds (most tilings two, half a row apart: through tiles and
+// between them, each closing a strip at its own lengths), each once (c a row on, the same), between tiles first (between:
+// no tile across it), then the nearest the origin, a mirror before a glide
+function mobiusMirrors(kind, [a, b] = gridMotif(kind).basis) {
   const {
       basis: [a0, b0],
       polys,
@@ -15799,38 +15800,38 @@ function mobiusMirror(kind, [a, b] = gridMotif(kind).basis) {
       [-3, -2, -1, 0, 1, 2, 3].flatMap((j) => polys.map((P) => P.map(W).map(([, y]) => y + i * A[1] + j * B[1]))),
     );
   const between = (c) => !tiles.some((ys) => Math.min(...ys) < c - 1e-6 && Math.max(...ys) > c + 1e-6); // (no tile across the line)
-  let through = null;
+  const found = [],
+    sameLine = (c, d) => near((c - d) / tb[1]); // (a row of b on: the same line, its slide bx on)
   for (const g of [0, la / 2, tb[0] / 2, (la + tb[0]) / 2, -tb[0] / 2])
     for (const c of cs) {
       const on = ([x, y]) => [x + g, 2 * c - y];
+      if (found.some((m) => sameLine(m.c, c))) continue;
       if (!mids.every((p) => inMids(on(p))) || !corners.every((p) => inCorners(on(p)))) continue;
-      const m = {
-        c,
-        g,
-        la,
-        bx: tb[0],
-        q: [1, 2, 3, 4, 6, 12].find((k) =>
-          [g, tb[0]].every((v) => Math.abs((v * k) / la - Math.round((v * k) / la)) < 1e-6),
-        ),
-        between: between(c),
-      };
-      if (m.between) return m;
-      through ??= m;
+      found.push({ c, g, la, bx: tb[0], between: between(c) });
     }
-  return through;
+  return found.sort((p, q) => q.between - p.between);
 }
 // the strip's length such that the twist (x + L, y) → (x, W − y), W = nv rows of b, maps the tiling onto itself (see
 // tilingStrip): with its mirror on y = 0, L − g a lattice vector's way along with nv rows across, nv·b_x + k·|a|; in
 // steps of |a| / q, the least that g and b_x are whole counts of
 for (const [strip, { kind, basis }] of Object.entries(MOBIUS_STRIPS)) {
-  const { c, g, la, bx, q, between } = mobiusMirror(kind, basis),
-    step = la / q;
-  // (copyLength: the least slide along that brings it onto itself, turned over on a glide: a bottle's colours' slices whole counts of it; mirrorY: its mirror's line, laid on the strip's edge, see stripFrame)
+  const mirrors = mobiusMirrors(kind, basis),
+    [{ g, la, bx, between }] = mirrors,
+    q = [1, 2, 3, 4, 6, 12].find((k) =>
+      [...mirrors.map((m) => m.g), bx].every((v) => Math.abs((v * k) / la - Math.round((v * k) / la)) < 1e-6),
+    ),
+    step = la / q,
+    closes = (m, n, nv) => (((n - Math.round((m.g + nv * bx) / step)) % q) + q) % q === 0;
+  // the mirror its ends close on, n steps long and nv rows wide (its line laid on the sheet's edge, see stripFrame): a strip's
+  // its edge's, its first; a bottle's any (no edge: each of its tiling's mirrors its own lengths, see mobiusMirrors)
+  const mirrorAt = (n, nv, any = false) => (any ? mirrors : mirrors.slice(0, 1)).find((m) => closes(m, n, nv));
+  // (copyLength: the least slide along that brings it onto itself, turned over on a glide: a bottle's colours' slices whole counts of it)
   MOBIUS_ALONG[strip] = {
     step,
     copyLength: g > 1e-9 ? g : la,
-    mirrorY: c,
-    ok: (n, nv) => (((n - Math.round((g + nv * bx) / step)) % q) + q) % q === 0,
+    mirrors,
+    mirrorAt,
+    ok: (n, nv, any = false) => !!mirrorAt(n, nv, any),
     edgeCuts: !between,
     width: (nv) => (nv * Math.abs(basis[0][0] * basis[1][1] - basis[0][1] * basis[1][0])) / la, // (nv rows of b across a)
   };
@@ -15938,7 +15939,7 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
   return count ? { L, W, n } : { L, W, tiles, latticeCells, cellPlaces };
 }
 // A tiling's strip (see MOBIUS_TILINGS): the plane turned so that its lattice's first side a runs along it, its mirror
-// on the strip's edge (see mobiusMirror), its tiles
+// on the strip's edge (see mobiusMirrors), its tiles
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
 function tilingStrip(kind, kind0, size, across = false) {
@@ -15991,11 +15992,14 @@ function stripFrame(kind, kind0, size, across = false) {
     [a, b] = (MOBIUS_STRIPS[kind0] ?? TORUS_SHEETS[kind0]).basis,
     turn = -Math.atan2(a[1], a[0]),
     m = t.polys.length,
-    { step, mirrorY, shear = 0 } = MOBIUS_ALONG[kind0] ?? TORUS_SHEETS[kind0]; // (shear: a torus's sheet, see TORUS_SHEETS)
+    { step, shear = 0 } = MOBIUS_ALONG[kind0] ?? TORUS_SHEETS[kind0]; // (shear: a torus's sheet, see TORUS_SHEETS)
   const [nv, own] = mobiusSize(size),
     [bx, by] = turnPoint(b, turn),
     W = nv * by,
-    n = across ? own : stripSteps(kind0, nv, W, own); // (its colours' stretches whole copies along)
+    n = across ? own : stripSteps(kind0, nv, W, own), // (its colours' stretches whole copies along)
+    mirrorY = MOBIUS_ALONG[kind0]
+      ? (MOBIUS_ALONG[kind0].mirrorAt(n, nv, across) ?? MOBIUS_ALONG[kind0].mirrors[0]).c
+      : TORUS_SHEETS[kind0].mirrorY; // (its ends' mirror on y = 0; a torus's sheet, its strip's first)
   const L = n * step,
     sides = Math.max(...t.polys.map((P) => P.length)),
     Q = STRIP_GRID;
@@ -16111,7 +16115,9 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     .filter((b) => K % b === 0 && (b === 1 || (nv / 2) % rows === 0))
     .map((b) => {
       const blocks = [K / b, b],
-        n = ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, [(K / b) * q], (c) => ok(c, nv)), // (a length of its own: in its usual's place, as a strip's, see stripSteps)
+        n = ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, own && K === 1 ? [] : [(K / b) * q], (c) =>
+          ok(c, nv, true),
+        ), // (a length of its own: in its usual's place, as a strip's, see stripSteps; whole copies for its colours' slices, one colour's as asked, the nearest a mirror closes)
         slice = (n * step * b) / K / copyLength;
       return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: Math.abs(slice - Math.round(slice)) < 1e-6 };
     })
@@ -17714,7 +17720,7 @@ for (const [name, kind, turned, unit] of [
     kind,
     basis: [a, b],
     step,
-    mirrorY: MOBIUS_ALONG[strip]?.mirrorY ?? 0,
+    mirrorY: MOBIUS_ALONG[strip]?.mirrors[0].c ?? 0,
     shear: Bx / By,
     rows,
     sheet: [a, B],

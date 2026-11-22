@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.572';
+const VERSION = '0.5.573';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26788,7 +26788,7 @@ function renderDrawTools() {
   grey($('openPng'), false, '', false, ({ w: v }) => pngWhyNot(v));
   $('brushColours').classList.toggle('off', away);
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
-  grey($('startCells'), !population.size, 'No cell is drawn.');
+  setTile($('startCells'), { greyed: population.size ? '' : 'No cell is drawn.' }); // (at any generation: back to gen 0)
   // Draw from current state: the generation shown (away from gen 0), else the one before Draw, its name saying which
   $('drawFromCurrent').lastChild.textContent = `Draw from ${away ? 'current' : 'previous'} state`;
   setTile($('drawFromCurrent'), {
@@ -42255,7 +42255,9 @@ $('pngTools').append(
     title: 'Saves the generation shown as a black and white PNG picture, a square a pixel',
   }),
 );
+// Clear: at any generation, back to gen 0 with no cell
 $('startCells').addEventListener('click', () => {
+  seekTo(0);
   rememberDrawing();
   population = new Map();
   lifeReseed(); // (the plane's or a surface's)
@@ -42336,7 +42338,6 @@ $('brushCards').replaceChildren(
       click: () => {
         brush.id = id;
         brush.view = false; // (a brush in hand: View off, back to its start's cells at gen 0)
-        play(false);
         seekTo(0);
         renderPlaneRow();
       },
@@ -42345,9 +42346,10 @@ $('brushCards').replaceChildren(
     return b;
   }),
 );
-// View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it
+// View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it, at gen 0 (as a brush picked)
 $('drawView').addEventListener('click', () => {
   brush.view = !brush.view;
+  if (!brush.view) seekTo(0);
   renderPlaneRow();
 });
 $('brushTurn').addEventListener('click', () => {

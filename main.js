@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.617';
+const VERSION = '0.5.618';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15522,12 +15522,11 @@ function kleinAt(q, u) {
 // 1 − cos (2 at its foot); its handle half a torus (ring 1, tube 0.25) under, from the neck's foot to the body's: glued as
 // ours, its end its start turned over (u to π − u). Its pieces by p = 3 − q, as Shadertoy lays them: the body [0, 1), the lip
 // [1, 1.5), the neck [1.5, 2.5), the handle [2.5, 3]; run the other way, q ∈ [0, 3] as ours runs (from its foot, where the tube
-// turns inside out, into its body first, its neck last: not the neck first, a knot in its handle as it folds), round it
-// π − u (its face kept); its height h, upside down: its lip at its foot, as ours's bowl (its sheet's middle, its pictures, to
+// turns inside out, into its body first, its neck last: not the neck first, a knot in its handle as it folds), round it as
+// laid (run back along it, its sheet as ours's, not mirrored); its height h, upside down: its lip at its foot, as ours's bowl (its sheet's middle, its pictures, to
 // the south, as ours's: the bottle the same, mirrored across its x–z plane)
-function glassBottleAt(p, v) {
-  const q = 3 - p,
-    u = Math.PI - v;
+function glassBottleAt(p, u) {
+  const q = 3 - p;
   const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
     level = (x, r, h) => [x + r * Math.cos(u), r * Math.sin(u), -h]; // (a level circle round (x, 0, h), upside down)
   if (q < 1) {

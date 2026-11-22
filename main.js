@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.623';
+const VERSION = '0.5.624';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35194,7 +35194,12 @@ function getSetup() {
       ...(readsDigits(w) ? { [life ? 'popNumber' : 'walkNumberA']: formulaInUse } : {}),
     };
   if (!variant.life || gensShown()) s.maxSteps = lengthAsked(); // (the length asked: digits, or generations)
-  if (variant.surface) s.gridSize = $('gridSizeField').value;
+  // (a size of two dimensions, a ring's rows and length, written whole as played: the link opens it as shown, whatever the
+  // usual length then; see torusDims, widthSize)
+  if (variant.surface)
+    s.gridSize = TORI.includes(surfaceOf(variant))
+      ? widthSize(surfaceOf(variant), ...torusDims(surfaceOf(variant), gridSizePlayed()))
+      : $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
   for (const f of Object.keys(RING_SHAPES)) if (shapeOn(f, w)) s[`${f}Shape`] = shapeOn(f, w); // (its place in its family's shapes: the first, 0, in no link)

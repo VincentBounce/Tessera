@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.599';
+const VERSION = '0.5.600';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33469,6 +33469,32 @@ function patternAt(i, K, cells, partial = false, to = null, round = !partial) {
   }
   return out;
 }
+// whether a pattern laid on a surface (see patternFrom) keeps its shape: each of its cells laid, and every two side by side
+// on the plane side by side there (past a solid's corner, three or four faces round a point the plane has six or four round,
+// some are not: Anywhere's moves kept where it does); its plane's pairs once a pattern (Famous centred: smaller than a face,
+// at its middle, never by an edge, see fits)
+const shapePairs = remember('shapePairs', new Map());
+function keepsShape(cells, at) {
+  const g = walk.surface,
+    k = g.sides,
+    kind = patternKind(),
+    key = `${kind}|${cells.map(([x, y]) => `${x},${y}`).join(';')}`;
+  if (!shapePairs.has(key))
+    shapePairs.set(
+      key,
+      cells.flatMap(([x, y], a) =>
+        planeCorners(kind, x, y).flatMap((_, e) => {
+          const c = planeAcross(kind, [x, y], e)?.[0],
+            b = c ? cells.findIndex(([u, v]) => u === c[0] && v === c[1]) : -1;
+          return b > a ? [[a, b]] : [];
+        }),
+      ),
+    );
+  return (
+    at.every((u) => u >= 0) &&
+    shapePairs.get(key).every(([a, b]) => [...Array(k).keys()].some((e) => g.nbr[k * at[a] + e] === at[b]))
+  );
+}
 // Famous on a sheet (a torus of hexagons, triangles or Cairo pentagons, a Möbius strip, a Klein bottle): the
 // pattern's cells from the plane's geometry brought to the sheet's units (hexagons: the plane's pointy ones
 // turned by 30°, as the sheets' flat ones), laid with the one nearest their middle on a tile near the spot
@@ -34672,7 +34698,7 @@ function laidChoices(centred, any = false) {
       const lay = ([cells, name], t) => {
         const F = frameOf(t),
           at = F && patternOnCell(F, cells, t);
-        if (!at || at[0] !== t) return null;
+        if (!at || at[0] !== t || (!APERIODIC[kind] && !keepsShape(cells, at))) return null; // (its shape kept: see keepsShape)
         const cs = [];
         for (let k = 0; k < cells.length; k++) {
           const c = at[k];

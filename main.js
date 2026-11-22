@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.600';
+const VERSION = '0.5.601';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15516,7 +15516,18 @@ function bagelAt(q, u) {
     r = 1 + TORUS_TUBE * (c * Math.sin(v) - s * Math.sin(2 * v));
   return [r * Math.sin(t), -r * Math.cos(t), TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v))];
 }
-// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, Jeener's triple
+// The Möbius strip: a band (radius 1, MOBIUS_BAND half wide) turning half a turn round a circle, its width the bottle's way
+// round cut at u = −π/2 (its middle at π/2: past its end, turned over, u to π − u, its across s to −s), its two edges apart
+// in space, one on the bottle (cells along one the neighbours of those along the other); q ∈ [0, 3] round the circle
+const MOBIUS_BAND = 0.6;
+function mobiusBandAt(q, u) {
+  const t = (2 * Math.PI * q) / 3,
+    s = (MOBIUS_BAND * (mod(u + Math.PI / 2, 2 * Math.PI) - Math.PI)) / Math.PI, // (across: −MOBIUS_BAND to MOBIUS_BAND)
+    r = 1 + s * Math.cos(t / 2);
+  return [r * Math.cos(t), r * Math.sin(t), s * Math.sin(t / 2)];
+}
+// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, Jeener's
+// triple, the Möbius strip
 const KLEIN_SHAPES = [
   [
     'Thin',
@@ -15531,8 +15542,12 @@ const KLEIN_SHAPES = [
     'Triple',
     "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
   ],
+  [
+    'Möbius',
+    'A Möbius strip whose two edges are one: the cells along one edge the neighbours of those along the other, as the bottle glues them',
+  ],
 ];
-const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt];
+const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt, mobiusBandAt];
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
 // torusShape, kleinShape: its place, the first in none), the one picked in each, its sheet the family's whatever its
 // shape (a torus knot's longer, see torusTube); the mesh made for a variant's (see stripKey)
@@ -15580,6 +15595,7 @@ function kleinBottle(shape = shapeOn('klein')) {
     N / 6,
     N / 2, // (the bagel's: the ring's back)
     Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
+    0, // (the Möbius strip's: anywhere, its start)
   ];
   return (kleinTables[shape] = {
     at,

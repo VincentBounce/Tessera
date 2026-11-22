@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.621';
+const VERSION = '0.5.622';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16153,7 +16153,7 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
       kind,
       basis: [a, b],
     } = MOBIUS_STRIPS[strip],
-    { step, ok, copyLength } = MOBIUS_ALONG[strip];
+    { step, ok, copyLength, mirrors, mirrorAt } = MOBIUS_ALONG[strip];
   const [nv, own] = mobiusSize(size),
     turn = -Math.atan2(a[1], a[0]),
     by = turnPoint(b, turn)[1],
@@ -16161,9 +16161,8 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
   // its colours' blocks a × b, as a torus's (see torusBlocks): a slices along, b = 1 or 2 round the tube, its half turn (a shift
   // by W / 2, the only one round it its gluing keeps: turned over, s comes back as −s), where half its rows are whole rows of
   // its lattice across (see sheetRows); its length as a ring's (see ringLength) for each: near its usual (W / TORUS_TUBE), its
-  // blocks square, whole copies along first (a slide lays each on the next), as the twist allows, its blocks alike (see
-  // kleinBlocksAlike: a half turn may lay them where a slide does not, 25.5 hexagons in 3); of those, the ones alike (fits),
-  // then the squarest blocks
+  // blocks square, as the twist allows, its blocks alike (see kleinBlocksAlike: a half turn may lay them where a slide does
+  // not, 25.5 hexagons in 3), by its preferences in turn (see prefer); of those, the ones alike (fits), then the squarest blocks
   const x = W / TORUS_TUBE / step,
     q = Math.round(copyLength / step),
     rows = sheetRows([a, b]); // (its lattice's, before b names the slices round the tube)
@@ -16174,13 +16173,24 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
         drawn = plane.start === 'draw',
         length = (units, judged = () => true) =>
           ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, units, (c) => ok(c, nv, true) && judged(c));
-      // (a length of its own: in its usual's place, as a strip's, see stripSteps; whole copies first, else the nearest of the
-      // few that close (8) whose blocks are alike, for a start laid by them; none: as near, whole copies, its blocks not alike;
-      // drawn by hand, or one colour, as asked)
-      let judged = 0;
-      const n =
-        (!drawn && length(own ? [] : [(K / b) * q], (c) => judged++ < 8 && kleinBlocksAlike(strip, nv, c, blocks))) ||
-        length(own && (K === 1 || drawn) ? [] : [(K / b) * q]);
+      // its blocks alike, judged on the nearest few that close (8) each time asked; drawn by hand, any (nothing laid by them)
+      const fair = () => {
+        let tries = 0;
+        return (c) => drawn || (tries++ < 8 && kleinBlocksAlike(strip, nv, c, blocks));
+      };
+      // its preferences in turn, [units, judged] each, the first that finds one: its usual one closed by its tiling's second
+      // mirror (the lengths it alone opened, see mobiusMirrors), fair by construction (kleinBlocksSlid: none measured for a
+      // preference, a teams' click judging every size's), step by step (none a whole copy's); a length of its
+      // own (as a strip's, see stripSteps) or the usual, fair, whole copies first; none fair near: as near, whole copies (one
+      // colour's or a drawn one's own as asked)
+      const prefer = [
+        ...(own
+          ? []
+          : [[[], (c) => mirrorAt(c, nv, true) === mirrors[1] && (drawn || kleinBlocksSlid(strip, nv, c, blocks))]]),
+        [own ? [] : [(K / b) * q], fair()],
+        [own && (K === 1 || drawn) ? [] : [(K / b) * q], () => true],
+      ];
+      const n = prefer.reduce((found, [units, judged]) => found || length(units, judged), 0);
       return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: kleinBlocksAlike(strip, nv, n, blocks) };
     })
     .reduce((p, c) => {
@@ -16201,12 +16211,17 @@ const sheetBlock = (u, v, nu, nv, [a, b]) => {
 // y + W) ≡ (x, y) and (x + L, y) ≡ (x, W − y): its shift across 0 or W / 2. The one sought sends the first block's middle to
 // the other's. By construction, the middles from the strip's frame (as stripCounted counts them), no mesh built
 const alikeMemo = remember('alikeMemo', {});
-function kleinBlocksAlike(strip, nv, n, blocks) {
-  const K = blocks[0] * blocks[1],
-    { step, mirrorAt } = MOBIUS_ALONG[strip],
+// whether a bottle's blocks are alike by construction: one colour, or its slices whole copies of its tiling along (turned over
+// on its ends' mirror's glide), each slice the one before slid
+function kleinBlocksSlid(strip, nv, n, blocks) {
+  const { step, mirrorAt } = MOBIUS_ALONG[strip],
     { g, la } = mirrorAt(n, nv, true),
-    copies = (n * step) / blocks[0] / (g > 1e-9 ? g : la); // (its slices' length in copies of its tiling along, turned over on its ends' mirror's glide)
-  if (K === 1 || Math.abs(copies - Math.round(copies)) < 1e-6) return true; // (whole copies: each slice the one before slid, by construction)
+    copies = (n * step) / blocks[0] / (g > 1e-9 ? g : la);
+  return blocks[0] * blocks[1] === 1 || Math.abs(copies - Math.round(copies)) < 1e-6;
+}
+function kleinBlocksAlike(strip, nv, n, blocks) {
+  const K = blocks[0] * blocks[1];
+  if (kleinBlocksSlid(strip, nv, n, blocks)) return true;
   return (alikeMemo[`${strip}|${nv}|${n}|${blocks}`] ??= (() => {
     const frame = stripFrame(MOBIUS_STRIPS[strip].kind, strip, `${nv}x${n}`, true),
       { L, W, cells, ta, tb, mirrorY, t } = frame,

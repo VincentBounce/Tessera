@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.615';
+const VERSION = '0.5.616';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15584,8 +15584,8 @@ const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
   shapeOn = (family, w = ringVariant()) => (ringFamily(w) === family ? ringShape[family] : 0);
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest) and its frame (centred, 3 at its
-// largest: the bottles' height)
+// the sheet's ends' share (the glass bottle's: its lip's lowest, at its foot; ours: the bowl's lowest, both where the tube turns
+// inside out, the sheet split there) and its frame (centred, 3 at its largest: the bottles' height)
 const kleinTables = {};
 function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
@@ -15617,7 +15617,7 @@ function kleinBottle(shape = shapeOn('klein')) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  const ends = [(N * 2.75) / 3, N / 6];
+  const ends = [(N * 1.25) / 3, N / 6]; // (the glass bottle's lip's lowest, its foot; ours's bowl's lowest: each split there)
   return (kleinTables[shape] = {
     at,
     N,

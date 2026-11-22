@@ -1,55 +1,140 @@
-// The Klein bottle's icon, drawn from the glass bottle's equations (main.js's glassBottleAt, Shadertoy's 4ltSW8) as Thin
-// shows it: its lip at its foot, its handle on top (X = −x, Z = −h). Its body's two sides and its neck's, each one cubic
-// (Hermite: its ends and their slopes, read from the equations), its foot's rim the front half of an ellipse (seen a little
-// from above), its handle's two arcs exact (half a torus: ring 1, tube 0.25); each side of its neck from where it leaves the
-// body's wall, none of it inside.
+// The Klein bottle's icon: the silhouette of the app's first Klein bottle shape (Basic) seen from the south, computed by the
+// app itself in a tab of tools/browser.js's browser (kleinOnBottle: no copy of its equations here): on a fine grid of its
+// sheet, the points where its surface turns from facing the view to facing away (its normal square to the view, the
+// zero of its y part, by marching squares), kept where nothing lies in front (its triangles along its ray), chained
+// into lines, simplified (Douglas–Peucker) and fitted in 24 × 24 (2 to 22).
 // Written into main.js's ICONS (the line `const klein = svgPath('…')`): run again after the bottle changes.
-//   node tools/klein_icon.mjs
+//   BROWSER_PORT=9451 node tools/klein_icon.mjs <tab>      (a tab of the app open: its id, see tools/browser.js tabs)
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
-  body = (h) => 1.5 - 1.25 * share(h), // (the body's radius at height h)
-  neckAxis = (h) => -(1 - Math.cos(((1 - h) / 3) * Math.PI)),
-  neck = (h) => 0.5 - 0.25 * share(h); // (the neck's radius)
-const S = 4.3, // (its extent, X −1.5 to 2.25 and Z −1.5 to 3.25, centred in 24)
-  at = (X, Z) => [12 + (X - 0.375) * S, 12 - (Z - 0.875) * S].map((v) => +v.toFixed(2)),
-  words = (p) => p.join(' ');
-// a side X(Z), Z from a to b: one cubic, its ends and slopes the curve's
-const side = (X, a, b) => {
-  const d = 1e-4,
-    slope = (z) => (X(z + d) - X(z - d)) / (2 * d),
-    third = (b - a) / 3;
-  return `M${words(at(X(a), a))}C${words(at(X(a) + slope(a) * third, a + third))} ${words(at(X(b) - slope(b) * third, b - third))} ${words(at(X(b), b))}`;
-};
-const arc = (r, to) => `A${+(r * S).toFixed(2)} ${+(r * S).toFixed(2)} 0 0 1 ${words(at(...to))}`;
-const [x0, y0] = at(-1.5, -1),
-  [x1] = at(1.5, -1),
-  rim = `M${x0} ${y0}A${+(1.5 * S).toFixed(2)} ${+(0.35 * S).toFixed(2)} 0 0 0 ${x1} ${y0}`; // (its front half)
-// where a side of the neck leaves the body: the last Z under which it lies inside the body's wall (bisected)
-const leaves = (X) => {
-  let lo = -1,
-    hi = 2;
-  for (let i = 0; i < 60; i++) {
-    const m = (lo + hi) / 2;
-    if (Math.abs(X(m)) < body(-m)) lo = m;
-    else hi = m;
+const here = path.dirname(fileURLToPath(import.meta.url)),
+  tab = process.argv[2];
+if (!tab) throw new Error('a tab of the app: node tools/klein_icon.mjs <tab>');
+
+// in the page: the silhouette's lines, each a list of [x, z] (east, up), as the bottle is drawn
+const inPage = `(() => {
+  const was = ringShape.klein;
+  ringShape.klein = 0;
+  const NS = 600, NU = 240, h = 1e-4,
+    P = (x, y) => kleinOnBottle(x, y, 1, 1, 0),
+    normal = (x, y) => cross(sub(P(x + h, y), P(x - h, y)), sub(P(x, y + h), P(x, y - h)));
+  const pts = [], f = [];
+  for (let i = 0; i <= NS; i++) {
+    pts.push([]); f.push([]);
+    for (let j = 0; j <= NU; j++) {
+      const p = P(i / NS, j / NU), n = normal(i / NS, j / NU);
+      pts[i].push(p);
+      f[i].push(n[1] / (Math.hypot(...n) || 1));
+    }
   }
-  return hi;
+  // what lies in front of a point, seen from the south (y: the nearer, the less): its triangles bucketed by where they fall
+  // on the view (x, z), each one met along the point's ray in front of it hiding it; none near it in space (its own sheet, a
+  // silhouette's depth changing at once beside it)
+  let lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
+  for (const row of pts) for (const p of row) { lo = [Math.min(lo[0], p[0]), Math.min(lo[1], p[2])]; hi = [Math.max(hi[0], p[0]), Math.max(hi[1], p[2])]; }
+  const G = 120, cell = Math.max(hi[0] - lo[0], hi[1] - lo[1]) / (G - 1),
+    bucket = (x, z) => Math.floor((z - lo[1]) / cell) * G + Math.floor((x - lo[0]) / cell),
+    buckets = Array.from({ length: G * G }, () => []),
+    tris = [];
+  for (let i = 0; i < NS; i++)
+    for (let j = 0; j < NU; j++)
+      for (const t of [[pts[i][j], pts[i + 1][j], pts[i + 1][j + 1]], [pts[i][j], pts[i + 1][j + 1], pts[i][j + 1]]]) {
+        const k = tris.push(t) - 1,
+          [x0, x1] = [Math.min(...t.map((p) => p[0])), Math.max(...t.map((p) => p[0]))],
+          [z0, z1] = [Math.min(...t.map((p) => p[2])), Math.max(...t.map((p) => p[2]))];
+        for (let z = z0; z <= z1 + cell; z += cell) for (let x = x0; x <= x1 + cell; x += cell) { const b = bucket(Math.min(x, x1), Math.min(z, z1)); if (buckets[b] && buckets[b].at(-1) !== k) buckets[b].push(k); }
+      }
+  const near = 0.06,
+    seen = (p) => (buckets[bucket(p[0], p[2])] ?? []).every((k) => {
+      const [a, b, c] = tris[k];
+      if ([a, b, c].some((v) => Math.hypot(v[0] - p[0], v[1] - p[1], v[2] - p[2]) < near)) return true;
+      const d = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]);
+      if (!d) return true;
+      const l1 = ((b[2] - c[2]) * (p[0] - c[0]) + (c[0] - b[0]) * (p[2] - c[2])) / d,
+        l2 = ((c[2] - a[2]) * (p[0] - c[0]) + (a[0] - c[0]) * (p[2] - c[2])) / d,
+        l3 = 1 - l1 - l2;
+      return l1 < 0 || l2 < 0 || l3 < 0 || l1 * a[1] + l2 * b[1] + l3 * c[1] >= p[1];
+    });
+  // its contour: the zero of f on each cell's edges, a segment each cell crossed
+  const cut = (i0, j0, i1, j1) => { const a = f[i0][j0], b = f[i1][j1], t = a / (a - b), p = pts[i0][j0], q = pts[i1][j1]; return p.map((v, d) => v + (q[d] - v) * t); };
+  const segments = [];
+  for (let i = 0; i < NS; i++)
+    for (let j = 0; j < NU; j++) {
+      const c = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]], hits = [];
+      for (let e = 0; e < 4; e++) { const [p, q] = [c[e], c[(e + 1) % 4]]; if ((f[p[0]][p[1]] < 0) !== (f[q[0]][q[1]] < 0)) hits.push(cut(...p, ...q)); }
+      for (let k = 0; k + 1 < hits.length; k += 2) {
+        const [a, b] = [hits[k], hits[k + 1]], m = a.map((v, d) => (v + b[d]) / 2);
+        if (seen(m)) segments.push([[a[0], a[2]], [b[0], b[2]]]);
+      }
+    }
+  ringShape.klein = was;
+  return segments.map((s) => s.flat().map((v) => v.toFixed(4)).join(',')).join(';'); // (one short line: a long JSON is cut)
+})()`;
+const out = execFileSync('node', [path.join(here, 'browser.js'), 'eval', tab, inPage], {
+  env: process.env,
+  maxBuffer: 1 << 28,
+}).toString();
+const segments = JSON.parse(out)
+  .split(';')
+  .map((s) => s.split(',').map(Number))
+  .map(([a, b, c, d]) => [
+    [a, b],
+    [c, d],
+  ]);
+
+// chained into lines by their ends (rounded), then fitted in 24 × 24 and simplified
+const key = ([x, z]) => `${Math.round(x * 1e4)},${Math.round(z * 1e4)}`,
+  ends = new Map();
+segments.forEach((s, i) => s.forEach((p) => ends.set(key(p), [...(ends.get(key(p)) ?? []), i])));
+const used = new Set(),
+  lines = [];
+for (let i = 0; i < segments.length; i++) {
+  if (used.has(i)) continue;
+  used.add(i);
+  const line = [...segments[i]];
+  // (grown from its last end, then from its first, while an unused segment meets it there)
+  for (const [tip, add] of [
+    [() => line[line.length - 1], (p) => line.push(p)],
+    [() => line[0], (p) => line.unshift(p)],
+  ])
+    for (;;) {
+      const end = tip(),
+        next = (ends.get(key(end)) ?? []).find((k) => !used.has(k));
+      if (next === undefined) break;
+      used.add(next);
+      const [a, b] = segments[next];
+      add(key(a) === key(end) ? b : a);
+    }
+  lines.push(line);
+}
+const all = lines.flat(),
+  [x0, x1] = [Math.min(...all.map((p) => p[0])), Math.max(...all.map((p) => p[0]))],
+  [z0, z1] = [Math.min(...all.map((p) => p[1])), Math.max(...all.map((p) => p[1]))],
+  S = 20 / Math.max(x1 - x0, z1 - z0),
+  at = ([x, z]) => [12 + (x - (x0 + x1) / 2) * S, 12 - (z - (z0 + z1) / 2) * S];
+const simplify = (P, tol) => {
+  if (P.length < 3) return P;
+  const [a, b] = [P[0], P[P.length - 1]],
+    len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  let far = 0,
+    at = 0;
+  for (let i = 1; i < P.length - 1; i++) {
+    const d = Math.abs((b[0] - a[0]) * (a[1] - P[i][1]) - (a[0] - P[i][0]) * (b[1] - a[1])) / len;
+    if (d > far) [far, at] = [d, i];
+  }
+  return far > tol ? [...simplify(P.slice(0, at + 1), tol).slice(0, -1), ...simplify(P.slice(at), tol)] : [a, b];
 };
-const neckSide = (X) => side(X, leaves(X), 2);
-const icon = [
-  side((Z) => body(-Z), -1, 2),
-  side((Z) => -body(-Z), -1, 2),
-  neckSide((Z) => -neckAxis(-Z) + neck(-Z)),
-  neckSide((Z) => -neckAxis(-Z) - neck(-Z)),
-  rim,
-  `M${words(at(-0.25, 2))}${arc(1.25, [2.25, 2])}M${words(at(0.25, 2))}${arc(0.75, [1.75, 2])}`,
-].join('');
-const main = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'main.js'),
+const icon = lines
+  .map((l) => simplify(l.map(at), 0.04))
+  .filter((l) => l.slice(1).reduce((sum, p, i) => sum + Math.hypot(p[0] - l[i][0], p[1] - l[i][1]), 0) > 0.5) // (crumbs left out)
+  .map((l) => `M${l.map((p) => p.map((v) => +v.toFixed(2)).join(' ')).join('L')}`)
+  .join('');
+const main = path.join(here, '..', 'main.js'),
   source = fs.readFileSync(main, 'utf8'),
   line = /const klein = svgPath\(\s*'[^']*',?\s*\);/;
 if (!line.test(source)) throw new Error("main.js: no `const klein = svgPath('…')`");
 fs.writeFileSync(main, source.replace(line, `const klein = svgPath(\n    '${icon}',\n  );`)); // (as Prettier leaves it)
-console.log(icon.length, 'characters');
+console.log(lines.length, 'lines,', icon.length, 'characters');

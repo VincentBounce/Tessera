@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.629';
+const VERSION = '0.5.630';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7986,11 +7986,10 @@ const ICONS = (() => {
     ) +
     svgPath('M6.8 6.6C11 6.8 16 8 19.5 10.2C16.5 13.5 13 16.5 9.8 18.1Z') +
     svgPath('M6.7 3.1Q6.1 5 6.8 6.6M20.1 6.8L19.5 10.2M9.8 18.1Q7.5 18.2 5.7 18.7');
-  // the Klein bottle as Thin shows it (glassBottleAt: its lip at its foot, its handle on top): its body's sides, its neck's,
-  // its foot's rim, its handle's two arcs
+  // the Klein bottle, its first shape's (Basic) silhouette seen from the south, as the app draws it
   const klein = svgPath(
-    'M16.84 20.06C16.84 15.76 11.46 11.46 11.46 7.16M3.94 20.06C3.94 15.76 9.31 11.46 9.31 7.16M15.05 15.01C17.31 12.39 20.06 9.78 20.06 7.16M13.77 13.02C16.04 11.07 17.91 9.12 17.91 7.16M3.94 20.06A6.45 1.5 0 0 0 16.84 20.06M9.31 7.16A5.38 5.38 0 0 1 20.06 7.16M11.46 7.16A3.22 3.22 0 0 1 17.91 7.16',
-  ); // (made by tools/klein_icon.mjs from the bottle's equations: run it again as they change)
+    'M15.12 19.11L15.73 17.27L17.52 12.62L18.04 10.7L18.28 9.18L18.3 7.52L18.2 6.75L18.02 6.08L17.77 5.42L17.43 4.79L17.01 4.2L16.51 3.67L15.71 3.05L14.72 2.53L13.75 2.21L12.64 2.02L11.5 2.02L10.45 2.18L9.44 2.52L8.57 2.97L7.79 3.56L7.13 4.27L6.59 5.07L6.19 5.94L5.89 6.94L5.73 7.96L5.67 9.08L5.74 10.39L6.14 12.6L6.28 13.15L6.62 14.01L8 16.95L10.21 21.38L10.58 21.94L10.71 22L15.21 21.98L15.41 21.64L15.47 20.91L15.37 20.04L15.1 18.91M13.96 15.84L14.68 14.27L15.47 12.33L15.82 11.26L16.06 10.24L16.15 9.29L16.07 8.39L15.83 7.67L15.44 7.12L14.93 6.72L14.28 6.47L13.59 6.4L12.87 6.5L12.21 6.77L11.66 7.19L11.28 7.71L11.06 8.36L11.06 9.23L11.34 10.25L11.86 11.35L12.93 13.15L14.02 15.91',
+  ); // (made by tools/klein_icon.mjs from the bottle the app draws: run it again as it changes)
   const [a, b, c, d] = [
     [12, 3],
     [3, 19],

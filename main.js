@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.577';
+const VERSION = '0.5.578';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6830,8 +6830,7 @@ function renderHeadTiles() {
         pic: icon('camera'),
         text: 'Screenshot',
         title: "Saves the view as a WebP picture, taken as the Gallery's thumbnails are (no grid lines, no sky)",
-        click: async () =>
-          saveBlob(await wantThumbnail(null), `${APP_TITLE} ${setupTitle({ setup: getSetup() })}.webp`),
+        click: async () => saveBlob(await wantThumbnail(null), `${setupTitle({ setup: getSetup() })}.webp`),
       }),
     ];
     for (const b of headTiles) b.classList.add('open-only');
@@ -35442,13 +35441,15 @@ function exportGallery(list = readGallery().filter((x) => !selecting() || select
   const blob = new Blob([JSON.stringify({ app: 'Tessera', version: 2, setups: list }, null, 2)], {
     type: 'application/json',
   });
-  saveBlob(blob, `${new Date().toLocaleDateString('sv')} Tessera v${VERSION} - Gallery export.json`); // (its day, YYYY-MM-DD, here; the version that wrote it)
+  saveBlob(blob, `Gallery export v${VERSION}.json`); // (the version that wrote it)
 }
-// a file saved by the browser (its downloads), named
+// a file saved by the browser (its downloads), named as the Mac names a screenshot, its time first, then the app's name
+// and its own: 2026-11-22 at 00.40.08 Tessera · Wild #398736471.webp
 function saveBlob(blob, name) {
-  const a = document.createElement('a');
+  const now = new Date(),
+    a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = name;
+  a.download = `${now.toLocaleDateString('sv')} at ${now.toLocaleTimeString('sv').replaceAll(':', '.')} ${APP_TITLE} · ${name}`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -42323,7 +42324,7 @@ $('exportPng').addEventListener('click', () => {
     im.data.set([v, v, v, 255], 4 * (y * w + x));
   }
   g.putImageData(im, 0, 0);
-  c.toBlob((blob) => saveBlob(blob, `${APP_TITLE} gen ${stepShown}.png`));
+  c.toBlob((blob) => saveBlob(blob, `gen ${stepShown}.png`));
 });
 stage.addEventListener('pointerleave', () => {
   pointerPixel = null; // (a surface's brush gone, see surfaceGhost)

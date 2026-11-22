@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.610';
+const VERSION = '0.5.611';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15463,22 +15463,6 @@ function kleinAt(q, u) {
     nz = -(B[0] - A[0]) / l; // (its normal in the plane: east at the body's top, west at the mouth)
   return [x + KLEIN_TUBE * Math.cos(u) * nx, KLEIN_TUBE * Math.sin(u), z + KLEIN_TUBE * Math.cos(u) * nz];
 }
-// The triple bottle, Jeener's (Edmond Bonan's form of it, J.-F. Colonna's page, Commentaires_NKleinBottle.01): a tube round a
-// deltoid (S = 2: S cos w + cos Sw, S sin w − sin Sw), its radius W swelling three times (its bulbs, T = 4), its circle turned
-// half a turn along it ((S − 1) w / 2): a Klein bottle, one face (N = S + 1 odd), glued as ours, F(w + 2π, u) = F(w, π − u);
-// q ∈ [0, 3] along it (w = 2π q / 3, as kleinAt's), u round it, its deltoid upright in the x–z plane (y its thickness)
-const JEENER_S = 2,
-  JEENER_T = 4;
-function jeenerAt(q, u) {
-  const S = JEENER_S,
-    w = (2 * Math.PI * q) / 3,
-    W = ((S + 1) / 4) * (Math.cos((S + 1) * w + Math.PI / JEENER_T) + Math.SQRT2);
-  return [
-    S * Math.cos(w) + Math.cos(S * w) - W * Math.sin(((S - 1) / 2) * w) * Math.cos(u),
-    W * Math.sin(u),
-    S * Math.sin(w) - Math.sin(S * w) - W * Math.cos(((S - 1) / 2) * w) * Math.cos(u),
-  ];
-}
 // The glass bottle (Shadertoy's 4ltSW8, its distance field's pieces): a tube whose circles lie level, its height h: the body
 // round the vertical, its radius 1.5 − 1.25 y (y = sin² of its height's share, 0 at its top, 1 at its foot, h 1 to −2); its
 // lip half a torus (ring 1, tube 0.5) turning it in to 0.5; its neck down from there, 0.5 − 0.25 y, its axis bent west by
@@ -15528,8 +15512,8 @@ function mobiusBandAt(q, u) {
     r = 1 + s * Math.cos(t / 2);
   return [r * Math.cos(t), r * Math.sin(t), s * Math.sin(t / 2)];
 }
-// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, Jeener's
-// triple, the Möbius strip
+// a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, the Möbius
+// strip
 const KLEIN_SHAPES = [
   [
     'Thin',
@@ -15541,15 +15525,11 @@ const KLEIN_SHAPES = [
     'A ring whose tube is a figure 8 turning half a turn round it, crossing itself along the circle through its middle',
   ],
   [
-    'Triple',
-    "Jeener's triple Klein bottle: three bulbs round a deltoid, each one's neck straight into the next one's bottom (its cells the same, the bottle's)",
-  ],
-  [
     'Möbius',
     'A Möbius strip whose two edges are one: the cells along one edge the neighbours of those along the other, as the bottle glues them',
   ],
 ];
-const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, jeenerAt, mobiusBandAt];
+const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt, mobiusBandAt];
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
 // torusShape, kleinShape: its place, the first in none), the one picked in each, its sheet the family's whatever its
 // shape (a torus knot's longer, see torusTube); the mesh made for a variant's (see stripKey)
@@ -15559,8 +15539,8 @@ const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
   shapeOn = (family, w = ringVariant()) => (ringFamily(w) === family ? ringShape[family] : 0);
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its back;
-// Jeener's: a neck's narrowest) and its frame (centred, 3 at its largest: the bottles' height, the bagel's width)
+// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its back; the
+// Möbius strip's: anywhere alike) and its frame (centred, 3 at its largest: the bottles' height, the bagel's width)
 const kleinTables = {};
 function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
@@ -15597,7 +15577,6 @@ function kleinBottle(shape = shapeOn('klein')) {
     (N * 2.75) / 3,
     N / 6,
     N / 2, // (the bagel's: the ring's back)
-    Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
     N / 2, // (the Möbius strip's: anywhere alike; as the bagel's, so that no tile's corner before the sheet's start falls before the band's)
   ];
   return (kleinTables[shape] = {

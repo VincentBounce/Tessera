@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.624';
+const VERSION = '0.5.625';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15427,8 +15427,8 @@ const kleinStraightTube = (x, y, nu, nv, tube, t) =>
 function kleinOnBottle(x, y, nu, nv, up) {
   const f = ((y - up) / nv) * 2 * Math.PI,
     w = x / nu + kleinBottle().bottom,
-    past = w >= 1;
-  return kleinBottlePoint(past ? w - 1 : w, past ? -Math.PI / 2 - f : f + 1.5 * Math.PI);
+    k = Math.floor(w); // (its turns round the bottle, before its start or past its end: each turns it over)
+  return kleinBottlePoint(w - k, k % 2 ? -Math.PI / 2 - f : f + 1.5 * Math.PI);
 }
 // A sheet point's circle round the tube, the straight tube's turned (m = ⅔, see kleinStraightTube) and the bottle's: each its middle, its
 // radius, its point's way from it, a quarter turn on and their normal (its frame), and the turn from one frame to the
@@ -15561,6 +15561,23 @@ function kleinSketchAt(q, u) {
     return [-b + (b + Math.cos(u)) * Math.cos(v), Math.sin(u), (d - 1 + Math.cos(u)) * Math.sin(v) + d * Math.PI];
   return [-b + b * Math.cos(v) - Math.cos(u), Math.sin(u), d * (4 * Math.PI - v)];
 }
+// The classic bottle (the one of every textbook and of 3D Warehouse's model: r = 4 (1 − cos t / 2), t round its loop): its
+// handle, t ∈ [0, π), a tube whose circles turn with it, its centre (6 cos t (1 + sin t), 16 sin t); then its neck and body,
+// t ∈ [π, 2π), circles level, its centre's height 16 sin t; upright (its height z), its flat bottom (t = 3π/2, where the
+// tube turns inside out) its sheet's ends, run from there into its body first (t down), round it from v = u + π (its sheet's
+// middle, its pictures, south as ours's); its own gluing at t = 0 (v to π − v) carried past it, the sheet's ends turned
+// over at its bottom instead
+function classicKleinAt(q, u) {
+  const t = 1.5 * Math.PI - (2 * Math.PI * q) / 3,
+    T = t < 0 ? t + 2 * Math.PI : t,
+    v = t < 0 ? -u : u + Math.PI,
+    r = 4 * (1 - Math.cos(T) / 2),
+    x = 6 * Math.cos(T) * (1 + Math.sin(T)),
+    up = 16 * Math.sin(T);
+  return T < Math.PI
+    ? [x + r * Math.cos(T) * Math.cos(v), -r * Math.sin(v), up + r * Math.sin(T) * Math.cos(v)]
+    : [x - r * Math.cos(v), -r * Math.sin(v), up];
+}
 // The rolled bottles' sections across their sheet, at s ∈ [−½, ½) from its middle, rolled up by m from the sheet's straight
 // width (its flat's, 2π·tube) round a ring of radius 1 (see ringRoll), by their place in KLEIN_SHAPES: the bagel's figure 8
 // (TORUS_TUBE wide, the figure 8 Klein bottle: turned half a turn round the ring, it meets itself turned over, s to −s,
@@ -15594,10 +15611,19 @@ const KLEIN_SHAPES = [
     'Sketch',
     "A bottle in four pieces: a bowl, a body narrowing up, a handle's half ring, its neck straight down into the bowl",
   ],
+  [
+    'Classic',
+    'The parametric Klein bottle found everywhere: a flat bottom, a wide body, its neck arching over and down through its side',
+  ],
 ];
 // each bottle's point (q, u) and the q its sheet's ends are at, where the tube turns inside out (the glass bottle's lip's
 // lowest, its foot; ours's and the sketch's bowl's lowest), by its place in KLEIN_SHAPES; the others rolled (see KLEIN_SECTIONS)
-const KLEIN_AT = { 0: [glassBottleAt, 1.75], 1: [kleinAt, 0.5], 4: [kleinSketchAt, 0.375, KLEIN_SKETCH] };
+const KLEIN_AT = {
+  0: [glassBottleAt, 1.75],
+  1: [kleinAt, 0.5],
+  4: [kleinSketchAt, 0.375, KLEIN_SKETCH],
+  5: [classicKleinAt, 0],
+};
 // a Klein bottle's shape as its meshes and tables are kept: its place, and its sizes if it has some to tune (Cells › Debug)
 const kleinShapeKey = (shape = shapeOn('klein')) =>
   `${shape}${KLEIN_AT[shape]?.[2] ? ` ${Object.values(KLEIN_AT[shape][2])}` : ''}`;

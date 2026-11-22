@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.602';
+const VERSION = '0.5.603';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15598,7 +15598,7 @@ function kleinBottle(shape = shapeOn('klein')) {
     N / 6,
     N / 2, // (the bagel's: the ring's back)
     Math.round(((N / 3) * (Math.PI - Math.PI / JEENER_T)) / (2 * Math.PI)), // (Jeener's: W least, (S + 1) w + π / T = π)
-    0, // (the Möbius strip's: anywhere, its start)
+    N / 2, // (the Möbius strip's: anywhere alike; as the bagel's, so that no tile's corner before the sheet's start falls before the band's)
   ];
   return (kleinTables[shape] = {
     at,

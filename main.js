@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.631';
+const VERSION = '0.5.632';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18091,16 +18091,14 @@ function torusDims(kind, size) {
 }
 // a torus's size at a height and a width (round the ring: its tiles per row; along a strip: its steps), as a size of its own
 const widthSize = (kind, rows, width) => `${rows}x${width * (MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow)}`;
-// A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): its
-// usual sizes' widths (its heights' ladder, see SURFACES' sizes) from half its usual one to twice it, and the one in use (a
-// link's: a notch of its own), as its tiling allows them, no more cells than CELLS.most: [width, size] each, narrowest
-// first, and the usual one's place
+// A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): the same
+// shares of its usual one at every height (WIDTH_SHARES), and the one in use (a link's: a notch of its own), as its tiling allows
+// them, no more cells than CELLS.most: [width, size] each, narrowest first, and the usual one's place
+const WIDTH_SHARES = [1 / 2, 3 / 4, 1, 3 / 2, 2];
 function widthsOf(kind, rows, width) {
   const usual = torusDims(kind, rows)[1],
     widths = new Map();
-  for (const c of [usual, width, ...SURFACES[kind].sizes.map((f) => torusDims(kind, f)[1])].filter(
-    (c) => c >= usual / 2 && c <= 2 * usual,
-  )) {
+  for (const c of [...WIDTH_SHARES.map((share) => Math.round(share * usual)), width]) {
     const size = widthSize(kind, rows, c),
       w = torusDims(kind, size)[1];
     if (!widths.has(w) && SURFACES[kind].tiles(size) <= CELLS.most) widths.set(w, w === usual ? rows : size);

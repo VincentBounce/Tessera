@@ -51,7 +51,7 @@
     let checked = 0;
     const size = () => 12; // (a size every torus takes)
     // the tori: their cells as many as said; a tiling's, straight and turned alike
-    const tori = TORI.filter((k) => /torus/.test(k) && !/Turned$/.test(k)); // (the app's tori: not the pinwheel's, of no lattice)
+    const tori = TORI.filter((k) => /torus/.test(k) && !/Turned$/.test(k)); // (the app's tori, as it lists them)
     const ref = {};
     // each tile's sheet corners its corners, in the same order (unrolled, its grid's edges drawn from them, see gpuSurface)
     const sheetOff = (g) => {

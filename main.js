@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.590';
+const VERSION = '0.5.591';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3855,18 +3855,6 @@ const hexSolids = Object.keys(HEX_SOLIDS);
 // the solids of squares with tetrakis triangles too (each square cut in 4 from its middle, see tetrakisOf): their names
 const TETRAKIS_SOLIDS = { cube: 'Cube', pits: 'Pits', bumps: 'Bumps', frame: 'Frame', menger: 'Sponge' };
 const PINWHEEL_SOLIDS = ['cube', 'rhombicDodeca', 'rhombicTriaconta']; // (the solids of parallelograms, their faces the pinwheel's: see pinwheelSolidMesh)
-// the pinwheel's folded surfaces, their sheets (see pinwheelFoldMesh): the surface each folds into (fold: its sheet glued
-// as that surface's, see sheetPoint), its rectangles, turned or not (a torus's by 45°), its faces (a Möbius strip's two, as
-// the tilings', see mobiusFaces)
-const PINWHEEL_SHEETS = {
-  torusPinwheel: { fold: 'torus', rects: 1, faces: 1 },
-  torusPinwheelTurned: { fold: 'torus', rects: 4, faces: 1, turned: true },
-  mobiusPinwheel: { fold: 'mobius', rects: 1, faces: 2 },
-  kleinPinwheel: { fold: 'klein', rects: 1, faces: 1 },
-};
-const PINWHEEL_FOLDS = Object.values(PINWHEEL_SHEETS)
-  .filter((F) => !F.turned)
-  .map((F) => F.fold); // (torus, mobius, klein)
 const foldOf = (fold, kind) => `${fold}${kind[0].toUpperCase()}${kind.slice(1)}`,
   mobiusOf = (kind) => foldOf('mobius', kind); // (a tiling folded: see FOLDS)
 // a grid's motif: its lattice's sides, one lattice cell's polygons in its units (u·a + v·b: its cells x = 0 … row 0, as the
@@ -10255,14 +10243,13 @@ for (const [k, S] of Object.entries(HULL_SOLIDS)) {
       twinWalks(S.name, HULL_CUTS.halves.name, `${k}${HULL_CUTS.halves.name}`, 'Octahedron', hullIcon(k));
   }
 }
-// the pinwheel's Life on the solids and the folded surfaces (see pinwheelSolidMesh, pinwheelFoldMesh): its surface's name
-// and icon (its Life's: Explore's beside it no other)
-for (const k of [...PINWHEEL_SOLIDS, ...PINWHEEL_FOLDS]) {
-  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k && NAV[w][0] === 'Life'),
+// the pinwheel solids' Life (see pinwheelSolidMesh): its solid's name and icon
+for (const k of PINWHEEL_SOLIDS) {
+  const base = Object.keys(VARIANTS).find((w) => VARIANTS[w].life && VARIANTS[w].surface === k),
     name = NAV[base][2];
   lifeGrid(variantName('Life', name, 'Pinwheel'), 'Surfaces', name, VARIANT_ICONS[base], {
     surface: `${k}Pinwheel`,
-    where: `the pinwheel's right triangles on ${name === 'Cube' ? 'a cube' : `a ${name.toLowerCase()}`}: ${PINWHEEL_FOLDS.includes(k) ? 'its sheet a rectangle' : 'each face two rectangles'} of two, cut in 5 again and again, turned every way`,
+    where: `the pinwheel's right triangles on ${name === 'Cube' ? 'a cube' : `a ${name.toLowerCase()}`}: each face two rectangles of two, cut in 5 again and again, turned every way`,
   });
 }
 // the carved cubes' squares walked as the cube's (measured 2026-11-17: their hollow corners of 5 and 6 edges walked; their start
@@ -10808,29 +10795,17 @@ for (const Fo of Object.values(FOLDS))
       F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
     addTiling(F, [variantName('Life', Fo.name, name)]);
   }
-// the pinwheel's surfaces (see pinwheelSolidMesh, pinwheelFoldMesh): a tab after their surface's own in its Life menu, the
-// torus's turned too (by 45°, see TURNED)
-for (const k of [...PINWHEEL_SOLIDS, ...PINWHEEL_FOLDS]) {
+// the pinwheel solids' (see pinwheelSolidMesh): a tab after their solid's own in its Life menu
+for (const k of PINWHEEL_SOLIDS) {
   const w = Object.keys(VARIANTS).find((v) => VARIANTS[v].surface === `${k}Pinwheel`),
-    F = FAMILIES.find((F) =>
-      F.variants.some((vs) => vs.some((v) => VARIANTS[v]?.life && VARIANTS[v].surface === k && NAV[v][0] === 'Life')),
-    ),
-    where = PINWHEEL_FOLDS.includes(k) ? 'its sheet' : 'each face';
+    F = FAMILIES.find((F) => F.variants.some((vs) => vs.some((v) => VARIANTS[v]?.life && VARIANTS[v].surface === k)));
   F.tabs.push([
     F.variants.length,
     false,
     'pinwheel',
     'Pinwheel',
-    `Pinwheel: Conway and Radin's right triangles on ${where}`,
+    "Pinwheel: Conway and Radin's right triangles on each face",
   ]);
-  if (PINWHEEL_SHEETS[`${k}PinwheelTurned`])
-    F.tabs.push([
-      F.variants.length,
-      true,
-      'pinwheel',
-      'Pinwheel',
-      'Pinwheel, turned by 45° (its rectangles across the sheet)',
-    ]);
   addTiling(F, [w]);
 }
 // a variant's sides there (Grid, Cells): its kind's and its rule's, on its tiling only (Cairo pentagons: no grid; on a surface's
@@ -14498,78 +14473,6 @@ function pinwheelSolidMesh(k, cells) {
   ));
 }
 
-/* ---- 7.2c Pinwheel sheets --------------------------------------------------------------- */
-// The pinwheel on the surfaces folded from a sheet (PINWHEEL_FOLDS): its sheet rectangles R × 2R (R = √5ⁿ), a solid's face's
-// halves (see pinwheelSolidMesh), their long side along it, each its two triangles cut n times (2 · 5ⁿ a rectangle); a torus
-// turned (by 45°, see TURNED): the same rectangles over the plane, its sheet a square across them, its sides along their
-// diagonals ((2R, 2R) and (−2R, 2R), whole steps of theirs: its tiles cut by a side come round whole across it). Its seams
-// glued as its surface glues them (along: past its end, a Möbius strip's and a Klein bottle's turned over, y to W − y;
-// across: a torus's and a Klein bottle's), a corner on a side across a seam a corner of that side too (see cornersOnSides),
-// each corner placed by its surface's own point (a corner glued to another there the same: one, see vertexStore); its
-// sheets: PINWHEEL_SHEETS
-// its rectangles' cuts at its cells (2 · 5ⁿ a rectangle a face), and its sheet's length along, in its tiles' short legs
-const pinwheelCuts = (k, cells) =>
-  Math.round(Math.log(cells / (2 * PINWHEEL_SHEETS[k].rects * PINWHEEL_SHEETS[k].faces)) / Math.log(5));
-const pinwheelSheetLength = (k, cells) =>
-  (PINWHEEL_SHEETS[k].turned ? 2 * Math.SQRT2 : 2) * 5 ** (pinwheelCuts(k, cells) / 2);
-function pinwheelFoldMesh(k, cells) {
-  const key = `${k}${cells}`;
-  if (meshCache[key]) return meshCache[key];
-  const F = PINWHEEL_SHEETS[k],
-    n = pinwheelCuts(k, cells),
-    R = 5 ** (n / 2),
-    L = pinwheelSheetLength(k, cells),
-    W = F.turned ? L : L / 2;
-  // a rectangle: its two triangles (their right angle's corner, long leg's end, short leg's), cut n times
-  let rect = [
-    [
-      [0, R],
-      [2 * R, R],
-      [0, 0],
-    ],
-    [
-      [2 * R, 0],
-      [0, 0],
-      [2 * R, R],
-    ],
-  ];
-  for (let i = 0; i < n; i++) rect = rect.flatMap(pinwheelSplit);
-  const across = (x, y) => [(x + y) / Math.SQRT2, (y - x) / Math.SQRT2], // (turned: the sheet's along and across)
-    tris = F.turned
-      ? [-1, 0]
-          .flatMap((i) =>
-            [0, 1, 2, 3].flatMap((j) => rect.map((T) => T.map(([x, y]) => across(x + 2 * R * i, y + R * j)))),
-          )
-          .filter((T) => {
-            const [u, v] = [0, 1].map((d) => (T[0][d] + T[1][d] + T[2][d]) / 3);
-            return u >= 0 && u < L && v >= 0 && v < W;
-          }) // (a tile on the sheet by its middle)
-      : rect;
-  // its tiles near a seam, glued past it (i along, past its end turned over but on a torus; j across, but on a Möbius strip)
-  // for their corners on the sides across it
-  const sheet = { torus: true, [F.fold]: true, nu: L, nv: W, L, W, tube: W / L }, // (its surface's sheet, see sheetPoint)
-    glued = (i, j) => (p) => [p[0] + i * L, (F.fold !== 'torus' && i % 2 ? W - p[1] : p[1]) + j * W],
-    near = tris.filter((T) => T.some(([x, y]) => x < 3 || x > L - 3 || y < 3 || y > W - 3)),
-    copies = [-1, 0, 1].flatMap((i) =>
-      (F.fold === 'mobius' ? [0] : [-1, 0, 1]).flatMap((j) => (i || j ? near.map((T) => T.map(glued(i, j))) : [])),
-    ),
-    polys = cornersOnSides([...tris, ...copies]).slice(0, tris.length),
-    most = polys.reduce((m, c) => Math.max(m, c.length), 0),
-    corners = polys.map((c) => [...c, ...Array(most - c.length).fill(c.at(-1))]);
-  if (F.fold === 'mobius') {
-    const { verts, tiles } = mobiusFaces(corners, L, W);
-    return (meshCache[key] = finishMesh(verts, tiles, most, cells, null));
-  } // (its two faces, see mobiusFaces)
-  const { verts, add } = vertexStore();
-  return (meshCache[key] = finishMesh(
-    verts,
-    corners.map((c) => turnOver(c).map(([x, y]) => add(...sheetPoint(sheet, x, y, 1)))),
-    most,
-    cells,
-    null,
-  )); // (its sheet's marks not on it: no lattice there, its tiles a solid's, see ONE_FORM)
-}
-
 /* ---- 7.3 Polyhedra with triangular faces -------------------------------------------------- */
 /* Flat polyhedra with triangular faces, each face cut into f² triangles (not inflated):
  * tetrahedron (4 faces, corners shared by 3 triangles instead of 6), octahedron (8 faces,
@@ -16315,41 +16218,8 @@ function mobiusMesh(kind, size) {
     nv = mobiusSize(size)[0]; // (its length its colours': see stripSteps)
   if (meshCache[key]) return meshCache[key];
   const { L, W, tiles: sheet, mids, latticeCells, colourBox, cellPlaces } = mobiusSheet(kind, size),
-    k = sheet[0].length,
-    { verts, tiles, uv, edge: onEdgeTiles } = mobiusFaces(sheet, L, W);
-  const mesh = finishMesh(verts, tiles, k, nv, null); // as listed: a back faces the other way
-  // (its edge's cells, both faces': those with a corner on it, where its edges cut its tiles; marked, see edgeRibbons)
-  const edge = MOBIUS_ALONG[kind].edgeCuts ? onEdgeTiles : [];
-  return (meshCache[key] = Object.assign(mesh, {
-    edgeCells: [...edge, ...edge.map((i) => i + sheet.length)],
-    torus: true,
-    mobius: true,
-    kite: kind.startsWith('mobiusKite'),
-    tiling: MOBIUS_STRIPS[kind]?.kind,
-    stripTurn: MOBIUS_STRIPS[kind] && -Math.atan2(MOBIUS_STRIPS[kind].basis[0][1], MOBIUS_STRIPS[kind].basis[0][0]),
-    L,
-    W,
-    nu: L,
-    nv,
-    uv: new Float64Array(uv),
-    front: sheet.length,
-    latticeCells: [...latticeCells, ...latticeCells],
-    ...(cellPlaces && { cellPlaces: [...cellPlaces, ...cellPlaces] }), // (its back's the front's, turned over)
-    ...(colourBox && {
-      colourCells: [0, 1].flatMap((back) =>
-        sheet.map((_, i) => colourBox(mids[2 * i] + back * L, back ? W - mids[2 * i + 1] : mids[2 * i + 1])),
-      ),
-    }), // (its colours' boxes along its loop: its back's past its front's, turned over, see tilingStrip)
-    ...(mids && { uvMid: new Float64Array([...mids, ...mids]) }),
-  })); // (a tiling's: its tiles' own middles, see sheetMiddle)
-}
-// A Möbius strip's two faces from its sheet's tiles (corners [x, y] on a sheet L long and W wide, glued past its end turned
-// over): each tile twice, its front's and its back's (after the front's, turned over: facing the other way), their corners
-// apart but on the strip's edge (its sides of one tile), a corner's face swapping across the glued ends (seen from where it
-// was first met); its corners' points, its tiles, their corners' places (uv), the tiles with a corner on its edge (edge)
-function mobiusFaces(sheet, L, W) {
-  const { verts, add } = vertexStore(),
     k = sheet[0].length;
+  const { verts, add } = vertexStore();
   const ids = sheet.map((t) => t.map(([x, y]) => add(...mobiusPoint(x, y, L, W, 1)))); // the glued ends share corners
   const n0 = verts.length / 3,
     uses = new Map(),
@@ -16393,7 +16263,31 @@ function mobiusFaces(sheet, L, W) {
       tiles.push(side ? c : turnOver(c)); // (its front facing the view as the torus's sheet: east, south, seen from above; listed counterclockwise y up, so turned over)
       uv.push(...(side ? t : turnOver(t)).flat());
     });
-  return { verts: cv, tiles, uv, edge: ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : [])) };
+  const mesh = finishMesh(cv, tiles, k, nv, null); // as listed: a back faces the other way
+  // (its edge's cells, both faces': those with a corner on it, where its edges cut its tiles; marked, see edgeRibbons)
+  const edge = MOBIUS_ALONG[kind].edgeCuts ? ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : [])) : [];
+  return (meshCache[key] = Object.assign(mesh, {
+    edgeCells: [...edge, ...edge.map((i) => i + sheet.length)],
+    torus: true,
+    mobius: true,
+    kite: kind.startsWith('mobiusKite'),
+    tiling: MOBIUS_STRIPS[kind]?.kind,
+    stripTurn: MOBIUS_STRIPS[kind] && -Math.atan2(MOBIUS_STRIPS[kind].basis[0][1], MOBIUS_STRIPS[kind].basis[0][0]),
+    L,
+    W,
+    nu: L,
+    nv,
+    uv: new Float64Array(uv),
+    front: sheet.length,
+    latticeCells: [...latticeCells, ...latticeCells],
+    ...(cellPlaces && { cellPlaces: [...cellPlaces, ...cellPlaces] }), // (its back's the front's, turned over)
+    ...(colourBox && {
+      colourCells: [0, 1].flatMap((back) =>
+        sheet.map((_, i) => colourBox(mids[2 * i] + back * L, back ? W - mids[2 * i + 1] : mids[2 * i + 1])),
+      ),
+    }), // (its colours' boxes along its loop: its back's past its front's, turned over, see tilingStrip)
+    ...(mids && { uvMid: new Float64Array([...mids, ...mids]) }),
+  })); // (a tiling's: its tiles' own middles, see sheetMiddle)
 }
 // The sheet point of a surface: a torus, or a Möbius strip
 const sheetPoint = (g, i, j, m) => {
@@ -17137,20 +17031,16 @@ function boyMesh(base, f) {
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
 const MORPH_WHERE =
-  "This surface has no other form (the pits, the bumps and the sponge: their holes leave none between; the pinwheel's torus, Möbius strip and Klein bottle: their tiles cut across the seams)."; // (Morph's greyed words)
-// the surfaces of one form, shown as built, their Shape greyed (MORPH_WHERE's): the pits, the bumps, the sponge, as squares or
-// tetrakis; the pinwheel's folded ones (their sheet not one of tiles of its own: no flat form, see pinwheelFoldMesh)
-const ONE_FORM = new Set([
-  ...['pits', 'bumps', 'menger'].flatMap((k) => [k, `${k}Tetrakis`]),
-  ...Object.keys(PINWHEEL_SHEETS),
-]);
+  'This surface has no other form (the pits, the bumps and the sponge: their holes leave none between).'; // (Morph's greyed words)
 const MORPHABLE = [
   ...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`),
-  ...ONE_FORM,
   ...BASE_SURFACES.filter((B) => B.fold !== 'mobius').map((B) => B.name), // (the base grids' tori and bottles)
   ...foldedIn('klein'),
   'cube',
+  'pits',
+  'bumps',
   'frame',
+  'menger',
   'tetra',
   'octa',
   'stella',
@@ -17337,13 +17227,12 @@ function initShape(kind) {
   const variant = digitsComputed.variant,
     keep = previousShape && surface(previousShape.variant) === surface(variant);
   const g = walk.surface,
-    forms = ONE_FORM.has(kind) ? [0] : [0, 1], // (one form: as built)
-    m = forms.length === 1 ? 0 : keep ? previousShape.target : defaultOf('shape', variant),
+    m = keep ? previousShape.target : defaultOf('shape', variant),
     shape = shapeAt(g, m);
   // its flat and round forms' extents, once a mesh (the form shown one of them, mostly)
   const extents = (g.formExtents ??= {});
-  for (const f of forms) extents[f] ??= f === m ? shape.extent : shapeAt(g, f).extent;
-  walk.shape = { ...shape, target: m, maxExtent: Math.max(...forms.map((f) => extents[f])), variant };
+  for (const f of [0, 1]) extents[f] ??= f === m ? shape.extent : shapeAt(g, f).extent;
+  walk.shape = { ...shape, target: m, maxExtent: Math.max(extents[0], extents[1]), variant };
 }
 
 // The frame of a surface: the sphere round its current form (flat or round), centred on its centre,
@@ -17395,11 +17284,13 @@ function updateMorphButton() {
     : ['Flat', 'Inflated'];
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
   showShapeAt();
-  // greyed on a surface of one form (see ONE_FORM); its default, told in its tooltip, each shape's of this tab (round: a
-  // sheet rolled up, a solid inflated)
+  // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
+  // this tab (round: a sheet rolled up, a solid inflated)
   greyInput($('shapeM'), $('shapeRow'), ({ w: v }) => {
     const k = surfaceOf(VARIANTS[v]);
-    return MORPHABLE.includes(k) && !ONE_FORM.has(k) ? '' : MORPH_WHERE;
+    return MORPHABLE.includes(k) && !['pits', 'bumps', 'menger'].includes(k.replace(/Tetrakis$/, ''))
+      ? ''
+      : MORPH_WHERE;
   });
   const [kind, space] = NAV[walk.variant],
     sheet = ['Torus', 'Möbius strip', 'Klein bottle'],
@@ -17738,21 +17629,6 @@ for (const k of PINWHEEL_SOLIDS) {
     radius: (cells) => SURFACES[k].radius(edge(cells)),
     edge: (cells) => Math.round(10 * edge(cells)) / 10,
     ownSizes: () => pinwheelSizes(k),
-    tiles: (cells) => cells,
-    unit: 'triangles',
-    tiling: 'pinwheel',
-  }; // (tiling: its rules the pinwheel's)
-}
-// the pinwheel's folded surfaces (see pinwheelFoldMesh): their sizes their cells (2 · 5ⁿ a rectangle a face), their radius
-// their sheet's length round
-for (const k of Object.keys(PINWHEEL_SHEETS)) {
-  const sizes = [];
-  for (let cells = 2 * PINWHEEL_SHEETS[k].rects * PINWHEEL_SHEETS[k].faces; cells <= CELLS.most; cells *= 5)
-    if (cells >= CELLS.least) sizes.push(cells);
-  SURFACES[k] = {
-    mesh: (cells) => pinwheelFoldMesh(k, cells),
-    radius: (cells) => pinwheelSheetLength(k, cells) / (2 * Math.PI),
-    ownSizes: () => sizes,
     tiles: (cells) => cells,
     unit: 'triangles',
     tiling: 'pinwheel',
@@ -18516,14 +18392,13 @@ function tilesTurn(surface) {
   return B?.turned ? baseTurn(B.fold, B.kind) : 0; // (a base grid's: its turn there, none straight)
 }
 for (const s of Object.keys(FOLDED)) if (FOLDED[`${s}Turned`]) TURNED[s] = `${s}Turned`; // (see FOLDED)
-for (const s of Object.keys(PINWHEEL_SHEETS)) if (PINWHEEL_SHEETS[`${s}Turned`]) TURNED[s] = `${s}Turned`; // (see PINWHEEL_SHEETS)
 let torusTurned = false;
 // the hexagons' tori, strips and bottles at 0° pointy as the plane's (their Turned ones), turned their flat ones
 const POINTY = new Set(BASE_SURFACES.filter((B) => B.kind === 'hex').map((B) => B.base)); // (pointy straight: named …Turned, see BASE_GRIDS)
 const shownSurface = (surface, turned) =>
   TURNED[surface] && turned !== POINTY.has(surface) ? TURNED[surface] : surface;
 const surfaceOf = (variant) => shownSurface(variant.surface, torusTurned);
-const STARTS_ON = [...SOLIDS, ...TORI, ...Object.keys(PINWHEEL_SHEETS)]; // the surfaces with a start selector (the pinwheel's folded ones too)
+const STARTS_ON = [...SOLIDS, ...TORI]; // the surfaces with a start selector
 
 // On a torus every corner is like any other (shifting the sheet maps the grid onto itself), and
 // turning the torus over (u, v → −u, −v) swaps the two ways along an edge: the different walks are

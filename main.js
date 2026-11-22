@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.620';
+const VERSION = '0.5.621';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15942,8 +15942,8 @@ const stripSteps = (kind0, nv, W, own) => {
 };
 const stripKey = () =>
   `${ringColours(ringVariant())}${VARIANTS[ringVariant()]?.margolus ? ' blocks' : ''}${Object.keys(RING_SHAPES)
-    .map((f) => (shapeOn(f) ? ` ${RING_SHAPES[f][shapeOn(f)][0]}` : ''))
-    .join('')}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps)
+    .map((f) => (shapeOn(f) ? ` ${f} ${f === 'klein' ? kleinShapeKey() : shapeOn(f)}` : ''))
+    .join('')}`; // (a strip's length its colours', a reversible one's its blocks', see stripSteps; a ring's shape its place, a bottle's its sizes too, see kleinShapeKey)
 const stripMemo = remember('stripMemo', weakCache()),
   countMemo = remember('countMemo', {});
 // a strip's length, width and tiles' count, without its tiles (the sizes' ladder asks for many: see mobiusSheetOf's count)

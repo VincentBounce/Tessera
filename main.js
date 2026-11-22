@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.592';
+const VERSION = '0.5.593';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42442,7 +42442,8 @@ stage.addEventListener('pointerup', (e) => {
 });
 
 // The keys: each a click on the first control shown and not greyed of its list (E: End, else Life's
-// green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's), or its own action
+// green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's, else Draw's View while
+// a click draws), or its own action
 // (Space: Stop while it plays, else Play; F: the view fitted again);
 // its name written after its control's in its tooltip (see shortcutOf)
 const KEYS = [
@@ -42452,7 +42453,7 @@ const KEYS = [
   ['r', 'R', ['#restart']],
   ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
   ['f', 'F', ['#autoFitTile'], recentre],
-  ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open']],
+  ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open', '#drawView:not(.active)']],
 ];
 // a control's key, its name (see KEYS), if it has one
 const shortcutOf = (el) => KEYS.find(([, , controls]) => controls.some((c) => el.matches(c)))?.[1];

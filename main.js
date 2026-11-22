@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.628';
+const VERSION = '0.5.629';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15589,9 +15589,9 @@ const MOBIUS_BAND = 0.6; // (the Möbius strip's band's half width, see its sect
 // a turn round the ring, it meets itself turned over, s to −s, crossing itself along the circle through its middle)
 const KLEIN_SHAPES = [
   [
-    'Wusu',
-    "A bottle in four pieces (a Mathematica sketch's): a bowl, a body narrowing up, a handle's half ring, its neck straight down into the bowl",
-    { at: kleinSketchAt, endsAt: 0.375, sizes: KLEIN_SKETCH },
+    'Basic',
+    "The parametric Klein bottle of every textbook (Paul Bourke's): a flat bottom, a wide body, its neck arching over and down through its side",
+    { at: classicKleinAt, endsAt: 0 },
   ],
   [
     'Mobius',
@@ -15609,9 +15609,9 @@ const KLEIN_SHAPES = [
     },
   ],
   [
-    'Basic',
-    "The parametric Klein bottle of every textbook (Paul Bourke's): a flat bottom, a wide body, its neck arching over and down through its side",
-    { at: classicKleinAt, endsAt: 0 },
+    'Wusu',
+    "A bottle in four pieces (a Mathematica sketch's): a bowl, a body narrowing up, a handle's half ring, its neck straight down into the bowl",
+    { at: kleinSketchAt, endsAt: 0.375, sizes: KLEIN_SKETCH },
   ],
   [
     'Iara',

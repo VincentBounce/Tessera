@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.622';
+const VERSION = '0.5.623';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16179,14 +16179,13 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
         return (c) => drawn || (tries++ < 8 && kleinBlocksAlike(strip, nv, c, blocks));
       };
       // its preferences in turn, [units, judged] each, the first that finds one: its usual one closed by its tiling's second
-      // mirror (the lengths it alone opened, see mobiusMirrors), fair by construction (kleinBlocksSlid: none measured for a
-      // preference, a teams' click judging every size's), step by step (none a whole copy's); a length of its
+      // mirror (the lengths it alone opened, see mobiusMirrors), fair by construction, a drawn start's too (kleinBlocksSlid:
+      // none measured for a usual one, the menu judging every size's of every bottle), step by step (none a whole copy's); a
+      // length of its
       // own (as a strip's, see stripSteps) or the usual, fair, whole copies first; none fair near: as near, whole copies (one
       // colour's or a drawn one's own as asked)
       const prefer = [
-        ...(own
-          ? []
-          : [[[], (c) => mirrorAt(c, nv, true) === mirrors[1] && (drawn || kleinBlocksSlid(strip, nv, c, blocks))]]),
+        ...(own ? [] : [[[], (c) => mirrorAt(c, nv, true) === mirrors[1] && kleinBlocksSlid(strip, nv, c, blocks)]]),
         [own ? [] : [(K / b) * q], fair()],
         [own && (K === 1 || drawn) ? [] : [(K / b) * q], () => true],
       ];

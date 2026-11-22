@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.598';
+const VERSION = '0.5.599';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27371,22 +27371,27 @@ function brushAt([cx, cy]) {
   if (brush.id === 'cell') return [[cx, cy, 1]]; // one cell: the one pointed at, whichever way it lies
   const { kind, xy } = walk.plane,
     p = DRAW_BY_ID.get(brush.id);
-  if (discPattern(p)) {
-    // a disc's: at its middle (no move keeps the disc), turned (as the figure turns) the nearest towards the cell pointed at
-    const D = discCells(kind),
-      m = cellMiddle(kind, cx, cy),
-      step = (2 * Math.PI) / figureTurns(kind);
-    return (D.laid(p[4], Math.round((Math.atan2(m[1] - D.o, m[0] - D.o) - D.way(p[4])) / step)) ?? []).map(([t, v]) => [
-      ...xy(t),
-      v,
-    ]);
-  }
+  if (discPattern(p)) return discBrush(p, cellMiddle(kind, cx, cy)).map(([t, v]) => [...xy(t), v]);
   return patternAt(0, 1, brushCells(), true, cellMiddle(kind, cx, cy), true).map(([t, v]) => [...xy(t), v]);
 }
-// a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid from t's heading, see patternFrom);
+// a disc pattern as Draw's brush lays it (the plane's disc, a rosette sphere's half): at the disc's middle (no move keeps the
+// disc), turned (as the figure turns) the nearest towards point m; [its disc's cell, state], none past the disc
+function discBrush(p, m) {
+  const D = discCells(p[1]),
+    step = (2 * Math.PI) / figureTurns(p[1]);
+  return D.laid(p[4], Math.round((Math.atan2(m[1] - D.o, m[0] - D.o) - D.way(p[4])) / step)) ?? [];
+}
+// a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid from t's heading, see patternFrom;
+// a rosette sphere's disc pattern, at its half's middle, see discBrush);
 // null where none goes (a cell folded over an edge, see cellPlace)
 function brushTilesAt(t) {
   if (brush.id === 'cell') return [[t, 1]];
+  const g = walk.surface,
+    p = DRAW_BY_ID.get(brush.id);
+  if (g.rosette && discPattern(p)) {
+    const half = t >= g.south ? g.south : 0; // (its half's disc, the north's or the south's)
+    return discBrush(p, cellMiddle(patternKind(), ...g.disc.xy(t))).map(([u, v]) => [u + half, v]);
+  }
   const place = cellPlace(t);
   if (!place) return null;
   const cells = brushCells(),

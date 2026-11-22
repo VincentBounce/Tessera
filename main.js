@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.608';
+const VERSION = '0.5.609';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16146,8 +16146,11 @@ const sheetBlock = (u, v, nu, nv, [a, b]) => {
 // the other's. By construction, the middles from the strip's frame (as stripCounted counts them), no mesh built
 const alikeMemo = remember('alikeMemo', {});
 function kleinBlocksAlike(strip, nv, n, blocks) {
-  const K = blocks[0] * blocks[1];
-  if (K === 1) return true;
+  const K = blocks[0] * blocks[1],
+    { step, mirrorAt } = MOBIUS_ALONG[strip],
+    { g, la } = mirrorAt(n, nv, true),
+    copies = (n * step) / blocks[0] / (g > 1e-9 ? g : la); // (its slices' length in copies of its tiling along, turned over on its ends' mirror's glide)
+  if (K === 1 || Math.abs(copies - Math.round(copies)) < 1e-6) return true; // (whole copies: each slice the one before slid, by construction)
   return (alikeMemo[`${strip}|${nv}|${n}|${blocks}`] ??= (() => {
     const kind = MOBIUS_STRIPS[strip].kind,
       { m, L, W, cells, la, bx, ta, tb, mirrorY, t } = stripFrame(kind, strip, `${nv}x${n}`, true),

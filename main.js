@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.580';
+const VERSION = '0.5.581';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11895,7 +11895,7 @@ function compute() {
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
-  $('copyRle').hidden = !variant.plane; // (the plane's cells only)  // its start: Hunt, Draw (the plane only), Digits
+  $('copyRle').hidden = !rleLaid(tabVariant()); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
   if (variant.life)
     plane.start = variant.elementary
       ? ELEMENTARY_STARTS.includes(plane.start)
@@ -23093,7 +23093,7 @@ const plane = {
 const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 // the drawing's history: the cells drawn before each edit (Draw picked: the generation shown then, its first; a click, Clear,
-// Draw from current state, Open PNG), Undo's, and those undone, Redo's
+// Draw from current state, Paste RLE, Open), Undo's, and those undone, Redo's
 // (each as a link writes them, see populationRle: a few bytes, a soup imported too); a start of another kind forgets it
 let drawHistory = { past: [], future: [] };
 const rememberDrawing = () => {
@@ -26610,15 +26610,12 @@ const startWhyNot = (start, v) =>
           : TEXT_WHERE
       : '';
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
-// Open and Export: a flat grid of squares only, the plane's or a sheet's (a torus's, a Möbius strip's, a Klein bottle's), a
-// pixel a square (see pictureCells)
-const pngWhyNot = (v) =>
-  VARIANTS[v].life &&
-  PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square' &&
-  (VARIANTS[v].plane || TORI.includes(VARIANTS[v].surface))
-    ? ''
-    : 'Only on a flat grid of squares (the plane, a torus, a Möbius strip, a Klein bottle): one pixel per square.';
-// the grid shown as a picture, a cell a pixel: its width, its height, each cell's pixel (the plane's, its place; a sheet's,
+// the Life grids an RLE file lays as rows of cells (Copy RLE, Paste RLE, Open): the plane's (its cells as its grid numbers
+// them, see lifeRle), a sheet's of squares (a torus's, a Möbius strip's, a Klein bottle's, a cell a place: see pictureCells)
+const rleLaid = (v) =>
+  !!VARIANTS[v].life &&
+  (!!VARIANTS[v].plane || (TORI.includes(VARIANTS[v].surface) && PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square'));
+// the grid shown as rows of cells, an RLE file's: its width, its height, each cell's place (the plane's, its own; a sheet's,
 // its place on it, see sheetPlace: a Möbius strip's round both its faces)
 const pictureCells = () => {
   if (walk.plane) return { w: walk.plane.row, h: walk.plane.W, at: (t) => walk.plane.xy(t) };
@@ -26643,7 +26640,6 @@ function renderPlaneRow() {
   syncTextButtons();
   $('startTextInput').style.setProperty('--text-start-font', TEXT_FONTS[plane.font][1]); // (at rest, in its font, see style.css)
   for (const b of $('textFonts').querySelectorAll('button')) setTile(b, { on: b.dataset.font === plane.font });
-  setTile($('exportPng'), { whyNot: ({ w: v }) => pngWhyNot(v) });
   if (!kind) {
     renderSymmetry(); // (one rule, renderSymmetry's: a solid's Opposite, as the plane's symmetries)
     $('startDraw').hidden = plane.start !== 'draw';
@@ -26790,7 +26786,6 @@ function renderDrawTools() {
     'Not for View or a cell, nor on a grid a pattern cannot mirror on.',
   );
 
-  grey($('openPng'), false, '', false, ({ w: v }) => pngWhyNot(v));
   $('brushColours').classList.toggle('off', away);
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   setTile($('startCells'), { greyed: population.size ? '' : 'No cell is drawn.' }); // (at any generation: back to gen 0)
@@ -42242,9 +42237,7 @@ $('startTextInput').addEventListener('change', () => {
   plane.text = $('startTextInput').value.trim() || APP_TITLE;
   compute();
 });
-// Open PNG: a picture, its dark pixels alive (its transparent ones dead), a pixel a square, on the smallest grid it fits in
-// (the plane's sizes: from 16 × 16, every rule's), in the middle; Export PNG: the generation shown, its live cells black
-// Draw's row tiles (see tile's row): Undo and Redo (see drawHistory); the brush's turn and Mirror; Open and Export PNG
+// Draw's row tiles (see tile's row): Undo and Redo (see drawHistory); the brush's turn and Mirror
 $('drawHistoryTools').append(
   ...DRAW_STEPS.map(([id, pic, text, title, from, to]) =>
     tile({ id, row: true, pic: icon(pic), text, title, click: () => drawStep(from, to) }),
@@ -42254,81 +42247,12 @@ $('brushTurns').append(
   tile({ id: 'brushTurn', row: true, text: '↻ 0°', title: 'A quarter turn more' }),
   tile({ id: 'brushFlip', row: true, toggle: true, text: '⇋ Mirror', title: 'Mirrored' }),
 );
-$('pngTools').append(
-  tile({
-    id: 'openPng',
-    row: true,
-    pic: icon('import'),
-    text: 'Open',
-    title: 'Opens a black and white PNG picture as the start, a pixel a square',
-    click: () => $('pngFile').click(),
-  }),
-  tile({
-    id: 'exportPng',
-    row: true,
-    pic: icon('export'),
-    text: 'Export',
-    title: 'Saves the generation shown as a black and white PNG picture, a square a pixel',
-  }),
-);
 // Clear: at any generation, back to gen 0 with no cell
 $('startCells').addEventListener('click', () => {
   seekTo(0);
   rememberDrawing();
   population = new Map();
   lifeReseed(); // (the plane's or a surface's)
-});
-$('pngFile').addEventListener('change', async () => {
-  const file = $('pngFile').files[0];
-  $('pngFile').value = '';
-  if (!file) return;
-  const img = await createImageBitmap(file),
-    c = new OffscreenCanvas(img.width, img.height),
-    g = c.getContext('2d');
-  g.drawImage(img, 0, 0);
-  const d = g.getImageData(0, 0, img.width, img.height).data,
-    kind = VARIANTS[tabVariant()].plane,
-    sides = kind && planeSides(kind),
-    side = kind && sides.find((f) => planeW(kind, f) >= Math.max(img.width, img.height)); // (the plane: its size the smallest it fits in)
-  const W = kind && planeW(kind, side ?? sides.at(-1)), // (the plane's grid: the one it fits in, else its largest)
-    { w, h, at } = kind ? { w: W, h: W } : pictureCells();
-  if (img.width > w || img.height > h) {
-    alert(`This picture is ${img.width} × ${img.height}: at most ${w} × ${h} here.`);
-    return;
-  }
-  const x0 = Math.floor((w - img.width) / 2),
-    y0 = Math.floor((h - img.height) / 2),
-    cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [at(t).join(), t])); // (a sheet's cell at a pixel)
-  rememberDrawing();
-  population = new Map();
-  for (let y = 0; y < img.height; y++)
-    for (let x = 0; x < img.width; x++) {
-      const i = 4 * (y * img.width + x);
-      if (d[i + 3] >= 128 && 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] < 128)
-        population.set(kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)), 1);
-    }
-  if (!kind) return lifeReseed(); // (a sheet: its size kept)
-  picked = planeCells(side);
-  plane.start = 'draw';
-  compute();
-});
-$('exportPng').addEventListener('click', () => {
-  const L = walk.life,
-    { w, h, at } = pictureCells(),
-    c = document.createElement('canvas'),
-    neg = negative(L),
-    cells = L.margolus?.cells;
-  [c.width, c.height] = [w, h];
-  const g = c.getContext('2d'),
-    im = g.createImageData(w, h);
-  im.data.fill(255);
-  for (let t = 0; t < L.alive.length; t++) {
-    const v = (L.alive[t] > 0 && L.alive[t] <= L.colours) !== (neg && !!cells?.[t]) ? 0 : 255, // (as shown: a block rule's negative)
-      [x, y] = at(t);
-    im.data.set([v, v, v, 255], 4 * (y * w + x));
-  }
-  g.putImageData(im, 0, 0);
-  c.toBlob((blob) => saveBlob(blob, `gen ${stepShown}.png`));
 });
 stage.addEventListener('pointerleave', () => {
   pointerPixel = null; // (a surface's brush gone, see surfaceGhost)
@@ -42741,25 +42665,29 @@ $('lifeRule').addEventListener('change', () => {
   if (VARIANTS[tabVariant()].life) compute(); // restart from generation 0; a new state count needs a new base
 });
 // Copy RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
-// characters a line): two states as b and o; more as . A B … (alive, then each dying stage; in colours, all alive as
-// A). Squares are Golly's grid, hexagons its hexagonal one (see gollyRule: our grid mirrored top to bottom, its neighbours
-// then Golly's); another grid's cells as this one numbers them, said in a comment; a rectangle's (see RECTS) as its
-// slanted grid numbers them; from a whole lattice cell (its cells' kinds kept, as the Famous are); Elementary's, its first
-// row (see elementaryRle)
+// characters a line): two states as b and o; more as . A B … (alive, then each dying stage, Golly's Generations); in
+// colours each cell's state as the app holds it (k alive of colour k, k + K × s dying, see parseRule), its rule the app's
+// (/Colours3: Golly has none). Squares are Golly's grid, hexagons its hexagonal one (see gollyRule: our grid mirrored top
+// to bottom, its neighbours then Golly's); another grid's cells as this one numbers them, said in a comment; a rectangle's
+// (see RECTS) as its slanted grid numbers them; from a whole lattice cell (its cells' kinds kept, as the Famous are); a
+// sheet's (a torus's, a Möbius strip's, a Klein bottle's) unrolled, a square a cell (see pictureCells); Elementary's, its
+// first row (see elementaryRle)
 function lifeRle() {
   if (walk.rows) return elementaryRle();
   const L = walk.life,
-    { kind, xy } = walk.plane,
     K = L.colours,
-    base = baseOf(kind),
-    per = gridCells(base),
+    kind = walk.plane?.kind,
+    base = kind && baseOf(kind),
+    per = kind ? gridCells(base) : 1,
     cells = [];
-  const at = (t) => {
-    const [x, y] = tilingCellOf(kind, ...xy(t));
-    return base === 'hex' ? [x, -y] : [x, y];
-  }; // (its grid's cell; on hexagons mirrored, see gollyRule)
+  const at = kind
+    ? (t) => {
+        const [x, y] = tilingCellOf(kind, ...walk.plane.xy(t));
+        return base === 'hex' ? [x, -y] : [x, y];
+      }
+    : pictureCells().at; // (its grid's cell; on hexagons mirrored, see gollyRule)
   L.alive.forEach((v, t) => {
-    if (v) cells.push([...at(t), v <= K ? 1 : 1 + Math.floor((v - 1) / K)]);
+    if (v) cells.push([...at(t), v]);
   });
   if (!cells.length) return null;
   const x0 = per * Math.floor(cells.reduce((e, c) => Math.min(e, c[0]), Infinity) / per),
@@ -42769,12 +42697,16 @@ function lifeRle() {
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   return rleFile(
     `generation ${stepShown}`,
-    kind === 'square' || base === 'hex'
-      ? []
-      : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
+    !kind
+      ? ['Its sheet unrolled, a square a cell']
+      : kind === 'square' || base === 'hex'
+        ? []
+        : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
     pop,
-    gollyRule(ruleBody($('lifeRule').value), base === 'hex'),
-    L.C === 2,
+    K > 1
+      ? `${lifeRuleNow().text}${base === 'hex' ? 'H' : ''}`
+      : gollyRule(ruleBody($('lifeRule').value), base === 'hex'),
+    L.C === 2 && K === 1,
   );
 }
 // Elementary's: its first row, Golly drawing the rows down from it itself (as the app: the rows shown can be hundreds of
@@ -42850,6 +42782,70 @@ $('copyRle').addEventListener('click', () => {
   const text = lifeRle();
   if (text) copyFlash($('copyRle'), text);
 });
+// An RLE file's pattern (Golly's, LifeWiki's, Copy RLE's): its cells [x, y, state] from its top left (Golly's hexagons
+// mirrored back, see lifeRle), its size, its rule as the app reads it (Golly's Generations, survival/birth/states, the
+// other way round, see gollyRule) and its grid (H after its rule: hexagons); null: no pattern, or no rule the app reads
+function rleRead(text) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()),
+    head = lines.findIndex((line) => /^x\s*=/.test(line));
+  if (head < 0) return null;
+  const said = lines[head].match(/rule\s*=\s*([^\s,]+)/i)?.[1] ?? 'B3/S23',
+    hex = /h$/i.test(said),
+    golly = said.match(/^(\d*)\/(\d*)(?:\/(\d+))?h?$/i),
+    rule = parseRule(golly ? `B${golly[2]}/S${golly[1]}${golly[3] ? `/C${golly[3]}` : ''}` : said.replace(/h$/i, '')),
+    body = lines.slice(head + 1).filter((line) => !line.startsWith('#'));
+  const cells = [...populationOf(`0,0:${body.join('')}`)].map(([k, v]) => [...cellXY(k), v]),
+    w = 1 + Math.max(...cells.map(([x]) => x)),
+    h = 1 + Math.max(...cells.map(([, y]) => y));
+  if (!rule || !cells.length) return null;
+  return { rule, grid: hex ? 'hex' : 'square', w, h, cells: cells.map(([x, y, v]) => [x, hex ? h - 1 - y : y, v]) };
+}
+// Paste RLE, Open: an RLE file as Draw's cells, in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
+// the file lays (its squares or hexagons, flat: see rleLaid), in its colours, its rule playable there; reached by the
+// menu's own clicks, each in turn; its rule then, its cells once built (see layCells)
+async function openRle(text) {
+  const file = rleRead(text);
+  if (!file) return alert('No RLE pattern here, or none with a rule the app reads.');
+  const { rule, grid } = file,
+    fits = (s) =>
+      NAV[s.w][0] === 'Life' &&
+      rleLaid(s.w) &&
+      PLANE_OF_MARK[lifeMark(VARIANTS[s.w])] === grid &&
+      s.lifeTeams === rule.colours &&
+      s.start === 'draw' &&
+      !ruleRefusal(ruleBody(rule.text), s.w),
+    [path] = fits(setupNow()) ? [[]] : pathsTo(fits);
+  if (!path) return alert(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
+  for (const [key] of path) {
+    document.querySelector(`[data-choice="${CSS.escape(key)}"]`).click();
+    await new Promise(requestAnimationFrame);
+  }
+  $('lifeRule').value = ruleBody(rule.text);
+  $('lifeRule').dispatchEvent(new Event('change'));
+  do await whenBuilt();
+  while (busy || walk.variant !== tabVariant());
+  layCells(file);
+}
+// a pattern's cells laid as Draw's, in the middle: on the plane, at the smallest size it fits in (from 16 × 16, every
+// rule's); on a sheet, at its own size, a cell at each place (see pictureCells)
+function layCells({ cells, w, h }) {
+  const kind = VARIANTS[tabVariant()].plane,
+    sides = kind && planeSides(kind),
+    side = kind && (sides.find((f) => planeW(kind, f) >= Math.max(w, h)) ?? sides.at(-1)),
+    room = kind ? { w: planeW(kind, side), h: planeW(kind, side) } : pictureCells();
+  if (w > room.w || h > room.h) return alert(`This pattern is ${w} × ${h}: at most ${room.w} × ${room.h} here.`);
+  const x0 = Math.floor((room.w - w) / 2),
+    y0 = Math.floor((room.h - h) / 2),
+    cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [room.at(t).join(), t])); // (a sheet's cell at a place)
+  rememberDrawing();
+  population = new Map(
+    cells.map(([x, y, v]) => [kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)), v]),
+  );
+  if (!kind) return lifeReseed(); // (a sheet: its size kept)
+  picked = planeCells(side);
+  plane.start = 'draw';
+  compute();
+}
 // Full number: the number over the view as how a rule works is (its title, all its digits, scrolling), with Copy
 // (a check once copied) and the cross; another number or base (a colour more), it shows that one; as how a rule works,
 // only a click on the button again or the cross closes it
@@ -43611,6 +43607,22 @@ $('galleryTools').replaceChildren(
 );
 $('galleryShareTiles').replaceChildren(
   tile({
+    id: 'openRle',
+    pic: icon('import'),
+    text: 'Open',
+    title:
+      "An RLE file (Golly's, LifeWiki's, Copy RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
+    click: () => $('rleOpenFile').click(),
+  }),
+  tile({
+    id: 'pasteRle',
+    pic: icon('copy'),
+    text: 'Paste RLE',
+    title:
+      "The RLE copied (Golly's, LifeWiki's, Copy RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
+    click: async () => openRle(await navigator.clipboard.readText()),
+  }),
+  tile({
     id: 'galleryShare',
     pic: icon('link'),
     text: 'Share link',
@@ -43642,6 +43654,11 @@ async function resetApp() {
   });
   location.reload();
 }
+$('rleOpenFile').addEventListener('change', async () => {
+  const file = $('rleOpenFile').files[0];
+  $('rleOpenFile').value = '';
+  if (file) openRle(await file.text());
+});
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';

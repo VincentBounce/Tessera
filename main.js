@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.575';
+const VERSION = '0.5.576';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26790,7 +26790,7 @@ function renderDrawTools() {
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   setTile($('startCells'), { greyed: population.size ? '' : 'No cell is drawn.' }); // (at any generation: back to gen 0)
   // Draw from current state: the generation shown (away from gen 0), else the one before Draw, its name saying which
-  $('drawFromCurrent').lastChild.textContent = `Draw from ${away ? 'current' : 'previous'} state`;
+  $('drawFromCurrent').lastChild.textContent = `Draw from ${away ? 'current state' : 'previous setup'}`;
   setTile($('drawFromCurrent'), {
     greyed: !away && !drawHistory.past.length ? 'No generation was shown before Draw.' : '',
   });

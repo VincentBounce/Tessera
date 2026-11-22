@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.625';
+const VERSION = '0.5.626';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15563,20 +15563,21 @@ function kleinSketchAt(q, u) {
 }
 // The classic bottle (the one of every textbook and of 3D Warehouse's model: r = 4 (1 − cos t / 2), t round its loop): its
 // handle, t ∈ [0, π), a tube whose circles turn with it, its centre (6 cos t (1 + sin t), 16 sin t); then its neck and body,
-// t ∈ [π, 2π), circles level, its centre's height 16 sin t; upright (its height z), its flat bottom (t = 3π/2, where the
-// tube turns inside out) its sheet's ends, run from there into its body first (t down), round it from v = u + π (its sheet's
-// middle, its pictures, south as ours's); its own gluing at t = 0 (v to π − v) carried past it, the sheet's ends turned
-// over at its bottom instead
+// t ∈ [π, 2π), circles level, its centre's height 16 sin t; upright (its height z), turned half a turn round the vertical
+// as the others are by kleinBottlePoint (its handle's arch east: its body west, its neck east), its flat bottom (t = 3π/2,
+// where the tube turns inside out) its sheet's ends, run from there into its body first (t down), round it from v = u (its
+// sheet's middle, its pictures, south as ours's); its own gluing at t = 0 (v to π − v) carried past it, the sheet's ends
+// turned over at its bottom instead
 function classicKleinAt(q, u) {
   const t = 1.5 * Math.PI - (2 * Math.PI * q) / 3,
     T = t < 0 ? t + 2 * Math.PI : t,
-    v = t < 0 ? -u : u + Math.PI,
+    v = t < 0 ? Math.PI - u : u,
     r = 4 * (1 - Math.cos(T) / 2),
     x = 6 * Math.cos(T) * (1 + Math.sin(T)),
     up = 16 * Math.sin(T);
   return T < Math.PI
-    ? [x + r * Math.cos(T) * Math.cos(v), -r * Math.sin(v), up + r * Math.sin(T) * Math.cos(v)]
-    : [x - r * Math.cos(v), -r * Math.sin(v), up];
+    ? [-x - r * Math.cos(T) * Math.cos(v), r * Math.sin(v), up + r * Math.sin(T) * Math.cos(v)]
+    : [-x + r * Math.cos(v), r * Math.sin(v), up];
 }
 // The rolled bottles' sections across their sheet, at s ∈ [−½, ½) from its middle, rolled up by m from the sheet's straight
 // width (its flat's, 2π·tube) round a ring of radius 1 (see ringRoll), by their place in KLEIN_SHAPES: the bagel's figure 8

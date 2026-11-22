@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.616';
+const VERSION = '0.5.617';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15520,10 +15520,14 @@ function kleinAt(q, u) {
 // round the vertical, its radius 1.5 − 1.25 y (y = sin² of its height's share, 0 at its top, 1 at its foot, h 1 to −2); its
 // lip half a torus (ring 1, tube 0.5) turning it in to 0.5; its neck down from there, 0.5 − 0.25 y, its axis bent west by
 // 1 − cos (2 at its foot); its handle half a torus (ring 1, tube 0.25) under, from the neck's foot to the body's: glued as
-// ours, its end its start turned over (u to π − u). q ∈ [0, 3] along it: the body [0, 1), the lip [1, 1.5), the neck
-// [1.5, 2.5), the handle [2.5, 3]; its height h, upside down: its lip at its foot, as ours's bowl (its sheet's middle,
-// its pictures, to the south, as ours's: the bottle the same, mirrored across its x–z plane)
-function glassBottleAt(q, u) {
+// ours, its end its start turned over (u to π − u). Its pieces by p = 3 − q, as Shadertoy lays them: the body [0, 1), the lip
+// [1, 1.5), the neck [1.5, 2.5), the handle [2.5, 3]; run the other way, q ∈ [0, 3] as ours runs (from its foot, where the tube
+// turns inside out, into its body first, its neck last: not the neck first, a knot in its handle as it folds), round it
+// π − u (its face kept); its height h, upside down: its lip at its foot, as ours's bowl (its sheet's middle, its pictures, to
+// the south, as ours's: the bottle the same, mirrored across its x–z plane)
+function glassBottleAt(p, v) {
+  const q = 3 - p,
+    u = Math.PI - v;
   const share = (h) => Math.sin(((1 - h) / 3) * (Math.PI / 2)) ** 2,
     level = (x, r, h) => [x + r * Math.cos(u), r * Math.sin(u), -h]; // (a level circle round (x, 0, h), upside down)
   if (q < 1) {
@@ -15617,7 +15621,7 @@ function kleinBottle(shape = shapeOn('klein')) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  const ends = [(N * 1.25) / 3, N / 6]; // (the glass bottle's lip's lowest, its foot; ours's bowl's lowest: each split there)
+  const ends = [(N * 1.75) / 3, N / 6]; // (the glass bottle's lip's lowest, its foot; ours's bowl's lowest: each split there)
   return (kleinTables[shape] = {
     at,
     N,

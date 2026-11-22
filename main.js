@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.603';
+const VERSION = '0.5.604';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37499,6 +37499,14 @@ const surfaceTriangles = (g) =>
     const k = g.sides,
       out = [],
       own = [];
+    // (a sheet's tile by its own corners, round, as shapeAt draws them: not its mesh's, welded across the seams, a Möbius
+    // bottle's band's corner past its edge welded to the other edge, a hexagon's ears lost, half of it never drawn)
+    const sheet = g.torus && tileCornerPlaces(g),
+      round = sheet && sheetPointsAt(g, sheet.places, 1),
+      cornerPoint = (slot) =>
+        sheet
+          ? [...round.subarray(3 * sheet.at[slot], 3 * sheet.at[slot] + 3)]
+          : [...g.verts.subarray(3 * g.poly[slot], 3 * g.poly[slot] + 3)];
     for (let t = 0; t < g.n; t++) {
       if (g.mobius && t >= g.front) {
         const f = t - g.front,
@@ -37514,7 +37522,7 @@ const surfaceTriangles = (g) =>
         const v = g.poly[k * t + q];
         if (q && v === g.poly[k * t + q - 1]) continue;
         slots.push(k * t + q);
-        P.push([g.verts[3 * v], g.verts[3 * v + 1], g.verts[3 * v + 2]]);
+        P.push(cornerPoint(k * t + q));
       }
       const N = newellNormal(P.flat(), 0, P.length, [0, 0, 0]);
       const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]),

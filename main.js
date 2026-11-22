@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.593';
+const VERSION = '0.5.594';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26783,6 +26783,8 @@ function renderDrawTools() {
     why = "Away from gen 0: its start's cells are drawn there.";
   drawToolsAway = away;
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, see drawsHere)
+  drawGhost(); // (the brush under the pointer as a click draws now: the plane's; a surface's with its frame, see surfaceGhost)
+  statsDirty = true;
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active'), whyNot = null) =>
     setTile(b, { on, greyed: away ? why : own ? ownWhy : '', whyNot }); // (its own on; whyNot, a setup's: a brush on the plane only)
   const tooBig = (p) => discPattern(p) && cellsPlane()?.kind === p[1] && !discCells(p[1]).laid(p[4], 0); // (a disc's pattern past the disc shown)
@@ -27411,12 +27413,12 @@ function surfaceGhost(put) {
     [r, g, b] = rgbOf(faded(ink, share, blankTile()));
   for (const [u] of tiles) put(u, (r | (g << 8) | (b << 16) | (255 << 24)) >>> 0); // (its colour, painted: see tileColour)
 }
-// the brush under the pointer, half seen
+// the brush under the pointer, half seen, where a click draws (see drawsHere: drawn again as it changes, see renderDrawTools)
 function drawGhost() {
   const ctx = layers.overlay,
     { scale: s, ox, oy } = view;
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  if (!drawing || !ghost || !walk.plane) return;
+  if (!drawsHere() || !ghost || !walk.plane) return;
   [ctx.fillStyle, ctx.globalAlpha] = ghostInk();
   turnLayer(ctx);
   ctx.beginPath();
@@ -41460,12 +41462,8 @@ function updateStats() {
   // Draw, leaving gen 0 or back (Play, a step, End, a seek): View on as it leaves, kept (a brush picked draws again, at gen 0);
   // its tools drawn again then, not each frame (785 cards)
   if (drawing && walk.life && drawAway() !== drawToolsAway) {
-    if (drawAway()) {
-      brush.view = true;
-      ghost = null;
-      drawGhost();
-    }
-    renderPlaneRow();
+    if (drawAway()) brush.view = true;
+    renderPlaneRow(); // (its brush under the pointer gone with them, see renderDrawTools)
   }
   setTile($('end'), {
     greyed: runStops().some((g) => g > stepShown)

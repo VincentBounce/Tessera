@@ -1,0 +1,10 @@
+kischecker 103448 rules 1012 candidates 344s
+kischecker done 567s
+  B389/S0157/C3   0.534  T 685 (344–1461) spread 0.44 plateau 0.47 at200 9% ash 3.31% osc 50%
+  B389/S015/C3    0.436  T 715 (268–1596) spread 0.53 plateau 0.56 at200 8.2% ash 3.46% osc 33%
+  B37/S0159/C3    0.398  T 886 (351–1192) spread 0.42 plateau 0.47 at200 7.9% ash 3.49% osc 25%
+  B369/S015/C3    0.388  T 831 (416–2287) spread 0.45 plateau 0.41 at200 10.3% ash 3.34% osc 42%
+  B36/S0158/C3    0.356  T 913 (559–2337) spread 0.4 plateau 0.55 at200 10.3% ash 3.52% osc 58%
+  B378/S015/C3    0.338  T 604 (382–1777) spread 0.47 plateau 0.55 at200 8.2% ash 3.37% osc 25%
+  B38/S0157/C3    0.334  T 901 (497–1519) spread 0.32 plateau 0.45 at200 8.7% ash 3.58% osc 50%
+  B369/S0159/C3   0.324  T 793 (448–1993) spread 0.48 plateau 0.51 at200 10.3% ash 3.52% osc 25%

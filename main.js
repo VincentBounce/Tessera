@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.597';
+const VERSION = '0.5.598';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27383,16 +27383,24 @@ function brushAt([cx, cy]) {
   }
   return patternAt(0, 1, brushCells(), true, cellMiddle(kind, cx, cy), true).map(([t, v]) => [...xy(t), v]);
 }
-// a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid on t's face, see patternOnCell);
+// a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid from t's heading, see patternFrom);
 // null where none goes (a cell folded over an edge, see cellPlace)
 function brushTilesAt(t) {
   if (brush.id === 'cell') return [[t, 1]];
   const place = cellPlace(t);
   if (!place) return null;
   const cells = brushCells(),
-    at = patternOnCell(patternFrame(0, 1, place), cells, t);
+    at = APERIODIC[patternKind()]
+      ? patternOnCell(patternFrame(0, 1, place), cells, t)
+      : patternFrom((brushHeading = brushHeadingAt(t, place)), cells);
   return cells.flatMap(([, , v], k) => (at[k] >= 0 ? [[at[k], v]] : []));
 }
+// the brush's heading on tile t (see headingOn): carried from the tile it was on to t, a neighbour, as the pointer moves (its
+// pattern turned on as it goes over a solid's edge or a seam, not as each face's frame has it); else, a jump, t's face's
+let brushHeading = null;
+const brushHeadingAt = (t, place) =>
+  (brushHeading?.g === walk.surface && (brushHeading.t === t ? brushHeading : headingAcross(brushHeading, t))) ||
+  headingOn(walk.surface, patternFrame(0, 1, place), t);
 // the brush's ink, half seen under the pointer (the plane's, a surface's): its colour (the eraser's, a dead cell's) and its
 // share over what is under it
 const ghostInk = () => [
@@ -33295,89 +33303,138 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     cellAt: (q) => find(q, on),
   });
 }
-// a pattern laid on a surface, its first cell on cell t, in t's face's frame F (see cellPlace, patternFrame): its cells (on the
-// plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none): a lattice's walked there from
-// its first as on the plane (see planePaths: over a solid's edges and a sheet's seams, as a walk goes); a disc's (a rosette
-// sphere's, its cells the plane's own) where F lays it; Anywhere's and Draw's brush's
+// a pattern laid on a surface, from cell t as t's face's frame F places it (see cellPlace, patternFrame, headingOn): its
+// cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none); Anywhere's
 function patternOnCell(F, cells, t) {
-  const kind = patternKind(),
-    ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
+  const kind = patternKind();
+  if (!APERIODIC[kind]) return patternFrom(headingOn(walk.surface, F, t), cells);
+  const ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     p = F.from(F.place(t)),
-    d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]),
-    on = ([x, y]) => F.cellAt(F.at(cellMiddle(kind, x, y).map((v, i) => v + d[i]))); // (a plane cell's, where F lays it)
-  const t0 = on(cells[0]); // (its first cell's tile: t, or another of t's lattice cell's, as the move by whole steps lands it)
-  if (APERIODIC[kind] || t0 < 0) return cells.map(on);
-  const g = walk.surface,
-    k = g.sides,
-    live = (u) => [...Array(k).keys()].filter((e) => g.nbr[k * u + e] >= 0), // (its edges with a tile across, as surfaceStep counts them)
-    { paths, around } = planePaths(kind, cells),
-    edges = live(t0),
-    edgeTo = (c) => (c ? edges.findIndex((f) => g.nbr[k * t0 + f] === on(c)) : -1), // (t0's edge towards a plane cell)
-    j0 = around.findIndex((c) => edgeTo(c) >= 0), // (its first cell's edge j0 towards a neighbour F lays by it)
-    e0 = edgeTo(around[j0]);
-  if (e0 < 0 || edges.length !== around.length) return cells.map((c, i) => (i ? -1 : t0));
-  const go = (g.patternStep ??= surfaceStep(
-    g,
-    false,
-    null,
-    Array.from({ length: k }, (_, b) => ['turn', b]),
-  )); // (once a mesh)
-  // its cells walked to, its edges listed the plane's way round (hand 1) or the other (−1)
-  const laid = (hand) => {
-    const taken = new Set(); // (a tile a cell: one met again, past a solid's corner, has no place)
-    return paths.map((path) => {
-      if (!path) return -1;
-      let state = [t0, edges[mod(e0 - hand * j0, edges.length)], 0, 0]; // (come in by its edge 0's)
-      for (const [b, sides] of path)
-        if (
-          !(state = go(state, mod(hand * b, live(state[0]).length))) ||
-          state[0] < 0 ||
-          live(state[0]).length !== sides
-        )
-          return -1;
-      return taken.has(state[0]) ? -1 : (taken.add(state[0]), state[0]);
-    });
-  };
-  // (its way round, the one laying the most of its cells where F lays them: F's own, the face's)
-  const agree = (at) => at.filter((u, c) => u >= 0 && u === on(cells[c])).length,
-    [a, b] = [laid(1), laid(-1)];
-  return agree(a) >= agree(b) ? a : b;
+    d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]);
+  return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]]))); // (a disc's, a rosette sphere's: its cells the plane's own)
 }
-// A pattern's paths on its plane (see planeCorners), once a pattern: from its first cell to each of its cells, the shortest
-// through the plane's cells round them, as a walk on cells turns (each cell's way out, edges on from its way in, in its own
-// corners' order; the first cell's from its edge 0), each step's next cell's edges; its first cell's neighbours, edge by edge
+// A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
+// against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
+// patternFrom). F's, its face's frame's (see patternFrame): its cell under t's middle, its edges by its neighbours F lays by
+// it, two at least (a solid's corner's tile, one: its neighbour's heading carried to it, see headingAcross)
+function headingOn(g, F, t) {
+  const kind = patternKind(),
+    k = g.sides,
+    edges = liveEdges(g, t),
+    cell = planeCellAt(kind, 1, ...F.from(F.place(t)), 'free'),
+    found = cell
+      ? planeCorners(kind, ...cell).flatMap((_, j) => {
+          const c = planeAcross(kind, cell, j)?.[0],
+            e = c ? edges.findIndex((f) => g.nbr[k * t + f] === F.cellAt(F.at(cellMiddle(kind, ...c)))) : -1;
+          return e < 0 ? [] : [[j, e, g.nbr[k * t + edges[e]]]];
+        })
+      : [];
+  if (found.length > 1) {
+    const [[j0, e0], [j1, e1]] = found,
+      hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
+    return { g, t, cell, e0: edges[mod(e0 - hand * j0, edges.length)], hand };
+  }
+  return found.length ? headingAcross(headingOn(g, F, found[0][2]), t) : null;
+}
+// a tile's edges with a tile across, as a walk on cells counts them (see surfaceStep)
+const liveEdges = (g, u) => [...Array(g.sides).keys()].filter((e) => g.nbr[g.sides * u + e] >= 0);
+// a heading carried to tile v, a neighbour (else null): its plane cell across the plane edge its mesh edge stands for, its edge
+// 0 and its way round there (turned over across a twisted seam: the edge listed the same way round in both tiles)
+function headingAcross(h, v) {
+  if (!h) return null;
+  const { g, t, cell, e0, hand } = h,
+    k = g.sides,
+    kind = patternKind(),
+    edges = liveEdges(g, t),
+    e = edges.findIndex((f) => g.nbr[k * t + f] === v),
+    across = e < 0 ? null : planeAcross(kind, cell, mod(hand * (e - edges.indexOf(e0)), edges.length));
+  if (!across) return null;
+  const a = g.nbrEdge[k * t + edges[e]],
+    back = liveEdges(g, v),
+    turned = g.poly[k * v + a] === g.poly[k * t + edges[e]] ? -hand : hand;
+  return { g, t: v, cell: across[0], e0: back[mod(back.indexOf(a) - turned * across[1], back.length)], hand: turned };
+}
+// a pattern laid from heading h (see headingOn): moved by whole steps (see translations) to lie its first cell by h's cell,
+// each of its cells walked to from h's tile as on the plane (see planePaths), a walk on cells's own steps (see surfaceStep:
+// over a solid's edges and a sheet's seams); a step off the cells of its kind or onto a tile already taken (past a solid's
+// corner) no place, −1
+function patternFrom(h, cells) {
+  if (!h) return cells.map(() => -1);
+  const kind = patternKind(),
+    { g, t, cell, e0, hand } = h,
+    m0 = cellMiddle(kind, ...cells[0]),
+    d = latticeNear(kind, sub(cellMiddle(kind, ...cell), m0)),
+    paths = planePaths(
+      kind,
+      cell,
+      cells.map(([x, y]) => planeCellAt(kind, 1, ...cellMiddle(kind, x, y).map((v, i) => v + d[i]), 'free')),
+    ),
+    go = (g.patternStep ??= surfaceStep(
+      g,
+      false,
+      null,
+      Array.from({ length: g.sides }, (_, b) => ['turn', b]),
+    )), // (once a mesh)
+    taken = new Set(); // (a tile a cell)
+  return paths.map((path) => {
+    if (!path) return -1;
+    let state = [t, e0, 0, 0]; // (come in by its edge 0's)
+    for (const [b, sides] of path)
+      if (
+        !(state = go(state, mod(hand * b, liveEdges(g, state[0]).length))) ||
+        state[0] < 0 ||
+        liveEdges(g, state[0]).length !== sides
+      )
+        return -1;
+    return taken.has(state[0]) ? -1 : (taken.add(state[0]), state[0]);
+  });
+}
+// a plane cell's neighbour across its edge e, and that edge's number in it (the plane's cell just past its middle, see
+// planeCellAt); null none
+function planeAcross(kind, cell, e) {
+  const P = planeCorners(kind, ...cell),
+    [a, b] = [P[e], P[(e + 1) % P.length]],
+    mid = meanPoint(P),
+    half = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+    next = planeCellAt(kind, 1, ...half.map((v, d) => v + 0.01 * (v - mid[d])), 'free'),
+    at = (q) => q.map((v) => roundOff(v)).join();
+  const Q = next && planeCorners(kind, ...next),
+    f = Q ? Q.findIndex((q, i) => at(q) === at(b) && at(Q[(i + 1) % Q.length]) === at(a)) : -1;
+  return f < 0 ? null : [next, f];
+}
+// A pattern's paths on its plane from cell `from` to each of its cells: the shortest through the plane's cells (breadth first,
+// see planeAcross), as a walk on cells turns (each cell's way out, edges on from its way in, in its own corners' order; from's
+// from its edge 0), each step's next cell's edges; null none near. Kept by its place in the lattice and its cells' offsets
+// (a lattice step moves them all alike)
 const patternPaths = remember('patternPaths', new Map());
-function planePaths(kind, cells) {
-  const key = `${kind}|${cells.map(([x, y]) => `${x},${y}`).join(';')}`;
+function planePaths(kind, from, cells) {
+  const [A, B] = translations(kind),
+    m = cellMiddle(kind, ...from),
+    key = [
+      kind,
+      inBasis(m, A, B).map((v) => roundOff(v - Math.floor(v + 1e-9))),
+      cells.map((c) => (c ? sub(cellMiddle(kind, ...c), m).map((v) => roundOff(v)) : 'x')),
+    ].join('|');
   if (patternPaths.has(key)) return patternPaths.get(key);
-  const per = gridCells(baseOf(kind)),
-    [xs, ys] = [0, 1].map((d) => cells.map((c) => c[d])),
-    corners = new Map(),
-    sides = new Map(),
-    at = (p) => p.map((v) => roundOff(v)).join();
-  for (let y = Math.min(...ys) - 2; y <= Math.max(...ys) + 2; y++)
-    for (let x = Math.min(...xs) - 2 * per - 2; x <= Math.max(...xs) + 2 * per + 2; x++) {
-      const P = planeCorners(kind, x, y);
-      corners.set(`${x},${y}`, P);
-      P.forEach((q, e) => sides.set(`${at(q)}|${at(P[(e + 1) % P.length])}`, [`${x},${y}`, e]));
-    } // (the plane's cells round it, a lattice cell and more: each side by its corners, as listed)
-  const across = (c, e) => {
-    const P = corners.get(c);
-    return sides.get(`${at(P[(e + 1) % P.length])}|${at(P[e])}`); // (its neighbour, the side listed the other way round)
-  };
-  const first = `${cells[0][0]},${cells[0][1]}`,
-    way = new Map([[first, [0, []]]]); // (each cell reached: its way in, its path)
-  for (const c of way.keys())
-    corners.get(c).forEach((_, e) => {
-      const next = across(c, e),
-        [inn, path] = way.get(c);
-      if (next && !way.has(next[0]))
-        way.set(next[0], [next[1], [...path, [mod(e - inn, corners.get(c).length), corners.get(next[0]).length]]]);
-    }); // (breadth first: a Map's keys walked as they are added)
-  const out = {
-    paths: cells.map(([x, y]) => way.get(`${x},${y}`)?.[1] ?? null),
-    around: corners.get(first).map((_, e) => across(first, e)?.[0].split(',').map(Number) ?? null),
-  };
+  const name = (c) => c.join(),
+    targets = new Set(cells.filter(Boolean).map(name)),
+    way = new Map([[name(from), [from, 0, []]]]);
+  let left = targets.size - (targets.has(name(from)) ? 1 : 0);
+  for (const [c, inn, path] of way.values()) {
+    if (!left || way.size > 4096) break; // (a pattern's cells near one another: not the whole plane)
+    const sides = planeCorners(kind, ...c).length;
+    for (let e = 0; e < sides; e++) {
+      const next = planeAcross(kind, c, e);
+      if (!next || way.has(name(next[0]))) continue;
+      way.set(name(next[0]), [
+        next[0],
+        next[1],
+        [...path, [mod(e - inn, sides), planeCorners(kind, ...next[0]).length]],
+      ]);
+      if (targets.has(name(next[0]))) left--;
+    }
+  } // (breadth first: a Map's values walked as they are added)
+  const out = cells.map((c) => (c && way.get(name(c))?.[2]) ?? null);
   patternPaths.set(key, out);
   return out;
 }

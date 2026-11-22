@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.605';
+const VERSION = '0.5.606';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16115,9 +16115,12 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
     .filter((b) => K % b === 0 && (b === 1 || (nv / 2) % rows === 0))
     .map((b) => {
       const blocks = [K / b, b],
-        n = ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, own && K === 1 ? [] : [(K / b) * q], (c) =>
-          ok(c, nv, true),
-        ), // (a length of its own: in its usual's place, as a strip's, see stripSteps; whole copies for its colours' slices, one colour's as asked, the nearest a mirror closes)
+        n = ringLength(
+          own ?? x,
+          own ?? (x * TORUS_TUBE * K) / b / b,
+          own && (K === 1 || plane.start === 'draw') ? [] : [(K / b) * q],
+          (c) => ok(c, nv, true),
+        ), // (a length of its own: in its usual's place, as a strip's, see stripSteps; whole copies for its colours' slices, a start laid by them; one colour's or one drawn by hand as asked, the nearest a mirror closes)
         slice = (n * step * b) / K / copyLength;
       return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: Math.abs(slice - Math.round(slice)) < 1e-6 };
     })
@@ -35140,14 +35143,6 @@ function applySetup(s) {
     const k = Number(s[`${f}Shape`]);
     ringShape[f] = Number.isInteger(k) && RING_SHAPES[f][k] ? k : 0;
   }
-  if (VARIANTS[w].surface) {
-    const kind = surfaceOf(VARIANTS[w]);
-    fillGridSizes(kind, VARIANTS[w].initial);
-    if (s.gridSize !== undefined) {
-      selectSize(kind, linkSize(kind, s.gridSize));
-      seek(kind);
-    }
-  }
   if (s.playRule && VARIANTS[w].worm) {
     worm.byDigits = s.playRule === 'digits';
     if (!worm.byDigits && wormRuleOf(s.playRule)) worm.rule = wormRuleOf(s.playRule).join(' ');
@@ -35179,6 +35174,16 @@ function applySetup(s) {
       $('lifeRule').value = ruleBody(s.playRule);
       if (ruleRefusal(s.playRule, w)) refuseRule(s.playRule, w);
     } // a link's rule as it is (one its grid cannot play: refused, its grid's kept)
+  }
+  // a surface's size once its teams and start are the link's (a ring's length is its colours', a drawn one's as asked: see
+  // kleinLength)
+  if (VARIANTS[w].surface) {
+    const kind = surfaceOf(VARIANTS[w]);
+    fillGridSizes(kind, VARIANTS[w].initial);
+    if (s.gridSize !== undefined) {
+      selectSize(kind, linkSize(kind, s.gridSize));
+      seek(kind);
+    }
   }
   // the display is not part of a setup: it takes the defaults of the walk variant's tab, when the tab
   // changes (as picking a walk does); within a tab, what was chosen stays

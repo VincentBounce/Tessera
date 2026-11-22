@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.589';
+const VERSION = '0.5.590';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16183,9 +16183,10 @@ function kleinLength(kindK, size, K = ringColours(ringVariant())) {
   // tile in its own middle's, see partPlaces), as the twist allows (Pent 15's twist asking an odd length: no 2, 4 slices); of
   // those, the ones whose slices are whole copies (fits), then the squarest blocks
   const x = W / TORUS_TUBE / step,
-    q = Math.round(copyLength / step);
+    q = Math.round(copyLength / step),
+    rows = sheetRows([a, b]); // (its lattice's, before b names the slices round the tube)
   return [1, 2]
-    .filter((b) => K % b === 0 && (b === 1 || (nv / 2) % sheetRows([a, b]) === 0))
+    .filter((b) => K % b === 0 && (b === 1 || (nv / 2) % rows === 0))
     .map((b) => {
       const blocks = [K / b, b],
         n = ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, [(K / b) * q], (c) => ok(c, nv)), // (a length of its own: in its usual's place, as a strip's, see stripSteps)
@@ -16273,6 +16274,18 @@ function tilingTorusMesh(name, nv, nu) {
     tube = (nv * Math.hypot(...B)) / (nu * step),
     { mesh, tiles } = foldMesh(frame, sheet, false, (x, y) => torusPoint(x, y, sheet.L, sheet.W, 1, tube)),
     units = (x, i) => x * (i % 2 ? nv / sheet.W : nu / sheet.L); // (x, then y: in its sides)
+  // its lattice cells, the plane's cell each tile was laid from (i, j: see tilingStrip) brought within the torus's periods
+  // (nu sides A round the ring, nv sides B round the tube, in the motif's own cells): a cell cut by a seam one, whole
+  const m = gridMotif(kind).polys.length,
+    [P, Q] = [A.map((x) => nu * x), B.map((x) => nv * x)].map((p) => inBasis(p, ...gridMotif(kind).basis)),
+    D = P[0] * Q[1] - P[1] * Q[0],
+    ids = new Map(),
+    latticeCells = sheet.cellPlaces.map(([c, j]) => {
+      const i = Math.floor(c / m),
+        [s, r] = [(i * Q[1] - j * Q[0]) / D, (P[0] * j - P[1] * i) / D].map((x) => Math.floor(x + 1e-9)),
+        home = `${Math.round(i - s * P[0] - r * Q[0])},${Math.round(j - s * P[1] - r * Q[1])}`;
+      return ids.get(home) ?? ids.set(home, ids.size).get(home);
+    });
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     nu,
@@ -16282,7 +16295,7 @@ function tilingTorusMesh(name, nv, nu) {
     sheet: [A, B],
     uv: Float64Array.from(tiles.flat(2), units),
     uvMid: Float64Array.from(sheet.mids, units),
-    latticeCells: sheet.latticeCells,
+    latticeCells,
     cellPlaces: sheet.cellPlaces,
     colourCells: sheet.colourCells,
   }));

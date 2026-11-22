@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.619';
+const VERSION = '0.5.620';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15597,7 +15597,10 @@ const KLEIN_SHAPES = [
 ];
 // each bottle's point (q, u) and the q its sheet's ends are at, where the tube turns inside out (the glass bottle's lip's
 // lowest, its foot; ours's and the sketch's bowl's lowest), by its place in KLEIN_SHAPES; the others rolled (see KLEIN_SECTIONS)
-const KLEIN_AT = { 0: [glassBottleAt, 1.75], 1: [kleinAt, 0.5], 4: [kleinSketchAt, 0.375] };
+const KLEIN_AT = { 0: [glassBottleAt, 1.75], 1: [kleinAt, 0.5], 4: [kleinSketchAt, 0.375, KLEIN_SKETCH] };
+// a Klein bottle's shape as its meshes and tables are kept: its place, and its sizes if it has some to tune (Cells › Debug)
+const kleinShapeKey = (shape = shapeOn('klein')) =>
+  `${shape}${KLEIN_AT[shape]?.[2] ? ` ${Object.values(KLEIN_AT[shape][2])}` : ''}`;
 // a bottle rolled up from its sheet, as a strip is: its section across (see KLEIN_SECTIONS), the others none
 const kleinRolls = () => KLEIN_SECTIONS[shapeOn('klein')];
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
@@ -15612,7 +15615,7 @@ const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
 // the sheet's ends' share (where the tube turns inside out, see KLEIN_AT) and its frame (centred, 3 at its largest: the bottles' height)
 const kleinTables = {};
 function kleinBottle(shape = shapeOn('klein')) {
-  if (kleinTables[shape]) return kleinTables[shape];
+  if (kleinTables[kleinShapeKey(shape)]) return kleinTables[kleinShapeKey(shape)];
   const N = 6000,
     q = (i) => (3 * i) / N,
     [at, endsAt] = KLEIN_AT[shape],
@@ -15641,7 +15644,7 @@ function kleinBottle(shape = shapeOn('klein')) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  return (kleinTables[shape] = {
+  return (kleinTables[kleinShapeKey(shape)] = {
     at,
     N,
     along,
@@ -15674,7 +15677,7 @@ function kleinSheetPlace(x0, y0, nu, nv, up) {
 }
 const kleinSheetKey = (x0, y0, nu, nv, up) => `${kleinSheetPlace(x0, y0, nu, nv, up)}`;
 function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
-  const key = `kleinCairo${nv}x${nu}|${shapeOn('klein')}`; // (its shape, see KLEIN_SHAPES)
+  const key = `kleinCairo${nv}x${nu}|${kleinShapeKey()}`; // (its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { tiles, places } = cairoSheet(nu, nv),
     up = 0.5; // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
@@ -16283,7 +16286,7 @@ function foldMesh({ step, by, n, nv }, sheet, twist, point) {
   };
 }
 function kleinTilingMesh(kindK, size) {
-  const key = `${kindK}${size}|${ringColours(ringVariant())}|${shapeOn('klein')}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
+  const key = `${kindK}${size}|${ringColours(ringVariant())}|${kleinShapeKey()}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const frame = kleinLength(kindK, size),
     { kind, strip, turn, n, nv } = frame,
@@ -42869,9 +42872,10 @@ function cellsTuning() {
   const theme = themeName(),
     solo = lifeTeams === 1,
     lights = cellsLightNow(), // (Solo on a light page its own)
-    lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]]; // (Panel, Debug: a pick its light's colour, the cell's left as it is)
+    lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]], // (Panel, Debug: a pick its light's colour, the cell's left as it is)
+    sizes = ringFamily(w) === 'klein' && KLEIN_AT[shapeOn('klein')]?.[2]; // (a Klein bottle's shape with sizes to tune)
   debugPanel({
-    key: `${theme}|${solo}|${cellsFinish()}`,
+    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}`, // (its shape's sizes kept as they slide)
     title: `Cells › ${CELLS_FINISHES[cellsFinish()][0]}`, // (the mode whose numbers it shows)
     numbers: lights,
     shown: cellsLightOf(CELLS_FINISHES[cellsFinish()][0]),
@@ -42898,6 +42902,7 @@ function cellsTuning() {
     note: !solo
       ? 'The battles’ colours, the teams’'
       : `A colour: ${lightColour ? 'its light' : 'the live cell’s'}, till the page is opened again`,
+    more: sizes && { title: `Klein bottle › ${KLEIN_SHAPES[shapeOn('klein')][0]}`, numbers: sizes, onNumbers: compute }, // (its shape's sizes, its meshes kept by them: see kleinShapeKey)
   });
 }
 // the theme's palette read again (a theme, or a colour of it changed: see cellsTuning) and everything drawn in it

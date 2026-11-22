@@ -13,6 +13,8 @@
  *                                             what to do once one changed (the object's own values already set)
  *     colours, picked, onPick, note,          colours to pick from, the one picked, what a pick does (none: shown only),
  *                                             and a line under them
+ *     more,                                   another object's numbers under them, past a line ({ title, numbers,
+ *                                             onNumbers }: a figure's sizes), copied and reset with the others
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
  *   })
  */
@@ -46,6 +48,7 @@ const DEBUG_STYLE = `
 #debugPanel .debug-colours input { width: 24px; height: 22px; padding: 0; border: 0; background: none; }
 #debugPanel p { margin: 6px 0 0; color: var(--muted-text-color); }
 #debugPanel .debug-button { margin: 8px 6px 0 0; }
+#debugPanel hr { margin: 10px 0 0; border: 0; border-top: 1px solid var(--border-color); }
 `;
 
 /* ---- The panel ---------------------------------------------------------------------------------- */
@@ -81,19 +84,42 @@ function debugPanel(spec) {
     picked,
     onPick,
     note,
+    more,
   } = spec;
-  if (!debugFirst.has(numbers)) debugFirst.set(numbers, { ...numbers });
-  const first = debugFirst.get(numbers);
+  const firstOf = (o) => (debugFirst.has(o) ? debugFirst.get(o) : debugFirst.set(o, { ...o }).get(o)),
+    first = firstOf(numbers);
   panel.replaceChildren();
   const head = document.createElement('h4');
   head.textContent = title;
   panel.append(head);
   if (onClose) panel.append(tutTools({ close: onClose })); // (main.js's)
-  // a slider a number: its value set at once, the caller told once the drag pauses (a 3D view made again is slow)
+  // a slider a number of an object: its value set at once, the caller told once the drag pauses (a 3D view made again is slow)
   let wait = 0;
-  const changed = () => {
-    clearTimeout(wait);
-    wait = setTimeout(onNumbers, 150);
+  const slider = (name, of = numbers, then = onNumbers) => {
+    const row = document.createElement('label'),
+      words = document.createElement('span'),
+      input = document.createElement('input'),
+      value = document.createElement('output'),
+      at = firstOf(of)[name],
+      reach = Math.max(signed.includes(name) ? 3 : 1, 3 * Math.abs(at)); // (a signed one from 0 at first: ±3)
+    words.textContent = name;
+    Object.assign(input, {
+      type: 'range',
+      min: signed.includes(name) ? -reach : 0,
+      max: reach,
+      step: 0.01,
+      value: of[name],
+    });
+    input.title = `${name}: from ${input.min} to ${input.max}, ${at} at first`;
+    value.textContent = of[name].toFixed(2);
+    input.addEventListener('input', () => {
+      of[name] = Number(input.value);
+      value.textContent = of[name].toFixed(2);
+      clearTimeout(wait);
+      wait = setTimeout(then, 150);
+    });
+    row.append(words, input, value);
+    panel.append(row);
   };
   const own = shown.filter((name) => !shared.includes(name)),
     others = shown.filter((name) => shared.includes(name));
@@ -103,28 +129,7 @@ function debugPanel(spec) {
       heading.textContent = 'Every mode';
       panel.append(heading);
     }
-    const row = document.createElement('label'),
-      words = document.createElement('span'),
-      slider = document.createElement('input'),
-      value = document.createElement('output');
-    words.textContent = name;
-    const reach = Math.max(signed.includes(name) ? 3 : 1, 3 * Math.abs(first[name])); // (a signed one from 0 at first: ±3)
-    Object.assign(slider, {
-      type: 'range',
-      min: signed.includes(name) ? -reach : 0,
-      max: reach,
-      step: 0.01,
-      value: numbers[name],
-    });
-    slider.title = `${name}: from ${slider.min} to ${slider.max}, ${first[name]} at first`;
-    value.textContent = numbers[name].toFixed(2);
-    slider.addEventListener('input', () => {
-      numbers[name] = Number(slider.value);
-      value.textContent = numbers[name].toFixed(2);
-      changed();
-    });
-    row.append(words, slider, value);
-    panel.append(row);
+    slider(name);
   }
   let pickedNow = picked; // (the colour picked, as Copy copies it)
   // its buttons under the sliders, a word each
@@ -140,6 +145,10 @@ function debugPanel(spec) {
   button('Reset', 'Every number back to its first value', () => {
     Object.assign(numbers, first);
     onNumbers();
+    if (more) {
+      Object.assign(more.numbers, firstOf(more.numbers));
+      more.onNumbers();
+    }
     panel.dataset.key = '';
     debugPanel(spec);
   });
@@ -147,6 +156,7 @@ function debugPanel(spec) {
     navigator.clipboard.writeText(
       JSON.stringify({
         [title]: { ...Object.fromEntries(shown.map((name) => [name, numbers[name]])), colour: pickedNow },
+        ...(more && { [more.title]: { ...more.numbers } }),
       }),
     ),
   );
@@ -188,5 +198,11 @@ function debugPanel(spec) {
     const line = document.createElement('p');
     line.textContent = note;
     panel.append(line);
+  }
+  if (more) {
+    const heading = document.createElement('h5');
+    heading.textContent = more.title;
+    panel.append(document.createElement('hr'), heading);
+    for (const name of Object.keys(more.numbers)) slider(name, more.numbers, more.onNumbers);
   }
 }

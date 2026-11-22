@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.579';
+const VERSION = '0.5.580';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35443,14 +35443,14 @@ function exportGallery(list = readGallery().filter((x) => !selecting() || select
   });
   saveBlob(blob, `Gallery export v${VERSION}.json`); // (the version that wrote it)
 }
-// the characters a file's name refuses (Chrome's, as Windows'), each as a look-alike it allows
-const [FILE_NAME_REFUSED, FILE_NAME_LOOKALIKES] = ['/\\:*?"<>|', '∕⧵꞉∗？＂＜＞ǀ']; // (each its look-alike's place)
+// the characters a file's name refuses (Chrome's, as Windows'), each as its full-width form, as rclone writes them
+const [FILE_NAME_REFUSED, FILE_NAME_LOOKALIKES] = ['/\\:*?"<>|', '／＼：＊？＂＜＞｜']; // (each its look-alike's place)
 // a file saved by the browser (its downloads), named as the Mac names a screenshot, its time first, then the app's name
 // and its own: 2026-11-22 at 00.40.08 Tessera · Wild #398736471.webp
 function saveBlob(blob, name) {
   const now = new Date(),
     stamp = `${now.toLocaleDateString('sv')} at ${now.toLocaleTimeString('sv').replaceAll(':', '.')}`,
-    allowed = [...name].map((c) => FILE_NAME_LOOKALIKES[FILE_NAME_REFUSED.indexOf(c)] ?? c).join(''), // (B3∕S23)
+    allowed = [...name].map((c) => FILE_NAME_LOOKALIKES[FILE_NAME_REFUSED.indexOf(c)] ?? c).join(''), // (B3／S23)
     a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `${stamp} ${APP_TITLE} · ${allowed}`;

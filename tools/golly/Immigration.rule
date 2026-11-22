@@ -1,0 +1,29 @@
+@RULE Immigration
+
+B3/S23 in 2 colours, as Tessera plays it: a newborn takes the colour most of its live neighbours have; on a
+tie, the one colour missing if just one is, else none (written by tools/golly/colours-rule.js)
+
+@TABLE
+n_states:3
+neighborhood:Moore
+symmetries:permute
+var c={1,2}
+var x1={1,2}
+var x2={1,2}
+var x3={1,2}
+var x4={1,2}
+var x5={1,2}
+var x6={1,2}
+var x7={1,2}
+var x8={1,2}
+0,1,1,1,0,0,0,0,0,1
+0,1,1,2,0,0,0,0,0,1
+0,1,2,2,0,0,0,0,0,2
+0,2,2,2,0,0,0,0,0,2
+c,0,0,0,0,0,0,0,0,0
+c,x1,0,0,0,0,0,0,0,0
+c,x1,x2,x3,x4,0,0,0,0,0
+c,x1,x2,x3,x4,x5,0,0,0,0
+c,x1,x2,x3,x4,x5,x6,0,0,0
+c,x1,x2,x3,x4,x5,x6,x7,0,0
+c,x1,x2,x3,x4,x5,x6,x7,x8,0

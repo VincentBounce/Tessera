@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.587';
+const VERSION = '0.5.588';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26611,12 +26611,16 @@ const startWhyNot = (start, v) =>
       : '';
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
 // the Life grids an RLE file lays as rows of cells (Save RLE, Paste RLE, Open RLE): the plane's (its cells as its grid numbers
-// them, see lifeRle), a sheet's of squares (a torus's, a Möbius strip's, a Klein bottle's, a cell a place: see pictureCells)
+// them, see lifeRle), a sheet's of squares straight, its rows the sheet's (a torus's, a Möbius strip's, a Klein bottle's, a
+// cell a place: see pictureCells; turned, its squares across its sheet's rows: no place of its own each)
 const RLE_WHERE =
-  'Only for Life on a grid laid in rows: the plane, or a sheet of squares (a torus, a Möbius strip, a Klein bottle).';
+  'Only for Life on a grid laid in rows: the plane, or a sheet of squares not turned (a torus, a Möbius strip, a Klein bottle).';
 const rleLaid = (v) =>
   !!VARIANTS[v].life &&
-  (!!VARIANTS[v].plane || (TORI.includes(VARIANTS[v].surface) && PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square'));
+  (!!VARIANTS[v].plane ||
+    (TORI.includes(VARIANTS[v].surface) &&
+      PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square' &&
+      !tilesTurn(surfaceOf(VARIANTS[v]))));
 // the grid shown as rows of cells, an RLE file's: its width, its height, each cell's place (the plane's, its own; a sheet's,
 // its place on it, see sheetPlace: a Möbius strip's round both its faces)
 const pictureCells = () => {
@@ -42692,10 +42696,11 @@ function lifeRle() {
     if (v) cells.push([...at(t), v]);
   });
   if (!cells.length) return null;
-  const x0 = per * Math.floor(cells.reduce((e, c) => Math.min(e, c[0]), Infinity) / per),
-    y0 =
-      cells.reduce((e, c) => Math.min(e, c[1]), Infinity) -
-      (base === 'cairo' && (x0 / 2 + cells.reduce((e, c) => Math.min(e, c[1]), Infinity)) & 1 ? 1 : 0);
+  const g = walk.surface,
+    sheet = !kind && { ...pictureCells(), grid: g.mobius ? '' : g.klein ? 'K' : 'T' }, // (Golly's bounded grid: none a Möbius strip)
+    lowest = (d) => cells.reduce((e, c) => Math.min(e, c[d]), Infinity),
+    x0 = sheet ? 0 : per * Math.floor(lowest(0) / per),
+    y0 = sheet ? 0 : lowest(1) - (base === 'cairo' && (x0 / 2 + lowest(1)) & 1 ? 1 : 0); // (a sheet's cells where they are on it)
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   return rleFile(
     `generation ${stepShown}`,
@@ -42705,10 +42710,9 @@ function lifeRle() {
         ? []
         : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
     pop,
-    K > 1
-      ? `${lifeRuleNow().text}${base === 'hex' ? 'H' : ''}`
-      : gollyRule(ruleBody($('lifeRule').value), base === 'hex'),
+    gollyRule(K > 1 ? lifeRuleNow().text : ruleBody($('lifeRule').value), base === 'hex'),
     L.C === 2 && K === 1,
+    sheet,
   );
 }
 // Elementary's: its first row, Golly drawing the rows down from it itself (as the app: the rows shown can be hundreds of
@@ -42727,31 +42731,44 @@ function elementaryRle() {
   );
 }
 // an RLE file: its name and words its setup's as its Gallery card writes them (when: its generation, its first row), its
-// comments, its cells (see populationRle) and rule; two states: b and o (Golly's Life-like)
-function rleFile(when, notes, pop, rule, two) {
+// comments, its cells (see populationRle) and rule; two states: b and o (Golly's Life-like); a sheet's (w × h) whole, its
+// rule with Golly's bounded grid (:T192,64, a torus; :K…*, a Klein bottle, its x ends turned over) and its place in it
+// (Golly's: centred, its top left at −⌊w/2⌋, −⌊h/2⌋)
+function rleFile(when, notes, pop, rule, two, sheet = null) {
   const x = { setup: getSetup() };
   const xs = [...pop.keys()].map((k) => cellXY(k)[0]),
     ys = [...pop.keys()].map((k) => cellXY(k)[1]);
   let body = populationRle(pop).replace(/^[^:]*:/, '');
   if (two) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
-  const lines = [];
-  for (let i = 0; i < body.length; i += 70) lines.push(body.slice(i, i + 70));
+  const lines = [''];
+  for (const run of body.match(/\d*(?:[p-y][A-X]|[^\d])/g)) {
+    if (lines.at(-1).length + run.length > 70) lines.push('');
+    lines[lines.length - 1] += run;
+  } // (70 characters a line at most, as Golly's, a run never cut: its count and its state on one line)
   return [
     `#N ${setupTitle(x)}, ${when}`,
     `#C ${setupWords(x)}`,
     `#C Tessera: ${SITE}${location.hash}`,
     ...notes.map((n) => `#C ${n}`),
-    `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,
+    ...(sheet ? [`#CXRLE Pos=${-Math.floor(sheet.w / 2)},${-Math.floor(sheet.h / 2)}`] : []),
+    sheet
+      ? `x = ${sheet.w}, y = ${sheet.h}, rule = ${rule}${sheet.grid && `:${sheet.grid}${sheet.w},${sheet.h}${sheet.grid === 'K' ? '*' : ''}`}`
+      : `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,
     ...lines,
   ].join('\n');
 }
-// a rule in Golly's words (its Help: QuickLife, Generations): a Life-like one as it is, B…/S…; a Generations one its way,
-// survival/birth/states; on hexagons H after (Golly's leave out a cell's NE and SW neighbours, ours its NW and SE: our
-// grid mirrored, see lifeRle); any other (a loop's, a block rule's) as the app writes it
+// the rules in colours Golly knows by a name, each the app's rule it is (their tables: tools/golly/colours-rule.js, put in
+// Golly's rules folder); both ways, Save RLE's and Open RLE's
+const GOLLY_NAMES = { Immigration: 'B3/S23/Immigration', QuadLife: 'B3/S23/Colours4' };
+// a rule in Golly's words (its Help: QuickLife, Generations): one in colours by its name (see GOLLY_NAMES); a Life-like one
+// as it is, B…/S…; a Generations one its way, survival/birth/states; on hexagons H after (Golly's leave out a cell's NE and
+// SW neighbours, ours its NW and SE: our grid mirrored, see lifeRle); any other (a loop's, a block rule's, colours Golly has
+// no name for) as the app writes it
 const gollyRule = (rule, hex) => {
-  const m = rule.match(/^B([^/]*)\/S([^/]*)(?:\/C(\d+))?$/);
-  if (!m) return rule;
-  return (m[3] ? `${m[2]}/${m[1]}/${m[3]}` : `B${m[1]}/S${m[2]}`) + (hex ? 'H' : '');
+  const named = !hex && Object.keys(GOLLY_NAMES).find((name) => GOLLY_NAMES[name] === rule),
+    m = rule.match(/^B([^/]*)\/S([^/]*)(?:\/C(\d+))?$/);
+  if (named) return named;
+  return (m ? (m[3] ? `${m[2]}/${m[1]}/${m[3]}` : `B${m[1]}/S${m[2]}`) : rule) + (hex ? 'H' : '');
 };
 // A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied;
 // then as it was (a tile's, a word's, a picture's alone: the same everywhere)
@@ -42786,22 +42803,29 @@ $('saveRle').addEventListener('click', () => {
     saveBlob(new Blob([text], { type: 'text/plain' }), `${setupTitle({ setup: getSetup() })} gen ${stepShown}.rle`);
 });
 // An RLE file's pattern (Golly's, LifeWiki's, Save RLE's): its cells [x, y, state] from its top left (Golly's hexagons
-// mirrored back, see lifeRle), its size, its rule as the app reads it (Golly's Generations, survival/birth/states, the
-// other way round, see gollyRule) and its grid (H after its rule: hexagons); the app's own (Save RLE's), its setup too, from
+// mirrored back, see lifeRle; on Golly's bounded grid, from the grid's, where its Pos lays it), its size (a bounded grid's
+// its own; else its header's, its cells' at least), its rule as the app reads it (Golly's names, see GOLLY_NAMES; Generations, survival/birth/states, the other
+// way round, see gollyRule) and its grid (H after its rule: hexagons); the app's own (Save RLE's), its setup too, from
 // its link (#C Tessera: …); null: no pattern, or no rule the app reads
 function rleRead(text) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()),
     head = lines.findIndex((line) => /^x\s*=/.test(line));
   if (head < 0) return null;
-  const said = lines[head].match(/rule\s*=\s*([^\s,]+)/i)?.[1] ?? 'B3/S23',
+  const [named, bounds] = (lines[head].match(/rule\s*=\s*([^\s,]+(?:,\d+\*?)?)/i)?.[1] ?? 'B3/S23').split(':'),
+    said = GOLLY_NAMES[named] ?? named,
+    grid = bounds?.match(/^[TK](\d+)\*?,(\d+)/i), // (Golly's bounded grid: its width and height)
+    pos = lines.find((line) => line.startsWith('#CXRLE'))?.match(/Pos=(-?\d+),(-?\d+)/),
     hex = /h$/i.test(said),
     golly = said.match(/^(\d*)\/(\d*)(?:\/(\d+))?h?$/i),
     rule = parseRule(golly ? `B${golly[2]}/S${golly[1]}${golly[3] ? `/C${golly[3]}` : ''}` : said.replace(/h$/i, '')),
     body = lines.slice(head + 1).filter((line) => !line.startsWith('#')),
     link = lines.find((line) => line.startsWith('#C Tessera: '));
-  const cells = [...populationOf(`0,0:${body.join('')}`)].map(([k, v]) => [...cellXY(k), v]),
-    w = 1 + Math.max(...cells.map(([x]) => x)),
-    h = 1 + Math.max(...cells.map(([, y]) => y));
+  const [W, H] = grid ? [Number(grid[1]), Number(grid[2])] : [],
+    [dx, dy] = grid ? [0, 1].map((d) => (pos ? Number(pos[d + 1]) + Math.floor([W, H][d] / 2) : 0)) : [0, 0], // (on a bounded grid, where its Pos lays it, else at its top left, as bgolly writes it)
+    cells = [...populationOf(`${dx},${dy}:${body.join('')}`)].map(([k, v]) => [...cellXY(k), v]),
+    [x, y] = ['x', 'y'].map((d) => Number(lines[head].match(new RegExp(`\\b${d}\\s*=\\s*(\\d+)`))?.[1] ?? 0)), // (its size said)
+    w = W ?? Math.max(x, 1 + Math.max(...cells.map(([cx]) => cx))),
+    h = H ?? Math.max(y, 1 + Math.max(...cells.map(([, cy]) => cy)));
   if (!rule || !cells.length) return null;
   return {
     rule,

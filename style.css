@@ -932,7 +932,7 @@ button.switch.active:hover:not(:disabled) {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--short-gap);
-} /* on the left room kept (.gallery-left); in the middle the setup in view's: Share link, its picture, Star; on the right
+} /* on the left Open and Paste RLE (.gallery-left); in the middle the setup in view's: Share link, its picture, Star; on the right
    Select, then the Gallery's tools (the left as wide as the right: the middle in the band's middle) */
 .gallery-tools,
 .gallery-in-view {

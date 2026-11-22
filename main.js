@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.581';
+const VERSION = '0.5.582';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43605,7 +43605,7 @@ $('galleryTools').replaceChildren(
     click: () => exportGallery(),
   }),
 );
-$('galleryShareTiles').replaceChildren(
+$('galleryOpenTiles').replaceChildren(
   tile({
     id: 'openRle',
     pic: icon('import'),
@@ -43622,6 +43622,8 @@ $('galleryShareTiles').replaceChildren(
       "The RLE copied (Golly's, LifeWiki's, Copy RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
     click: async () => openRle(await navigator.clipboard.readText()),
   }),
+);
+$('galleryShareTiles').replaceChildren(
   tile({
     id: 'galleryShare',
     pic: icon('link'),

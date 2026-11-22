@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.612';
+const VERSION = '0.5.613';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15404,11 +15404,10 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
  * DISCONTINUED.md). Flat (m = 0) as the torus's sheet. */
 function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
   if (kleinRolls()) {
-    // the Möbius strip's: rolled up from the sheet as a strip is (see mobiusPoint), across from the sheet's width to the band's
-    // (MOBIUS_BAND each side), its mirror line from the sheet's middle to Cairo's (up) as it closes
-    const s = (y - up * m) / nv - 0.5,
-      W = ((2 * Math.PI * tube * (1 - m) + 2 * MOBIUS_BAND * m) * nu) / (2 * Math.PI);
-    return mobiusPoint(x, (s + 0.5) * W, nu, W, m);
+    // a rolled shape's: its section across (see KLEIN_SECTIONS) rolled up as a strip's (see ringRoll), its mirror line from the
+    // sheet's middle to Cairo's (up) as it closes
+    const s = (y - up * m) / nv - 0.5;
+    return ringRoll((x / nu - 0.5) * 2 * Math.PI, kleinRolls()(s, m, tube), m);
   }
   const f = ((y - up) / nv) * 2 * Math.PI; // (round the tube from the sheet's mirror line, up: Cairo's half square, so that the bottle glues as its sheet does)
   // the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned over (u to π − u)
@@ -15496,22 +15495,21 @@ function glassBottleAt(q, u) {
     r = 0.25 * Math.cos(Math.PI - u); // (its circle across the ring, turned over from the neck's)
   return [-1 + (1 + r) * Math.cos(a), 0.25 * Math.sin(u), 2 - (1 + r) * Math.sin(a)];
 }
-// The bagel (the figure 8 Klein bottle): a ring (radius 1) whose tube is a figure 8 (TORUS_TUBE wide), turned half a turn
-// round it, so it meets itself turned over (u to π − u, the 8's v = u + π / 2), crossing itself along the circle through
-// its middle; q ∈ [0, 3] round the ring, lying in the x–y plane (z its thickness)
-function bagelAt(q, u) {
-  const t = (2 * Math.PI * q) / 3,
-    v = u + Math.PI / 2,
-    c = Math.cos(t / 2),
-    s = Math.sin(t / 2),
-    r = 1 + TORUS_TUBE * (c * Math.sin(v) - s * Math.sin(2 * v));
-  return [r * Math.sin(t), -r * Math.cos(t), TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v))];
-}
-// The Möbius strip's band: MOBIUS_BAND half wide round a circle of radius 1, its edges apart in space, one on the bottle (cells
-// along one the neighbours of those along the other); rolled up from the sheet (see kleinPoint)
+// The rolled bottles' sections across their sheet, at s ∈ [−½, ½) from its middle, rolled up by m from the sheet's straight
+// width (its flat's, 2π·tube) round a ring of radius 1 (see ringRoll), by their place in KLEIN_SHAPES: the bagel's figure 8
+// (TORUS_TUBE wide, the figure 8 Klein bottle: turned half a turn round the ring, it meets itself turned over, s to −s,
+// crossing itself along the circle through its middle), the Möbius strip's band (MOBIUS_BAND each side, its edges apart in
+// space, one on the bottle: cells along one the neighbours of those along the other)
 const MOBIUS_BAND = 0.6;
+const KLEIN_SECTIONS = {
+  2: (s, m, tube) => [
+    (1 - m) * 2 * Math.PI * tube * s + m * TORUS_TUBE * Math.sin(2 * Math.PI * s),
+    m * TORUS_TUBE * Math.sin(4 * Math.PI * s),
+  ],
+  3: (s, m, tube) => [s * (2 * Math.PI * tube * (1 - m) + 2 * MOBIUS_BAND * m), 0],
+};
 // a Klein bottle's shapes (Shape's tabs, the link's kleinShape: its place): the glass bottle, ours, the bagel, the Möbius
-// strip
+// strip (the last two rolled up from the sheet, see KLEIN_SECTIONS)
 const KLEIN_SHAPES = [
   [
     'Thin',
@@ -15527,9 +15525,9 @@ const KLEIN_SHAPES = [
     'A Möbius strip whose two edges are one: the cells along one edge the neighbours of those along the other, as the bottle glues them',
   ],
 ];
-const KLEIN_AT = [glassBottleAt, kleinAt, bagelAt];
-// a bottle rolled up from its sheet, as a strip is: a shape of no point of its own, the Möbius strip's (see kleinPoint)
-const kleinRolls = () => !KLEIN_AT[shapeOn('klein')];
+const KLEIN_AT = [glassBottleAt, kleinAt];
+// a bottle rolled up from its sheet, as a strip is: its section across (see KLEIN_SECTIONS), the others none
+const kleinRolls = () => KLEIN_SECTIONS[shapeOn('klein')];
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
 // torusShape, kleinShape: its place, the first in none), the one picked in each, its sheet the family's whatever its
 // shape (a torus knot's longer, see torusTube); the mesh made for a variant's (see stripKey)
@@ -15539,8 +15537,8 @@ const RING_SHAPES = { torus: TORUS_SHAPES, klein: KLEIN_SHAPES },
   shapeOn = (family, w = ringVariant()) => (ringFamily(w) === family ? ringShape[family] : 0);
 // a bottle's shape, once a shape (see KLEIN_SHAPES): its point (at), its length along it, its share s ∈ [0, 1) to its q (the
 // tiles as long everywhere along it: ours by its profile's and neck's lines, the others by their surface's speed round it),
-// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest; the bagel's: its back) and its
-// frame (centred, 3 at its largest: the bottles' height, the bagel's width)
+// the sheet's ends' share (the glass bottle's: its handle's middle; ours: the bowl's lowest) and its frame (centred, 3 at its
+// largest: the bottles' height)
 const kleinTables = {};
 function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
@@ -15572,11 +15570,7 @@ function kleinBottle(shape = shapeOn('klein')) {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });
-  const ends = [
-    (N * 2.75) / 3,
-    N / 6,
-    N / 2, // (the bagel's: the ring's back)
-  ];
+  const ends = [(N * 2.75) / 3, N / 6];
   return (kleinTables[shape] = {
     at,
     N,
@@ -15830,11 +15824,15 @@ const mobiusSize = (size) => (typeof size === 'number' ? [size, null] : size.spl
  * upside down: the point (x + L, y) is then the point (x, W − y). Its tiles as they are, whatever its length:
  * its width follows it (the circle L tile edges round, its radius 1). */
 function mobiusPoint(x, y, L, W, m) {
-  const X = (x / L - 0.5) * 2 * Math.PI,
-    S = ((y - W / 2) * 2 * Math.PI) / L; // along, across (the circle's radius 1)
+  return ringRoll((x / L - 0.5) * 2 * Math.PI, [((y - W / 2) * 2 * Math.PI) / L, 0], m); // (along, across: the circle's radius 1)
+}
+// A strip's point rolled up by m ∈ [0, 1], X along it (−π to π), its section across (cw, ch: outwards and up, flat: across
+// the strip and out of it): the section turned with it up to half a turn round its line (m X / 2), the strip bent round a
+// circle of radius 1 / m (lengths along kept), flat at m = 0 (in the x–y plane): a Möbius strip's, a rolled Klein bottle's
+function ringRoll(X, [cw, ch], m) {
   const tw = (m * X) / 2,
-    w = S * Math.cos(tw),
-    h = S * Math.sin(tw); // across: outwards and up
+    w = cw * Math.cos(tw) - ch * Math.sin(tw),
+    h = cw * Math.sin(tw) + ch * Math.cos(tw); // across: outwards and up
   if (m < 1e-6) return [X, -w, h];
   const rr = 1 / m,
     ph = X / rr;

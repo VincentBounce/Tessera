@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.594';
+const VERSION = '0.5.595';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33300,12 +33300,60 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
   });
 }
 // a pattern laid on a surface, its first cell on cell t, in t's face's frame F (see cellPlace, patternFrame): its cells (their
-// middles ms on the plane, see cellMiddle) moved by whole steps (see translations), each its cell there (−1 none); Anywhere's
-// and Draw's brush's
+// middles ms on the plane, see cellMiddle) moved by whole steps (see translations), each its cell there (−1 none); on a
+// surface of squares, by steps from t as a walk on cells steps (see squaresOnCells: over the solid's edges and the seams);
+// Anywhere's and Draw's brush's
 function patternOnCell(F, ms, t) {
   const p = F.from(F.place(t)),
-    d = latticeNear(patternKind(), [p[0] - ms[0][0], p[1] - ms[0][1]]);
+    d = latticeNear(patternKind(), [p[0] - ms[0][0], p[1] - ms[0][1]]),
+    first = [ms[0][0] + d[0], ms[0][1] + d[1]];
+  if (patternKind() === 'square') return squaresOnCells(walk.surface, F, first, ms, t);
   return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]])));
+}
+// A pattern of squares laid by steps from cell t (its first cell's middle first on F's plane), as a walk on cells steps (see
+// surfaceStep): each square across the edge it faces, straight on out by the edge across the one it came in by; x first,
+// then y, from its first cell; its heading carried over a solid's edges and a sheet's seams (a Klein bottle's turning over:
+// the edge listed the same way round in both squares, its hand the other way), so a pattern goes on over as many faces as it
+// covers (at a solid's corner, three faces, as this order brings it; a square met again there no place, −1); t's x and y edges those towards its neighbours a step
+// along F's x and y, the face's frame (a pattern turned as before); −1 where a step finds no square (a strip's edge, a
+// triangle among the squares)
+function squaresOnCells(g, F, first, ms, t) {
+  const k = g.sides,
+    P = g.poly,
+    edgeTo = (u, v) => [...Array(k).keys()].find((e) => v >= 0 && g.nbr[k * u + e] === v),
+    toward = (dx, dy) => {
+      const e = edgeTo(t, F.cellAt(F.at([first[0] + dx, first[1] + dy])));
+      return e !== undefined ? e : mod(edgeTo(t, F.cellAt(F.at([first[0] - dx, first[1] - dy]))) + 2, 4);
+    }, // (its edge towards the next square along x or y, else across from the one back)
+    square = (u) => u >= 0 && P[k * u + 3] !== P[k * u + 2], // (a tile of 4 corners, not a triangle's last repeated)
+    E0 = toward(1, 0),
+    Y0 = toward(0, 1);
+  if (!square(t) || Number.isNaN(E0) || Number.isNaN(Y0)) return ms.map((m, c) => (c ? -1 : t));
+  // a step from [square, its x edge, its hand: its y edge x's + hand] along x (0), y (1), −x (2) or −y (3)
+  const step = ([u, E, hand], dir) => {
+    const Y = mod(E + hand, 4),
+      out = [E, Y, E + 2, Y + 2][dir] % 4,
+      v = g.nbr[k * u + out],
+      a = g.nbrEdge[k * u + out];
+    if (!square(v)) return null;
+    const turned = P[k * v + a] === P[k * u + out] ? -hand : hand, // (the seam turning it over)
+      on = mod(a + 2, 4); // (straight on: across from the edge come in by)
+    return [v, [on, mod(on - turned, 4), a, mod(a - turned, 4)][dir], turned];
+  };
+  const at = new Map([['0,0', [t, E0, mod(Y0 - E0, 4) === 1 ? 1 : -1]]]),
+    reach = (x, y) => {
+      const key = `${x},${y}`;
+      if (!at.has(key)) {
+        const from = y ? reach(x, y - Math.sign(y)) : reach(x - Math.sign(x), 0); // (x first, then y)
+        at.set(key, from && step(from, y ? (y > 0 ? 1 : 3) : x > 0 ? 0 : 2));
+      }
+      return at.get(key);
+    };
+  const taken = new Set(); // (a tile a cell: one met again, past a solid's corner, has no place)
+  return ms.map(([x, y]) => {
+    const u = reach(Math.round(x - ms[0][0]), Math.round(y - ms[0][1]))?.[0] ?? -1;
+    return u < 0 || taken.has(u) ? -1 : (taken.add(u), u);
+  });
 }
 // the move by whole steps (see translations) nearest a plane vector e
 const latticeNear = (kind, e) => {

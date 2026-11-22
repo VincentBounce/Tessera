@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.609';
+const VERSION = '0.5.610';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15763,6 +15763,21 @@ const kleinStrip = (kindK) => {
 const MOBIUS_ALONG = {
   mobiusCairo: { step: 1, copyLength: 2, width: (nv) => nv, ok: (n, nv) => (n + nv) % 2 === 1, edgeCuts: true },
 }; // (width: its width for its rows; copyLength: the least slide along that brings its tiling onto itself, a tiling's strip's too: see mobiusMirrors; edgeCuts: its edges no mirror between its tiles, its edge's cells' neighbours not as in its middle: see edgeCells)
+// Whether a map f of the plane lays a periodic tiling on itself: its lattice's sides (ta, tb) on lattice steps, a lattice cell's
+// middles on middles and its corners on corners (frac: a point's place in lattice cells, all its copies alike)
+function laysOnItself(f, { ta, tb, mids, corners, frac }) {
+  const near = (z) => Math.abs(z - Math.round(z)) < 1e-4,
+    among = (set) => (p) => {
+      const [u, v] = frac(p);
+      return set.some(([s2, t]) => near(u - s2) && near(v - t));
+    },
+    o = f([0, 0]);
+  return (
+    [ta, tb].every((v) => inBasis([f(v)[0] - o[0], f(v)[1] - o[1]], ta, tb).every(near)) && // (run as the strips are made, before sub)
+    mids.every((p) => among(mids.map(frac))(f(p))) &&
+    corners.every((p) => among(corners.map(frac))(f(p)))
+  );
+}
 // A tiling's mirrors along a side a of its lattice (with b, a lattice cell), the plane turned so that a runs along x: each
 // line y = c, and the slide g along it with it (0: a mirror; else a glide), (x, y) → (x + g, 2c − y) mapping its corners
 // and its cells' middles onto theirs; every one a row of b holds (most tilings two, half a row apart: through tiles and
@@ -15782,15 +15797,10 @@ function mobiusMirrors(kind, [a, b] = gridMotif(kind).basis) {
   }; // (turned: a along x)
   const turned = ([x, y]) => [x * ca - y * sa, x * sa + y * ca],
     [ta, tb] = [turned(a), turned(b)];
-  const frac = (p) => inBasis(p, ta, tb); // (in lattice cells: a point, as all its copies)
-  const near = (z) => Math.abs(z - Math.round(z)) < 1e-4,
-    among = (set) => (p) => {
-      const [u, v] = frac(p);
-      return set.some(([s, t]) => near(u - s) && near(v - t));
-    };
+  const frac = (p) => inBasis(p, ta, tb), // (in lattice cells: a point, as all its copies)
+    near = (z) => Math.abs(z - Math.round(z)) < 1e-4;
   const mids = polys.map((P) => W(meanPoint(P))),
-    corners = polys.flat().map(W);
-  const [inMids, inCorners] = [among(mids.map(frac)), among(corners.map(frac))],
+    corners = polys.flat().map(W),
     ys = [...mids, ...corners].map((p) => p[1]);
   const cs = [
     ...new Map([0, ...ys.flatMap((y) => ys.map((z) => (y + z) / 2))].map((c) => [roundOff(c, 1e6), c])).values(),
@@ -15806,7 +15816,7 @@ function mobiusMirrors(kind, [a, b] = gridMotif(kind).basis) {
     for (const c of cs) {
       const on = ([x, y]) => [x + g, 2 * c - y];
       if (found.some((m) => sameLine(m.c, c))) continue;
-      if (!mids.every((p) => inMids(on(p))) || !corners.every((p) => inCorners(on(p)))) continue;
+      if (!laysOnItself(on, { ta, tb, mids, corners, frac })) continue;
       found.push({ c, g, la, bx: tb[0], between: between(c) });
     }
   return found.sort((p, q) => q.between - p.between);
@@ -16038,23 +16048,21 @@ function stripCount(kind, kind0, size, across = false) {
   ));
 }
 function stripCounted(kind, kind0, size, across) {
-  // (each of a lattice cell's middles, row by row of its lattice (b: a row up, bx along): in its copy of the tiling along,
-  // la long, as in every whole copy of the strip's, and in what is left of one past them)
-  const { m, nv, L, W, cells, la, bx } = stripFrame(kind, kind0, size, across),
-    e = 1e-5,
-    by = W / nv,
-    copies = Math.floor((L + e) / la),
-    rest = L - copies * la;
   let count = 0;
-  for (let k = 0; k < m; k++) {
-    const P = cells(0, 0, k),
-      [mx, my] = [0, 1].map((d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length);
-    for (let j = Math.ceil((-e - my) / by); across ? my + j * by < W - e : my + j * by <= W + e; j++) {
-      const x = mx + j * bx;
-      count += copies + (x - la * Math.floor((x + e) / la) < rest - e);
-    }
-  }
+  eachStripMiddle(stripFrame(kind, kind0, size, across), across, () => count++);
   return count;
+}
+// a strip's frame's tiles' middles (see stripFrame), fn(x, y) each, as tilingStrip keeps them: each of a lattice cell's
+// middles, row by row of its lattice (b: a row up, bx along), every copy along within its length (on the fine grid a middle on an
+// edge lands on it: here 10⁻⁵ of it, as near); across: below its top (a bottle's or a torus's), else to it
+function eachStripMiddle({ m, nv, L, W, cells, la, bx }, across, fn) {
+  const e = 1e-5,
+    by = W / nv;
+  for (let k = 0; k < m; k++) {
+    const [mx, my] = meanPoint(cells(0, 0, k));
+    for (let j = Math.ceil((-e - my) / by); across ? my + j * by < W - e : my + j * by <= W + e; j++)
+      for (let x = mx + j * bx - la * Math.floor((mx + j * bx + e) / la); x < L - e; x += la) fn(x, my + j * by);
+  }
 }
 // A tiling's Klein bottle or torus: its strip's sheet (see tilingStrip), L along and W across, glued across, (x, y + W) →
 // (x, y), and at its ends turned over as the strip's, (x + L, y) → (x, W − y) (a Klein bottle), or straight, (x + L, y) →
@@ -16152,31 +16160,10 @@ function kleinBlocksAlike(strip, nv, n, blocks) {
     copies = (n * step) / blocks[0] / (g > 1e-9 ? g : la); // (its slices' length in copies of its tiling along, turned over on its ends' mirror's glide)
   if (K === 1 || Math.abs(copies - Math.round(copies)) < 1e-6) return true; // (whole copies: each slice the one before slid, by construction)
   return (alikeMemo[`${strip}|${nv}|${n}|${blocks}`] ??= (() => {
-    const kind = MOBIUS_STRIPS[strip].kind,
-      { m, L, W, cells, la, bx, ta, tb, mirrorY, t } = stripFrame(kind, strip, `${nv}x${n}`, true),
-      e = 1e-5,
-      by = W / nv;
-    // the bottle's place of a sheet point, as a key: within its length (past its end turned over) and round it
-    const key = (x, y) => {
-      x = Math.round(x * 1e5) / 1e5;
-      const k = Math.floor(x / L + 1e-9);
-      x -= k * L;
-      y = Math.round((k % 2 ? -y : y) * 1e5) / 1e5;
-      y -= Math.floor(y / W + 1e-9) * W;
-      return Math.round(x * 1e3) * 1e8 + (Math.round(y * 1e3) % Math.round(W * 1e3)); // (one number: in thousandths, y under 10⁵)
-    };
-    // its tiles' middles, each its block's (fn(x, y, block) each)
-    const each = (fn) => {
-      for (let k = 0; k < m; k++) {
-        const P = cells(0, 0, k),
-          [mx, my] = [0, 1].map((d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length);
-        for (let j = Math.ceil((-e - my) / by); my + j * by < W - e; j++) {
-          const y = my + j * by;
-          for (let x = mx + j * bx - la * Math.floor((mx + j * bx + e) / la); x < L - e; x += la)
-            fn(x, y, sheetBlock(x, y, L, W, blocks));
-        }
-      }
-    };
+    const frame = stripFrame(MOBIUS_STRIPS[strip].kind, strip, `${nv}x${n}`, true),
+      { L, W, cells, ta, tb, mirrorY, t } = frame,
+      each = (fn) => eachStripMiddle(frame, true, (x, y) => fn(x, y, sheetBlock(x, y, L, W, blocks))),
+      key = (x, y) => kleinSheetKey(x, y, L, W, 0); // (the bottle's place: within its length, past its end turned over)
     // (first its blocks' counts and middles, then the maps the tiling and the gluings allow, before any tile is matched)
     const count = new Array(K).fill(0),
       centre = Array.from({ length: K }, () => [0, 0]);
@@ -16187,34 +16174,27 @@ function kleinBlocksAlike(strip, nv, n, blocks) {
     });
     if (count.some((c) => c !== count[0])) return false;
     centre.forEach((c) => c.forEach((v, d) => (c[d] = v / count[0])));
-    // the tiling's own points (a lattice cell's corners and middles, in its lattice's units, as copies), and whether a map of the
-    // plane lays it on itself
-    const mean = (P, d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length,
-      lattice = (p) => inBasis([p[0], p[1] + mirrorY], ta, tb),
-      whole = (z) => Math.abs(z - Math.round(z)) < 1e-4,
-      motif = t.polys.flatMap((_, k) => {
-        const P = cells(0, 0, k);
-        return [...P, [0, 1].map((d) => mean(P, d))];
-      }),
-      own = motif.map(lattice),
-      onTiling = (f) =>
-        [ta, tb].every((v) => lattice([f(v)[0] - f([0, 0])[0], f(v)[1] - f([0, 0])[1] - mirrorY]).every(whole)) &&
-        motif.every((p) => {
-          const [u, v] = lattice(f(p));
-          return own.some(([a, b]) => whole(u - a) && whole(v - b));
-        });
+    // (the tiling: a lattice cell's middles and corners, its lattice's units from its mirror's line, laid on y = 0)
+    const tiling = {
+      ta,
+      tb,
+      mids: t.polys.map((_, k) => meanPoint(cells(0, 0, k))),
+      corners: t.polys.flatMap((_, k) => cells(0, 0, k)),
+      frac: (p) => inBasis([p[0], p[1] + mirrorY], ta, tb),
+    };
     // each other block's maps: x and y kept or reversed, the first block's middle sent to its, its shift across 0 or W / 2 (the
     // gluings kept), the tiling laid on itself
-    const maps = centre.slice(1).map((c1) =>
-      [1, -1]
-        .flatMap((sx) =>
-          [1, -1].map((sy) => {
-            const ty = c1[1] - sy * centre[0][1];
-            return whole((2 * ty) / W) && (([x, y]) => [sx * (x - centre[0][0]) + c1[0], sy * y + ty]);
-          }),
-        )
-        .filter((f) => f && onTiling(f)),
-    );
+    const whole = (z) => Math.abs(z - Math.round(z)) < 1e-6,
+      maps = centre.slice(1).map((c1) =>
+        [1, -1]
+          .flatMap((sx) =>
+            [1, -1].map((sy) => {
+              const ty = c1[1] - sy * centre[0][1];
+              return whole((2 * ty) / W) && (([x, y]) => [sx * (x - centre[0][0]) + c1[0], sy * y + ty]);
+            }),
+          )
+          .filter((f) => f && laysOnItself(f, tiling)),
+      );
     if (maps.some((fs) => !fs.length)) return false;
     const first = [],
       at = Array.from({ length: K }, () => new Set());

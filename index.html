@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.582">
+  <link rel="stylesheet" href="style.css?v=0.5.583">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -99,7 +99,7 @@
       </section>
 
       <section id="startSection" hidden>  <!-- Life: how the cells start (the plane), or the hunt for a lasting start (the surfaces) -->
-        <h2 data-icon="play">Start<button id="copyRle" class="head-btn" data-icon="copy" type="button" title="Copies the generation shown as an RLE file, as Golly and LifeWiki read it">Copy RLE</button></h2>  <!-- the generation shown, as Golly's and LifeWiki's RLE (the plane) -->
+        <h2 data-icon="play">Start</h2>
         <div id="lifeStartRow" hidden>  <!-- Life on the plane: how the cells start -->
           <div id="lifeStartTabs" class="nav-shapes"></div>  <!-- the starts: Hunt (Random for blocks), Text, Digits, Draw: one choice, a tab group of tiles (see START_TABS) -->
           <div id="startText" class="start-panel" hidden>  <!-- Text: a word or an emoji drawn on the grid, its dark pixels alive -->
@@ -251,7 +251,7 @@
       <div id="ruleTuto" class="rule-tuto" hidden></div>  <!-- how the rule picked works, in place of the grid (see ruleTutorial) -->
       <div id="animBar" class="stage-box stage-bar" tabindex="-1" aria-label="What is walked, animation and stats">  <!-- (tabindex: on a touch screen, a tap on it opens it) -->
         <div class="stage-more">  <!-- shown on hover, above the title: the bar grows upwards, its title, gauges and Play row stay where they were (a link in them clicked as it was seen) -->
-          <p class="bar-sub"><span id="description"></span><span id="status"></span></p>  <!-- the walk, then how its digits came (computing, an error…) -->
+          <p class="bar-sub"><button id="copyRle" class="head-btn" data-icon="copy" type="button" title="Copies the generation shown as an RLE file, as Golly and LifeWiki read it">Copy RLE</button><span id="description"></span><span id="status"></span></p>  <!-- Copy RLE (greyed where no grid laid in rows, see rleLaid); the walk, then how its digits came (computing, an error…) -->
           <div id="ruleChips" class="rule-chips"></div>
           <div id="gauges" class="stat-table" hidden></div>  <!-- one colour: alive, its peak, order…; a walk: its position, its distance, its peak, its cells (open only) -->
           <div id="digitStrip" class="strip" aria-label="Recent digits"></div>
@@ -347,11 +347,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.582"></script>
-  <script src="punks.js?v=0.5.582"></script>
-  <script src="loops.js?v=0.5.582"></script>
-  <script src="emoji.js?v=0.5.582"></script>
-  <script src="debug.js?v=0.5.582"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.582"></script>
+  <script src="pixelarticons.js?v=0.5.583"></script>
+  <script src="punks.js?v=0.5.583"></script>
+  <script src="loops.js?v=0.5.583"></script>
+  <script src="emoji.js?v=0.5.583"></script>
+  <script src="debug.js?v=0.5.583"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.583"></script>
 </body>
 </html>

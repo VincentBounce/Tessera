@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.582';
+const VERSION = '0.5.583';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11895,7 +11895,7 @@ function compute() {
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
-  $('copyRle').hidden = !rleLaid(tabVariant()); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
+  setTile($('copyRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
   if (variant.life)
     plane.start = variant.elementary
       ? ELEMENTARY_STARTS.includes(plane.start)
@@ -26612,6 +26612,8 @@ const startWhyNot = (start, v) =>
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
 // the Life grids an RLE file lays as rows of cells (Copy RLE, Paste RLE, Open): the plane's (its cells as its grid numbers
 // them, see lifeRle), a sheet's of squares (a torus's, a Möbius strip's, a Klein bottle's, a cell a place: see pictureCells)
+const RLE_WHERE =
+  'Only for Life on a grid laid in rows: the plane, or a sheet of squares (a torus, a Möbius strip, a Klein bottle).';
 const rleLaid = (v) =>
   !!VARIANTS[v].life &&
   (!!VARIANTS[v].plane || (TORI.includes(VARIANTS[v].surface) && PLANE_OF_MARK[lifeMark(VARIANTS[v])] === 'square'));

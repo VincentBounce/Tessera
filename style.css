@@ -209,9 +209,10 @@ main {
   color: var(--accent-color);
   vertical-align: 0;
 }
-/* a section's own action, on its title's right (Copy RLE), its icon small (the title's own picture its child, not its button's) */
+/* a small action before a text (Copy RLE, before the Play card's description), its icon small */
 .head-btn {
-  margin-left: auto;
+  margin-right: var(--short-gap);
+  vertical-align: middle;
   display: inline-flex;
   align-items: center;
   gap: 4px;

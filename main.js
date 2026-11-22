@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.633';
+const VERSION = '0.5.634';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -30720,11 +30720,13 @@ const ruleBlocks = (rule, kind, W, torus = planeTorus(kind), cols = planeColumns
 };
 // The sets of blocks that do not come round a surface (a rule's: Ising's squares in turn, its 4 phases, its stars, else its
 // blocks), at none of its sizes (see BLOCK_STEPS: its sizes those they come round at): a Klein bottle's checkerboard, a
-// Möbius strip's and a Klein bottle's triangles turned. Declared, no mesh built to know it (asked of every variant next to the
+// Möbius strip's and a Klein bottle's squares (but a bottle's blocks) and triangles turned. Declared, no mesh built to know it (asked of every variant next to the
 // one shown, by a greyed tile's search, see choicesAt; and a mesh made from another tab took that tab's colours: a torus of
 // squares judged with no rule till v0.4.1067); as the meshes say, each made for its own variant: tools/check.js's checkBlocksRound
 const BLOCKS_NOT_ROUND = {
   klein: ['ising'],
+  mobiusTurned: ['blocks', 'ising', 'four'],
+  kleinTurned: ['ising', 'four'],
   mobiusTriTurned: ['blocks', 'stars'],
   kleinTriTurned: ['blocks', 'stars'],
 };

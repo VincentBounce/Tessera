@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.601';
+const VERSION = '0.5.602';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15517,12 +15517,14 @@ function bagelAt(q, u) {
   return [r * Math.sin(t), -r * Math.cos(t), TORUS_TUBE * (s * Math.sin(v) + c * Math.sin(2 * v))];
 }
 // The Möbius strip: a band (radius 1, MOBIUS_BAND half wide) turning half a turn round a circle, its width the bottle's way
-// round cut at u = −π/2 (its middle at π/2: past its end, turned over, u to π − u, its across s to −s), its two edges apart
-// in space, one on the bottle (cells along one the neighbours of those along the other); q ∈ [0, 3] round the circle
+// round as kleinPoint gives it, cut where the sheet's own seam across is (its edge, y = 0, W), never folded back: the
+// sheet's u from 1.5π to 3.5π, past its end −π/2 down to −2.5π (turned over: its across s to −s), a tile across that seam
+// (its corners just below 0 or past W, see tileCornerPlaces) a hair past the band's edge, whole; its two edges apart in
+// space, one on the bottle (cells along one the neighbours of those along the other); q ∈ [0, 3] round the circle
 const MOBIUS_BAND = 0.6;
 function mobiusBandAt(q, u) {
   const t = (2 * Math.PI * q) / 3,
-    s = (MOBIUS_BAND * (mod(u + Math.PI / 2, 2 * Math.PI) - Math.PI)) / Math.PI, // (across: −MOBIUS_BAND to MOBIUS_BAND)
+    s = (MOBIUS_BAND * (u > 0 ? u - 2.5 * Math.PI : u + 1.5 * Math.PI)) / Math.PI, // (across: −MOBIUS_BAND to MOBIUS_BAND)
     r = 1 + s * Math.cos(t / 2);
   return [r * Math.cos(t), r * Math.sin(t), s * Math.sin(t / 2)];
 }
@@ -15564,6 +15566,7 @@ function kleinBottle(shape = shapeOn('klein')) {
   if (kleinTables[shape]) return kleinTables[shape];
   const N = 6000,
     q = (i) => (3 * i) / N,
+    wayRound = (share) => 1.5 * Math.PI + 2 * Math.PI * share, // (its way round as kleinPoint gives it: a tube's anywhere, the band's within its width)
     at = KLEIN_AT[shape],
     along = new Float64Array(N + 1);
   const mid = (i) => (q(i) < 2 ? kleinProfile(q(i)) : kleinNeck(q(i) - 2)),
@@ -15575,8 +15578,8 @@ function kleinBottle(shape = shapeOn('klein')) {
       }
       let sum = 0;
       for (let j = 0; j < 8; j++) {
-        const a = at(q(i - 1), (j * Math.PI) / 4),
-          b = at(q(i), (j * Math.PI) / 4);
+        const a = at(q(i - 1), wayRound(j / 8)),
+          b = at(q(i), wayRound(j / 8));
         sum += Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / 8;
       }
       return sum;
@@ -15586,7 +15589,7 @@ function kleinBottle(shape = shapeOn('klein')) {
     hi = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i <= 600; i++)
     for (let j = 0; j < 48; j++)
-      at((3 * i) / 600, (j * Math.PI) / 24).forEach((v, d) => {
+      at((3 * i) / 600, wayRound(j / 48)).forEach((v, d) => {
         lo[d] = Math.min(lo[d], v);
         hi[d] = Math.max(hi[d], v);
       });

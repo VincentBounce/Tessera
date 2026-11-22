@@ -192,7 +192,7 @@ main {
 } /* (read by screen readers and search engines, not drawn; at its positioned ancestor's corner, never where the flow
      would lay it: in a pane that scrolls, not its ancestor, that place lay past the page's end and lengthened it: a
      hunt's 🎲 at the panel's foot, a scrollbar on the whole page) */
-/* a section's title: its gold picture, then its name */
+/* a section's title: its gold picture (the Gallery's groups' too), then its name */
 .panel h2 {
   display: flex;
   align-items: center;
@@ -202,12 +202,12 @@ main {
   font-weight: 600;
   color: var(--text-color);
 }
-.panel h2 > .icon {
+:is(.panel, #yourList) h2 > .icon {
   width: 24px;
   height: 24px;
   flex: none;
   color: var(--accent-color);
-  vertical-align: 0;
+  vertical-align: middle; /* (the Gallery's, on its name's line; a panel's: a flex row) */
 }
 /* a small action at a text's top right (Copy RLE, the Play card's description wrapping round it), its icon small */
 .head-btn {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.570';
+const VERSION = '0.5.571';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27381,10 +27381,12 @@ const ghostInk = () => [
   !brush.colour ? UNLIT : walk.life.colours > 1 ? teamColour(brush.colour - 1) : LIFE_ALIVE,
   brush.colour ? 0.55 : 0.85,
 ];
-// a surface's brush under the pointer (see pickedTile): its tiles painted in its ink over their own, after them (see gpuSurface)
+// a surface's brush under the pointer (see pickedTile): its tiles painted in its ink over their own, after them (see gpuSurface);
+// none where no click draws (a walk's surface has no Life, nor its ink)
 function surfaceGhost(put) {
-  const t = pickedTile,
-    tiles = drawsHere() && pointerPixel && t >= 0 && t < walk.surface.n ? (brushTilesAt(t) ?? []) : [],
+  const t = pickedTile;
+  if (!(drawsHere() && pointerPixel && t >= 0 && t < walk.surface.n)) return;
+  const tiles = brushTilesAt(t) ?? [],
     [ink, share] = ghostInk(),
     [r, g, b] = rgbOf(faded(ink, share, blankTile()));
   for (const [u] of tiles) put(u, (r | (g << 8) | (b << 16) | (255 << 24)) >>> 0); // (its colour, painted: see tileColour)

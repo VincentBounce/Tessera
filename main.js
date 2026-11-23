@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.656';
+const VERSION = '0.5.657';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6549,10 +6549,10 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => {
       if (['Life', 'Ant', 'Rewind'].includes(NAV[w][0]))
         return GRID_LINES.length + TILES_PALETTES.light.indexOf('Mist');
-      if (variant.explore) return ['kind', 'distance'].includes(exploreLook.rule) ? 3 : 0;
+      if (variant.explore) return ['kind', 'distance', 'hemispheres', 'lunes'].includes(exploreLook.rule) ? 3 : 0;
       return NAV[w][1].startsWith('2D') || NAV[w][1] === '3D' ? 1 : 2; // (11% in 2D and in a lattice, 20% on a solid)
     },
-  ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's and its distances', Strong: see GRID_LINES)
+  ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, distances', hemispheres' and lunes', Strong: see GRID_LINES)
   trail: ['lifeTrail', 'open', true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
@@ -11913,6 +11913,10 @@ function compute() {
   syncDigitsStepper();
   relabelColours(variant);
   for (const [id, used] of Object.entries(sectionsOf(tabVariant()))) $(id).hidden = !used;
+  if (variant.explore && exploreRuleWhyNot(exploreLook.rule, tabVariant())) {
+    exploreLook.rule = EXPLORE_RULES[0][0]; // (a colouring greyed on the grid clicked: the default, as a link's, see setupFrom)
+    applyDefaults('exploreRule');
+  }
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
@@ -15210,6 +15214,7 @@ function rosetteSphereMesh(kind, W) {
       flatVerts: lentilVerts(verts),
       rosette: true,
       south: m,
+      cellFaces: Int32Array.from({ length: 2 * m }, (_, t) => (t < m ? 0 : 1)), // (its two halves its faces: Tiles each apart)
       middles: [F.coreIds, F.coreIds.map((t) => m + t)],
       disc: { kind, W, row: planeRow(kind, W), torus: false, ...plane, xy: (t) => plane.xy(t >= m ? t - m : t) },
     },
@@ -18314,7 +18319,7 @@ const facesCount = (kind) => {
 const sizeSides = (kind, f) => {
   const d = gridSize(kind, f),
     S = SURFACES[kind];
-  if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: no face, its two discs)
+  if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: its two discs, its faces)
   if (!d) {
     const F = facesCount(kind), // (none: a globe's, no face to share out)
       a = F && formatNumber(Math.round(Math.sqrt(S.tiles(f) / F)));
@@ -22974,6 +22979,12 @@ const EXPLORE_RULES = [
   ],
   ['kind', 'Kind of tile', "A colour for each tile's shape, by its number of sides"],
   ['sides', 'Sides', "Two faces of the solid touching never the same colour (a solid's only)"],
+  ['hemispheres', 'Hemispheres', "Its north and its south, each a colour (a rosette sphere's, a globe's)"],
+  [
+    'lunes',
+    'Max lunes',
+    "As many lunes, pole to pole, as it cuts alike, side by side never the same colour (a rosette sphere's, a globe's)",
+  ],
 ];
 const EXPLORE_PALETTES = [
   ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B'], 'Baked clay, apricot and a sea green'],
@@ -23077,17 +23088,33 @@ function blockColours(xy, pairs, m, P, [k, l]) {
 // Explore's grid and Tiles' ground alike (see groundColours)
 const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
+  ...surfaceLunes(g),
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
   alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
 });
+// a surface cut round its axis (see inLunes): each cell's hemisphere (0 north, 1 south: a rosette sphere's discs, a globe's
+// bands mirrored about its equator) and its lune, pole to pole, of as many as it cuts alike (a rosette sphere's turns, its
+// lunes as rosetteParts' in halves, each disc's; a globe's fewest columns), a pole's cell none (-1); none elsewhere
+const inLunes = (surface) => surface === 'globe' || !!SURFACES[surface]?.disc;
+function surfaceLunes(g) {
+  if (!g.globe && !g.rosette) return { halves: null, lunes: null };
+  const count = g.globe ? Math.min(...g.columns) : rosetteTurns(g),
+    parts = g.rosette && rosetteParts(g, 2 * count);
+  return {
+    halves: g.cellFaces ?? Int32Array.from({ length: g.n }, (_, t) => (t < g.n / 2 ? 0 : 1)), // (a rosette sphere's: its faces, its discs)
+    lunes: {
+      count,
+      of: Int32Array.from({ length: g.n }, (_, t) =>
+        g.rosette ? (parts[t] < 0 ? -1 : parts[t] % count) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * count) : -1,
+      ),
+    },
+  };
+}
 // two neighbouring cells of a surface parted by a fold: a solid's across its edge (its faces), a rosette sphere's north and
 // south; null, none (a sheet's coloured by its grid's alternation, see surfaceColouring)
 function cellsApart(g) {
-  if (g.cellFaces) return (t, u) => g.cellFaces[t] !== g.cellFaces[u];
-  // (a rosette sphere's halves, its disc twice, see rosetteSphereMesh: each coloured apart, as a rosette; it works when its
-  // fold is a multiple of 4 on a Flower (Flower 4, 8, 12) or of 3 on a Hexa (Hexa 6, 9, 12))
-  return g.south ? (t, u) => t < g.south !== u < g.south : null;
+  return g.cellFaces ? (t, u) => g.cellFaces[t] !== g.cellFaces[u] : null; // (a rosette sphere's: its halves, see rosetteSphereMesh)
 }
 const planeColouring = (kind, W) => {
   const { n, xy } = planeGrid(kind, W),
@@ -23125,7 +23152,7 @@ function groundColours() {
         M ? cellNeighbours(M.start, M.list, M.nv) : (walk.life?.nbr ?? cornerNeighbours(g)),
         M ? M.start.length - 1 : n,
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
-        middleCells(),
+        distanceFrom,
         palette,
       ),
       colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA)),
@@ -23144,10 +23171,11 @@ function groundColours() {
 // plane coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold not counted: two cells alike may meet
 // there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, middle, palette = explorePalette()) {
+function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes }, middle, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
-    rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
+    own = { sides: faces, hemispheres: halves, lunes }, // (the rules a grid needs its own cuts for: none, Tiles)
+    rule = exploreLook.rule in own && !own[exploreLook.rule] ? 'tiles' : exploreLook.rule;
   let level = new Uint8Array(n);
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
@@ -23165,13 +23193,20 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, middle, pale
     const colour = paletteColours(touching.length, (a, put) => touching[a].forEach(put), P);
     for (let t = 0; t < n; t++) level[t] = colour[faces[t]];
   }
+  if (rule === 'hemispheres') for (let t = 0; t < n; t++) level[t] = 1 + halves[t];
+  if (rule === 'lunes') {
+    // (in turn 1, 2…; an odd count's last a 3rd; a pole's cell, touching all of them, one more)
+    const { count, of } = lunes;
+    for (let t = 0; t < n; t++)
+      level[t] = of[t] < 0 ? 4 - (count % 2 === 0) : of[t] === count - 1 && count % 2 ? 3 : 1 + (of[t] % 2);
+  }
   if (rule === 'kind') {
     const all = [...new Set(kinds.subarray(0, n))].sort((a, b) => a - b);
     for (let t = 0; t < n; t++) level[t] = 1 + all.indexOf(kinds[t]);
   }
   if (rule === 'distance') {
     const steps = new Int32Array(n).fill(-1),
-      queue = [...middle]; // (its middle's cells, all at step 0: see middleCells)
+      queue = [...middle()]; // (its first cells, all at step 0: see distanceFrom; found only here, Distance's)
     for (const t of queue) steps[t] = 0;
     for (let i = 0; i < queue.length; i++)
       for (let q = nbr.start[queue[i]]; q < nbr.start[queue[i] + 1]; q++)
@@ -23179,7 +23214,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, middle, pale
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    for (let t = 0; t < n; t++) level[t] = 1 + (Math.max(0, steps[t]) % P); // (a ring a step, the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
+    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % P); // (a ring a step, the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
     return level;
   }
   return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)
@@ -23245,6 +23280,13 @@ const tileKinds = (corners, protos = null) =>
     protos ? protos[t] : corners.start[t + 1] - corners.start[t],
   );
 // its section: the rules as cards, then the palettes, each a tile with its colours
+// an Explore colouring's why not at variant w ('' allowed): the cuts of its own it needs (a solid's faces, a sphere's lunes)
+const exploreRuleWhyNot = (key, w) =>
+  key === 'sides' && !facesCount(surfaceOf(VARIANTS[w]))
+    ? 'On a solid only: its sides.'
+    : ['hemispheres', 'lunes'].includes(key) && !inLunes(surfaceOf(VARIANTS[w]))
+      ? 'On a rosette sphere or a globe only.'
+      : '';
 function renderExplore() {
   const pick = (key, value) => () => {
     exploreLook[key] = value;
@@ -23257,8 +23299,7 @@ function renderExplore() {
         name,
         detail,
         on: exploreLook.rule === key,
-        whyNot: ({ w }) =>
-          key === 'sides' && !facesCount(surfaceOf(VARIANTS[w])) ? 'On a solid only: its sides.' : '',
+        whyNot: ({ w }) => exploreRuleWhyNot(key, w),
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
       }),
@@ -23308,7 +23349,7 @@ function startLife(seq, rule, n, grid) {
   };
   if (explore) {
     // (Explore: each cell alive in its colour, see exploreLevels; once its grid is the walk's, for its middle)
-    const seed = exploreLevels(grid.nbr, n, grid, middleCells()),
+    const seed = exploreLevels(grid.nbr, n, grid, distanceFrom),
       palette = exploreColours(seed);
     Object.assign(walk.life, { seed, palette, colours: palette.length });
   }
@@ -33341,6 +33382,7 @@ function patternPlace(i, K) {
     surface = VARIANTS[walk.variant].surface; // (the walk shown's, as g)
   if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
+  if (frameless(g)) return null; // (a globe, Boy's surface: no frame to lay a pattern on, nor a middle; not the cube's last branch)
   const hull = hullColours(surface, K, startOpposite()),
     squares = (g.uncut ?? g).squareFaces?.length ?? 0; // (a hull solid's colour: its first face, see hullColourings; a cut's, its solid's)
   if (hull) {
@@ -35206,6 +35248,17 @@ function middleCells(i = 0, K = 1) {
   middleMemo.set(key, cells);
   return cells;
 }
+// Explore's Distance's first cells: on a solid, its faces' centres all (see solidFaceCentres); a globe's, its north cap; Boy's
+// surface's, the cell in front; else
+// the grid's middle
+const distanceFrom = () =>
+  walk.plane || !SOLIDS.includes(surfaceOf(VARIANTS[walk.variant]))
+    ? walk.surface?.globe && !walk.plane
+      ? [walk.surface.n - 1] // (a globe: its north cap, its rings its parallels)
+      : frameless(walk.surface) && !walk.plane
+        ? [frontCell()] // (Boy's surface: no frame, no middle, see patternPlace; the cell in front)
+        : middleCells()
+    : solidFaceCentres(walk.surface, solidCorners(walk.surface)).flatMap((d) => centreCells(d));
 // The cells at the middle (one colour's: see middleCells); on a solid, the open cells nearest a direction d (a colour's spot)
 function centreCells(d) {
   if (!d) return middleCells();

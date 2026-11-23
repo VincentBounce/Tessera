@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.690';
+const VERSION = '0.5.691';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11656,13 +11656,8 @@ function renderModePicker() {
         RING_SHAPES[ring],
         shapeOn(ring, w),
         (k) => {
-          const kind = surfaceOf(VARIANTS[w]);
-          seek(kind); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
+          seek(surfaceOf(VARIANTS[w])); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
           ringShape[ring] = k;
-          if (!RING_SHAPES[ring][k][2].square) return;
-          fillGridSizes(kind, VARIANTS[w].initial); // (a square section's twist its slider's default, its middle; its sizes first, a pinwheel's)
-          const t = torusTwists(kind, $('gridSizeField').value);
-          selectSize(kind, withTwist($('gridSizeField').value, t[t.length >> 1]));
         },
         null,
         () => (ring === 'klein' && walk.variant === tabVariant() ? reshapeKlein() : compute()), // (the bottle shown: its form only; a torus's shapes their own sizes: built again)
@@ -17882,7 +17877,7 @@ const SURFACES = {
       return [
         name,
         {
-          mesh: (s) => torusCairoMesh(...torusDims(name, s), torusTwist(s), turned),
+          mesh: (s) => torusCairoMesh(...torusDims(name, s), torusTwist(s, name), turned),
           radius: (s) => (torusDims(name, s)[0] * Math.sqrt(squares)) / (2 * Math.PI * TORUS_TUBE),
           columns: (nv, own) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own),
           perRow: 1,
@@ -18108,7 +18103,7 @@ for (const k of PINWHEEL_SOLIDS) {
 // radius their sheet's length round
 for (const k of Object.keys(PINWHEEL_SHEETS))
   SURFACES[k] = {
-    mesh: (size) => pinwheelRingMesh(k, untwisted(size), torusTwist(size)),
+    mesh: (size) => pinwheelRingMesh(k, untwisted(size), torusTwist(size, k)),
     radius: (size) => pinwheelFrame(k, untwisted(size)).L / (2 * Math.PI),
     ownSizes: () => pinwheelSizes(pinwheelLeast(k)),
     tiles: (size) => untwisted(size),
@@ -18182,7 +18177,7 @@ for (const [name, kind, turned, unit] of [
     sheet: [a, B],
   };
   SURFACES[name] = {
-    mesh: (z) => tilingTorusMesh(name, ...torusDims(name, z), torusTwist(z)),
+    mesh: (z) => tilingTorusMesh(name, ...torusDims(name, z), torusTwist(z, name)),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
     columns: (nv, own) => ringColumns((nv * tube) / (step * torusTube()), nv, 1, false, undefined, own),
     perRow: per,
@@ -18227,7 +18222,7 @@ function syncSizeStepper() {
   // (a torus that turns: its turn too, 0° or its own)
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : ''; // (as its tiles lie)
   const label = (f) => {
-    const twist = torusTwists(kind, f).length ? ` · +${torusTwist(f)}` : ''; // (its twist, see torusTwist)
+    const twist = torusTwists(kind, f).length ? ` · +${torusTwist(f, kind)}` : ''; // (its twist, see torusTwist)
     $('sizeLabel').innerHTML =
       `${sizeShape(kind, untwisted(f))}${turn}${twist}<small>${shortCells(sizeCells(kind, f))}</small>`;
   };
@@ -18254,20 +18249,20 @@ function syncSizeStepper() {
     $('widthGauge'),
     widths.list.length,
     widths.list.findIndex(([w]) => w === width),
-    (k) => label(sizeOf(withTwist(widths.list[k][1], torusTwist(sel.value)))),
-    (k) => useSize(kind, withTwist(widths.list[k][1], torusTwist(sel.value))),
+    (k) => label(sizeOf(withTwist(widths.list[k][1], torusTwist(sel.value, kind), kind))),
+    (k) => useSize(kind, withTwist(widths.list[k][1], torusTwist(sel.value, kind), kind)),
     widths.usual,
   );
   // its twist under them (a torus of rows: see torusTwists), the straight one marked; elsewhere none
   const twists = sel.selectedOptions[0] ? torusTwists(kind, sel.value) : [],
-    twisted = (k) => sizeOf(withTwist(sel.value, twists[k]));
+    twisted = (k) => sizeOf(withTwist(sel.value, twists[k], kind));
   sizeGauge(
     $('twistGauge'),
     twists.length,
-    twists.findLastIndex((t) => t <= torusTwist(sel.value)),
+    twists.findLastIndex((t) => t <= torusTwist(sel.value, kind)),
     (k) => label(twisted(k)),
     (k) => useSize(kind, twisted(k)),
-    TORUS_SHAPES[shapeOn('torus')][2].square ? twists.length >> 1 : 0, // (its default: none, a square section's middle, Penrose's)
+    twists.indexOf(twistByDefault(kind, sel.value)),
   );
   const starts = variantStarts();
   $('startRow').hidden = !starts;
@@ -18368,7 +18363,7 @@ function sizeTo(option) {
   const now = Number(option.value),
     to =
       share && !option.dataset.own ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1])) : option.value;
-  return withTwist(to, torusTwists(kind, to).findLast((t) => t <= torusTwist(sel.value)) ?? 0); // (its twist kept, as far as it goes)
+  return withTwist(to, torusTwists(kind, to).findLast((t) => t <= torusTwist(sel.value, kind)) ?? 0, kind); // (its twist kept, as far as it goes)
 }
 const pickSize = (option) => useSize(surfaceOf(VARIANTS[tabVariant()]), sizeTo(option));
 // a size used: the menu's (a size of its own added, see selectSize), the surface built again
@@ -18382,11 +18377,18 @@ function useSize(kind, size) {
 // taller or wider)
 const sizeOf = (v) => (/[x+]/.test(String(v)) ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10"; a twist's, "16+3", "16x10+3")
 // A torus's twist: its sheet glued k cells of its lattice further round the tube at its seam round the ring ((x + nu, y) ≡
-// (x, y + k): its tube a helix closing k cells on), a size's "+k" (72x180+3); twists, those it takes at a size: 0 to half
+// (x, y + k): its tube a helix closing k cells on), a size's "+k" (72x180+3), none its default (see twistByDefault: "+0" a
+// Triangle's untwisted); twists, those it takes at a size: 0 to half
 // its lattice cells round the tube (past it, the same mirrored), its lattice cell its steps' (Cairo's 2 squares), a square
 // section's by quarter turns (0, ¼, ½), on a torus of rows only (a tiling's, Cairo's; none elsewhere)
-const torusTwist = (size) => Number(String(size).split('+')[1] ?? 0),
-  withTwist = (size, k) => `${String(size).split('+')[0]}${k ? `+${k}` : ''}`,
+const torusTwist = (size, kind) => {
+    const written = String(size).split('+')[1];
+    return written === undefined ? twistByDefault(kind, size) : Number(written);
+  },
+  withTwist = (size, k, kind) => {
+    const base = String(size).split('+')[0];
+    return k === undefined || k === twistByDefault(kind, base) ? base : `${base}+${k}`;
+  }, // (its default written in no size, nor link: see twistByDefault)
   untwisted = (size) => sizeOf(String(size).split('+')[0]), // (a size, its twist apart: a pinwheel ring's, its cells)
   torusTwists = (kind, size) => {
     if (PINWHEEL_SHEETS[kind]) return pinwheelAcross(kind) === 4 ? [0, 1, 2] : []; // (a pinwheel's: by bricks, a quarter turn each)
@@ -18394,6 +18396,11 @@ const torusTwist = (size) => Number(String(size).split('+')[1] ?? 0),
     const cells = torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube)
       step = TORUS_SHAPES[shapeOn('torus')][2].square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
     return Number.isInteger(step) ? Array.from({ length: Math.floor(cells / 2 / step) + 1 }, (_, q) => q * step) : [0];
+  },
+  // its twist when its size writes none: a square section's its middle one (a quarter turn: Penrose's), else none
+  twistByDefault = (kind, size) => {
+    const twists = TORUS_SHAPES[shapeOn('torus')][2].square ? torusTwists(kind, size) : [];
+    return twists.length ? twists[twists.length >> 1] : 0;
   },
   twistedRow = (i, j, nu, k) => j - (k * i) / nu; // (a sheet point's row as its twist lays it: k rows on once round)
 const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
@@ -18409,8 +18416,8 @@ function torusDims(kind, size) {
   return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 // a torus's size at a height and a width (round the ring: its tiles per row; along a strip: its steps), as a size of its own
-const widthSize = (kind, rows, width, twist = 0) =>
-  withTwist(`${rows}x${width * (MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow)}`, twist);
+const widthSize = (kind, rows, width, twist) =>
+  withTwist(`${rows}x${width * (MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow)}`, twist, kind);
 // A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): the same
 // shares of its usual one at every height (WIDTH_SHARES), and the one in use (a link's: a notch of its own), as its tiling allows
 // them, no more cells than CELLS.most: [width, size] each, narrowest first, and the usual one's place
@@ -18692,7 +18699,9 @@ function selectSize(kind, size) {
     [rows] = dims(size);
   for (const o of [...sel.options]) if (o.dataset.own) o.remove();
   const usual =
-    `${dims(rows)}` === `${dims(size)}` && !torusTwist(size) && [...sel.options].find((o) => Number(o.value) === rows);
+    `${dims(rows)}` === `${dims(size)}` &&
+    !String(size).includes('+') &&
+    [...sel.options].find((o) => Number(o.value) === rows);
   if (usual) {
     sel.value = usual.value;
     return;
@@ -18712,7 +18721,7 @@ function linkSize(kind, s) {
     step *
       Math.round(Math.min(sizes[sizes.length - 1], Math.max(least, Math.round(Number(rows)) || sizes[0])) / step) ||
     sizes.find((f) => f % step === 0); // (a block rule's: a size its blocks come round at)
-  return withTwist(TORI.includes(kind) && along ? `${n}x${along}` : n, torusTwist(s)); // (its twist, see torusTwist)
+  return `${TORI.includes(kind) && along ? `${n}x${along}` : n}${String(s).match(/\+.*/)?.[0] ?? ''}`; // (its twist as written, see torusTwist)
 }
 
 // Fill the Sphere size menu for the kind of sphere of the current variant
@@ -28672,7 +28681,7 @@ function surfaceFrame(kind, size) {
   }
   if (!TORI.includes(kind)) return {}; // (a solid: its counts by its kind, see solidCounts)
   const [nv, nu] = torusDims(kind, size);
-  return { torus: true, klein: kind === 'kleinCairo', nu, nv, twist: torusTwist(size) };
+  return { torus: true, klein: kind === 'kleinCairo', nu, nv, twist: torusTwist(size, kind) };
 }
 // a surface variant's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
 // it opens at (see sizeAt: another variant's, or the tab's a moment after it changed, its menu still the surface before's)
@@ -35659,7 +35668,11 @@ function getSetup() {
   // usual length then; see torusDims, widthSize)
   if (variant.surface)
     s.gridSize = TORI.includes(surfaceOf(variant))
-      ? widthSize(surfaceOf(variant), ...torusDims(surfaceOf(variant), gridSizePlayed()), torusTwist(gridSizePlayed()))
+      ? widthSize(
+          surfaceOf(variant),
+          ...torusDims(surfaceOf(variant), gridSizePlayed()),
+          torusTwist(gridSizePlayed(), surfaceOf(variant)),
+        )
       : $('gridSizeField').value;
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;

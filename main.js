@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.666';
+const VERSION = '0.5.667';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10614,7 +10614,7 @@ function navGo(level, ...values) {
 // stripSides finds, a torus's its strip's, declared here as the grids' shapes are built after the menu)
 const BASE_GRIDS = [
   ['square', '', 'squares', 'tilesSq', 'Squares', 'Squares', 45, 45],
-  ['cairo', 'Cairo', 'pentagons', 'pentagons', 'Cairo', 'Cairo pentagons', 0, 0],
+  ['cairo', 'Cairo', 'pentagons', 'pentagons', 'Cairo', 'Cairo pentagons', 45, 0],
   ['tri', 'Tri', 'triangles', 'tilesTri', 'Triangles', 'Triangles', 30, 30],
   ['kite', 'Kite', 'kites', 'kites', 'Kites', 'Kites (each triangle cut in 3)', 30, 30],
   ['hex', 'Hex', 'hexagons', 'tilesHex', 'Hexagons', 'Hexagons', 30, 30],
@@ -15964,29 +15964,42 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
 
 // Cairo's sheet, a torus's or a Klein bottle's: nv squares of the Cairo grid round the tube, nu round the ring, two pentagons a
 // square, tile 2 (i·nv + j) + o (see cairoCorners), a square's pair reaching half a square back: on the sheet, its first pair at
-// its corner; its tiles' corners in sheet units (see torusPoint) and their plane cells (see cellPlaces)
-function cairoSheet(nu, nv) {
-  const places = Array.from({ length: 2 * nu * nv }, (_, t) => [
-    2 * Math.floor(t / (2 * nv)) + (t % 2),
-    Math.floor(t / 2) % nv,
-  ]);
-  return { tiles: places.map(([x, y]) => latticeCorners('cairo', x, y).map(([u, v]) => [u + 0.5, v + 0.5])), places };
+// its corner; its tiles' corners in sheet units (see torusPoint) and their plane cells (see cellPlaces). Turned by 45°, its
+// sheet along the grid's diagonals, (1, 1) round the ring, (1, −1) round the tube (Cairo repeats along them: i + j's parity
+// kept), nu × nv of them, two squares each: the pentagons whose middles lie in it
+function cairoSheet(nu, nv, turned = false) {
+  const sheet = ([u, v]) => (turned ? [(u + v) / 2, (u - v) / 2] : [u, v]),
+    corners = (x, y) => latticeCorners('cairo', x, y).map(([u, v]) => sheet([u + 0.5, v + 0.5])),
+    inside = (x, y) => {
+      const c = corners(x, y),
+        [i, j] = [0, 1].map((d) => c.reduce((sum, p) => sum + p[d], 0) / c.length);
+      return i > -1e-9 && i < nu - 1e-9 && j > -1e-9 && j < nv - 1e-9;
+    },
+    places = turned
+      ? Array.from({ length: nu + nv + 2 }, (_, gx) =>
+          Array.from({ length: nu + nv + 2 }, (_, gy) => [0, 1].map((o) => [2 * gx + o, gy - nv - 1])),
+        )
+          .flat(2)
+          .filter(([x, y]) => inside(x, y))
+      : Array.from({ length: 2 * nu * nv }, (_, t) => [2 * Math.floor(t / (2 * nv)) + (t % 2), Math.floor(t / 2) % nv]);
+  return { tiles: places.map(([x, y]) => corners(x, y)), places };
 }
 // Cairo's torus (both its counts even: the tiling repeats every other square), its tube its rows over its columns (its
 // squares square); once a size
-function torusCairoMesh(nv, nu, twist = 0) {
-  const key = `torusCairo${nv}x${nu}+${twist}|${shapeOn('torus')}`; // (its twist, see torusTwist; its shape, see TORUS_SHAPES)
+function torusCairoMesh(nv, nu, twist = 0, turned = false) {
+  const key = `torusCairo${turned ? 'Turned' : ''}${nv}x${nu}+${twist}|${shapeOn('torus')}`; // (its twist, see torusTwist; its shape, see TORUS_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { verts, add } = vertexStore(),
     tube = nv / nu,
-    { tiles, places } = cairoSheet(nu, nv);
+    { tiles, places } = cairoSheet(nu, nv, turned),
+    cell = turned ? 1 : 2; // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
   const ids = tiles.map((c) =>
-    c.map(([i, j]) => add(...torusPoint(i, twistedRow(i, j, nu, 2 * twist), nu, nv, 1, tube))),
+    c.map(([i, j]) => add(...torusPoint(i, twistedRow(i, j, nu, cell * twist), nu, nv, 1, tube))),
   );
   return (meshCache[key] = Object.assign(finishTorus(verts, ids, 5, nu, nv, tiles.flat(2)), {
     tube,
     cairo: true,
-    seamTwist: 2 * twist, // (its lattice cell 2 squares: see torusTwists)
+    seamTwist: cell * twist,
     cellPlaces: places,
   }));
 }
@@ -16687,7 +16700,6 @@ const sheetPoint = (g, i, j, m, form = null) => {
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
 // the tiling repeats every other square), two pentagons a square (tile 2 (i·nv + j) + o, see cairoCorners),
 // listed counterclockwise on the sheet as the squares are
-const torusCairoColumns = (nv, own) => ringColumns(nv / torusTube(), nv, 2, false, undefined, own);
 
 // A tiling's polygons, their corners the same from every polygon round them (stored to 6 decimals: those a whole lattice
 // cell apart, or less than 10⁻⁴, made one): a surface glues them by their places, which must agree exactly
@@ -17817,15 +17829,24 @@ const SURFACES = {
   // a torus's size: its rows (see torusDims); perRow: tiles per column across a row; steps: what rows
   // and tiles per row go by in a size of its own, keeping the sheet's columns even or rows even
   // Cairo pentagons: the tube nv squares of their grid around, two pentagons a square
-  torusCairo: {
-    mesh: (s) => torusCairoMesh(...torusDims('torusCairo', s), torusTwist(s)),
-    radius: (s) => torusDims('torusCairo', s)[0] / (2 * Math.PI * TORUS_TUBE),
-    columns: torusCairoColumns,
-    perRow: 1,
-    steps: [2, 2], // even counts both ways
-    tiles: (s) => 2 * torusDims('torusCairo', s).reduce((a, b) => a * b),
-    unit: 'pentagons',
-  },
+  ...Object.fromEntries(
+    [false, true].map((turned) => {
+      const name = turned ? 'torusCairoTurned' : 'torusCairo',
+        squares = turned ? 2 : 1; // (a sheet's unit: a square, or turned a diagonal's two, see cairoSheet)
+      return [
+        name,
+        {
+          mesh: (s) => torusCairoMesh(...torusDims(name, s), torusTwist(s), turned),
+          radius: (s) => (torusDims(name, s)[0] * Math.sqrt(squares)) / (2 * Math.PI * TORUS_TUBE),
+          columns: (nv, own) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own),
+          perRow: 1,
+          steps: [2 / squares, 2 / squares], // (straight: even counts both ways, the tiling repeating every other square)
+          tiles: (s) => 2 * squares * torusDims(name, s).reduce((a, b) => a * b),
+          unit: 'pentagons',
+        },
+      ];
+    }),
+  ),
   // the icosahedron's dual: a cell per corner of its triangles (hexagon edge ≈ 1 unit)
   hexsphere: {
     mesh: hexSphereMesh,

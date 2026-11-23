@@ -174,6 +174,10 @@ touched shows (+0 if its code lines are as many).
   shown: 0 the first, and the first the default (written in no link). Never a number kept from an older order, never a
   default set apart from the order: to change the default, change the order.
 - Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
+- **Links and JSON explicit**: a link and a Gallery JSON write every setting they hold, its default too (a torus's twist
+  `+0`, `+6`): nothing left to a default that may change (2026-11-23: « on explicite tout ! »). Reading one, a setting it
+  does not write still takes its default (older links). The fields still left out by default: to make explicit one by one
+  (night job 30).
 
 <p align="center"><br>* * *</p>
 

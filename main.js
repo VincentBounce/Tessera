@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.700';
+const VERSION = '0.5.701';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18277,7 +18277,6 @@ const surfaceCard = (kind, f, shown = true) => [
     ...(shown && MOBIUS_ALONG[kind]?.edgeCuts
       ? [`\n{b:Specific cells}\n{e:${formatNumber(SURFACES[kind].mesh(f).edgeCells.length)} cells}`]
       : []), // (a strip's edge's cells, as outlined: see edgeRibbons; counted on its mesh, the one shown only)
-    ...(shown ? [lastPicked()] : []), // (the size picked: the one shown's)
   ]
     .filter(Boolean)
     .join('\n'),
@@ -18299,9 +18298,9 @@ function syncSizeStepper() {
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
-  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', lastPicked()]));
+  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['']));
   // (its rows: a notch each, the one in use's whatever its width, what a notch leads to shown as it will be: see sizeRows,
-  // sizeTo; its width under it)
+  // ringSize; its width under it)
   const { options, at } = sizeRows();
   const now = parseInt(sel.value);
   setTile($('sizeDown'), { greyed: options.some((o) => parseInt(o.value) < now) ? '' : 'Already the smallest size.' });
@@ -18310,30 +18309,39 @@ function syncSizeStepper() {
     $('sizeGauge'),
     options.length,
     at,
-    (k) => label(sizeOf(sizeTo(options[k]))),
+    (k) => label(walkersSize(kind, ringSize(kind, sizeOf(options[k].value)))),
     (k) => pickSize(options[k]),
   );
   // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere none (hidden)
-  const [rows, width] = ringSized(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
-    widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 };
+  const rowsNow = sizeOf(sel.value),
+    asked = sizeAsked(kind),
+    [rows, width] = ringSized(kind) && sel.selectedOptions[0] ? torusDims(kind, asked) : [],
+    widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 },
+    widthShare = (k) => widths.list[k][0] / torusDims(kind, rows)[1];
   sizeGauge(
     $('widthGauge'),
     widths.list.length,
     widths.list.findIndex(([w]) => w === width),
-    (k) => label(sizeOf(withTwist(widths.list[k][1], twistOf(kind, sel.value)))),
-    (k) => useSize(kind, withTwist(widths.list[k][1], twistOf(kind, sel.value))),
+    (k) => label(walkersSize(kind, ringSize(kind, rowsNow, widthShare(k)))),
+    (k) => {
+      ringWidth = widthShare(k);
+      sizeChanged();
+    },
     widths.usual,
   );
-  // its twist under them (a torus of rows: see torusTwists), the straight one marked; elsewhere none
-  const twists = sel.selectedOptions[0] ? torusTwists(kind, sel.value) : [],
-    twisted = (k) => sizeOf(withTwist(sel.value, twists[k]));
+  // its twist under them (a torus of rows: see torusTwists), its default marked; elsewhere none
+  const twists = sel.selectedOptions[0] ? torusTwists(kind, asked) : [],
+    twistShare = (k) => twists[k] / twists.at(-1);
   sizeGauge(
     $('twistGauge'),
     twists.length,
-    twists.findLastIndex((t) => t <= torusTwist(sel.value, kind)),
-    (k) => label(twisted(k)),
-    (k) => useSize(kind, twisted(k)),
-    twists.indexOf(twistByDefault(kind, sel.value)),
+    twists.findLastIndex((t) => t <= torusTwist(asked, kind)),
+    (k) => label(walkersSize(kind, ringSize(kind, rowsNow, ringWidth, twistShare(k)))),
+    (k) => {
+      ringTwist = twistShare(k);
+      sizeChanged();
+    },
+    twists.indexOf(twistByDefault(kind, asked)),
   );
   const starts = variantStarts();
   $('startRow').hidden = !starts;
@@ -18420,34 +18428,14 @@ function sizeRows() {
     options = [...sel.options].filter((o) => !o.dataset.own);
   return { options, at: options.findLastIndex((o) => parseInt(o.value) <= now) };
 }
-// the size a size of the menu (its option) leads to: a torus's width kept as a share of its usual one (its shape: see widthsOf),
-// its twist kept (at most its new rows' half)
-function sizeTo(option) {
-  const sel = $('gridSizeField'),
-    kind = surfaceOf(VARIANTS[tabVariant()]);
-  const [rows, width] = ringSized(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
-    usual = rows && torusDims(kind, rows)[1],
-    share =
-      rows &&
-      (widthShares().find((s) => torusDims(kind, widthSize(kind, rows, Math.round(s * usual)))[1] === width) ??
-        width / usual); // (a width of the gauge, its share as it is: no drift by roundings from height to height)
-  const now = Number(option.value),
-    to =
-      share && !option.dataset.own ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1])) : option.value;
-  const [from, at] = [sel.value, to].map((z) => torusTwists(kind, z)),
-    turn = from.length > 1 ? torusTwist(sel.value, kind) / from.at(-1) : 0; // (its twist's share of half a turn, kept: its angle)
-  return withTwist(
-    to,
-    at.length
-      ? at.reduce((a, b) => (Math.abs(b - turn * at.at(-1)) < Math.abs(a - turn * at.at(-1)) ? b : a))
-      : undefined,
-  ); // (its twist at the same angle, the nearest notch: a quarter turn a quarter turn at any rows)
+// a size of the menu picked (its rows: a ring's width and twist kept as shares, see ringWidth), the surface built again
+function pickSize(option) {
+  $('gridSizeField').value = option.value;
+  sizeChanged();
 }
-const pickSize = (option) => useSize(surfaceOf(VARIANTS[tabVariant()]), sizeTo(option));
-// a size used: the menu's (a size of its own added, see selectSize), the surface built again
-function useSize(kind, size) {
-  selectSize(kind, size);
-  seek(kind);
+// the size asked changed (its rows, a ring's width or twist): its cells kept (see seek), the surface built again
+function sizeChanged() {
+  seek(surfaceOf(VARIANTS[tabVariant()]));
   $('gridSizeField').dispatchEvent(new Event('change'));
 }
 
@@ -18480,7 +18468,28 @@ const torusTwist = (size, kind) => {
     return twists.length ? twists[twists.length >> 1] : 0;
   },
   twistedRow = (i, j, nu, k) => j - (k * i) / nu; // (a sheet point's row as its twist lays it: k rows on once round)
-const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
+// A ring's width and twist as asked, kept from height to height as shares: its width a share of its usual one (null: the usual,
+// see widthsOf), its twist a share of its largest, half a turn (null: its default, see twistByDefault); the size menu holds the
+// rows only, a size its rows and these (see ringSize)
+let ringWidth = null,
+  ringTwist = null;
+// a ring's size at its rows, a width share and a twist share (see ringWidth): its width the nearest its tiling allows, its twist
+// the nearest notch (a quarter turn a quarter turn at any rows); a size of rows only elsewhere
+function ringSize(kind, rows, width = ringWidth, twist = ringTwist) {
+  if (!ringSized(kind)) return rows;
+  const usual = torusDims(kind, rows)[1],
+    across = width === null ? usual : Math.round(width * usual),
+    size = across === usual ? rows : widthSize(kind, rows, across),
+    twists = torusTwists(kind, size);
+  if (!twists.length) return size;
+  const near = (k) => Math.abs(k - twist * twists.at(-1));
+  return withTwist(
+    size,
+    twist === null ? twistByDefault(kind, size) : twists.reduce((a, b) => (near(b) < near(a) ? b : a)),
+  );
+}
+const sizeAsked = (kind = surfaceOf(VARIANTS[tabVariant()])) => ringSize(kind, sizeOf($('gridSizeField').value)); // (the menu's rows, its ring's width and twist)
+const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeAsked()); // (the size played: the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
 function torusDims(kind, size) {
   size = sizeOf(String(size).split('+')[0]); // (as the list has it, its twist apart: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
@@ -18570,14 +18579,11 @@ const sizeShape = (kind, f) => {
 const cssColour = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
   motifColour = () => cssColour('--motif-color'),
   faceRed = () => cssColour('--face-color'); // (the page's, as its theme has them: see style.css)
-// a size's tooltip's end: what was last picked, kept from grid to grid (each takes the nearest it offers)
-// (the size: its cells, by hand or by a link, kept on every grid, plane, surface or solid, each the size it offers with about as
-// many, from that same number each time: never drifting a step at a time; none yet: each grid its first size)
-let picked = null;
+// The size asked, the setup's (see setupNow): its cells, by hand or by a link, kept on every grid, plane, surface or solid, each the size it offers with about as
+// many, from that same number each time: never drifting a step at a time; none yet: each grid its first size
+let cellsAsked = null;
 const nearCells = (sizes, cells, n) =>
   sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a)); // the size with about n cells
-const lastPicked = () =>
-  picked ? `\n{b:Last picked}\nSize: {b:${formatNumber(picked)} cells} (picked with − + or the slider)` : ''; // (its blank line over it its own: none when none was picked)
 // a size's card in words marked ({b:…} bold, {g:…} grey, {y:…} and the others coloured), as html: its total, then its words
 const sizeCardHtml = (total, text) => {
   const marks = (t) =>
@@ -18779,25 +18785,28 @@ const sizeCells = (kind, f, marked = false) => {
 // a size's cells as its stepper shows them, short (hexas, pentas, octas: its − and + as wide; its tooltip says them whole)
 const shortCells = (text) => text.replace(/agons\b/g, 'as');
 const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${sizeCells(kind, f)}` : sizeCells(kind, f));
-// A size of its own (a link, a loop found): an extra entry among the usual ones, by rows (a torus,
-// a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
+// A size asked (a link's, a loop found's): its rows in the menu (rows of its own: an extra entry among the usual ones, by rows
+// or tiles across), a ring's width and twist as shares (see ringWidth: none written, its default)
 function selectSize(kind, size) {
-  const sel = $('gridSizeField'),
-    dims = (s) => (ringSized(kind) ? torusDims(kind, s) : [untwisted(s)]),
-    [rows] = dims(size);
-  for (const o of [...sel.options]) if (o.dataset.own) o.remove();
-  const usual =
-    `${dims(rows)}` === `${dims(size)}` &&
-    !String(size).includes('+') &&
-    [...sel.options].find((o) => Number(o.value) === rows);
-  if (usual) {
-    sel.value = usual.value;
-    return;
+  const [rows, width] = ringSized(kind) ? torusDims(kind, size) : [untwisted(size)];
+  if (ringSized(kind)) {
+    const usual = torusDims(kind, rows)[1],
+      twists = torusTwists(kind, size);
+    ringWidth = width === usual ? null : width / usual;
+    ringTwist = String(size).includes('+') && twists.length > 1 ? torusTwist(size, kind) / twists.at(-1) : null;
   }
-  const own = new Option(sizeLabel(kind, size), size);
-  own.dataset.own = '1';
-  sel.insertBefore(own, [...sel.options].find((o) => dims(sizeOf(o.value))[0] > rows) ?? null);
-  sel.value = size;
+  selectRows(kind, rows);
+}
+// rows in the menu: one of its own, rows of its own (a link's), an extra entry among the usual ones
+function selectRows(kind, rows) {
+  const sel = $('gridSizeField');
+  for (const o of [...sel.options]) if (o.dataset.own) o.remove();
+  if (![...sel.options].some((o) => Number(o.value) === rows)) {
+    const own = new Option(sizeLabel(kind, rows), rows);
+    own.dataset.own = '1';
+    sel.insertBefore(own, [...sel.options].find((o) => Number(o.value) > rows) ?? null);
+  }
+  sel.value = rows;
 }
 // A size from a link: any number of rows or tiles across, from the surface's smallest that builds
 // (least: below it a tiny torus breaks; else 1) to its largest usual one
@@ -18817,9 +18826,9 @@ function linkSize(kind, s) {
 // a surface's sizes' step: a reversible one's, its blocks' sets coming round (see BLOCK_STEPS), else 1
 const blockSizeStep = (kind, variant = VARIANTS[tabVariant()]) => (variant.margolus ? (BLOCK_STEPS[kind] ?? 1) : 1);
 const seek = (kind) => {
-  picked = SURFACES[kind].tiles(parseInt($('gridSizeField').value));
-  $('gridSizeField').dataset.picked = picked;
-}; // (the size picked: its cells, see picked; the menu shows it)
+  cellsAsked = SURFACES[kind].tiles(parseInt($('gridSizeField').value));
+  $('gridSizeField').dataset.cellsAsked = cellsAsked;
+}; // (the size picked: its cells, see cellsAsked; the menu shows it)
 // a surface's sizes (a reversible torus's: its blocks' sets come round), and the one it opens at: the size picked's nearest
 // there (picked on another grid), else its variant's first (initial); any variant's, the one its button goes to too (see enablersFor)
 const sizesOf = (kind, variant) => {
@@ -18828,7 +18837,7 @@ const sizesOf = (kind, variant) => {
 };
 const sizeAt = (kind, initial = SURFACES[kind].initial, variant) => {
   const sizes = sizesOf(kind, variant),
-    f = Number(picked ? SURFACES[kind].near(picked) : SURFACES[kind].nearest(initial));
+    f = Number(cellsAsked ? SURFACES[kind].near(cellsAsked) : SURFACES[kind].nearest(initial));
   return sizes.reduce((a, b) => (Math.abs(b - f) < Math.abs(a - f) ? b : a));
 };
 // the size variant w's battle of K walkers plays from a size asked (the menu's if none): where a count is judged (see teamsWhyNot)
@@ -18840,14 +18849,14 @@ function fillGridSizes(kind, initial = SURFACES[kind].initial) {
   const sel = $('gridSizeField'),
     key = `${kind} ${Object.keys(RING_SHAPES).map((f) => shapeOn(f))} ${initial} ${lifeTeams} ${surfaceWalkers(kind)} ${step}`, // (its surface its first word, see was, menuSizeOf; its shape with it)
     [was] = (sel.dataset.kind ?? '').split(' '); // (a torus's sizes: its columns as its colours, see ringColumns; its walkers: the sizes played theirs, see walkersSize)
-  if (sel.dataset.kind === key && sel.dataset.picked === String(picked)) return; // (a size picked on another grid: its nearest here)
-  const now = was === kind && sel.dataset.picked === String(picked) ? sel.value : null; // (the same surface, its colours or its shape changed: its size kept, rows and width)
+  if (sel.dataset.kind === key && sel.dataset.cellsAsked === String(cellsAsked)) return; // (a size asked on another grid: its nearest here)
+  const now = was === kind && sel.dataset.cellsAsked === String(cellsAsked) ? sel.value : null; // (the same surface, its colours or its shape changed: its size kept, rows and width)
   sel.replaceChildren(...sizes.map((f) => new Option(sizeLabel(kind, walkersSize(kind, f)), f))); // (a size asked, its words the size played's)
-  if (now && (now.includes('x') || sizes.map(String).includes(now)))
-    selectSize(kind, sizeOf(now)); // (one of its own, a width picked or a link's, as one of the list: see selectSize)
+  if (now)
+    selectRows(kind, Number(now)); // (rows of its own, a link's, kept)
   else sel.value = sizeAt(kind, initial);
   sel.dataset.kind = key;
-  sel.dataset.picked = picked;
+  sel.dataset.cellsAsked = cellsAsked;
 }
 
 // Walk from tile to tile (see surfaceSteps)
@@ -19555,7 +19564,7 @@ let torusLoopList = null; // { key, loops: [{ start, size, laps: [ring, tube], s
 function torusLoops() {
   const variant = VARIANTS[tabVariant()];
   if (!variant.net || !TORI.includes(surfaceOf(variant))) return []; // a walk by a rule's commands (its network's: not an ant's), along the edges or on cells, on a torus or a Möbius strip
-  const least = picked ? SURFACES[surfaceOf(variant)].near(picked) : SURFACES[surfaceOf(variant)].initial; // (its rows: the size picked's, else the one it opens at)
+  const least = cellsAsked ? SURFACES[surfaceOf(variant)].near(cellsAsked) : SURFACES[surfaceOf(variant)].initial; // (its rows: the size asked's, else the one it opens at)
   const key = `${formulaInUse} ${tabVariant()} ${surfaceOf(variant)} ${walkRuleOf(variant)} ${least}`; // (its loops its rule's turns)
   if (
     digitsComputed?.formula !== formulaInUse ||
@@ -23740,7 +23749,7 @@ function buildLife(seq, variant) {
 const planeCells = (side, kind = VARIANTS[tabVariant()].plane, k = planeKind(kind), outline = outlineOf(kind)) => {
   const W = shaped(kind, outline) ? sideW(k, side) : planeW(k, side, undefined, outline);
   return W * planeRow(k, W);
-}; // a side's grid's cells, counted, not built (see picked)
+}; // a side's grid's cells, counted, not built (see cellsAsked)
 const planeSides = (
   kind,
   k = planeKind(kind),
@@ -23757,7 +23766,11 @@ const planeSides = (
 // zone's, one a colour (or one for all)
 // a plane grid's side, for its tiling kind k: the one with about as many cells as the size picked (none: 48's)
 const planeSideOf = (k, outline = outlineOf(k)) =>
-  nearCells(planeSides(k, k, outline), (f) => planeCells(f, k, k, outline), picked ?? planeCells(48, k, k, outline));
+  nearCells(
+    planeSides(k, k, outline),
+    (f) => planeCells(f, k, k, outline),
+    cellsAsked ?? planeCells(48, k, k, outline),
+  );
 const plane = {
   get side() {
     return planeSideOf(planeKind(VARIANTS[tabVariant()].plane));
@@ -27209,7 +27222,7 @@ function startLead(number, seeded) {
 function planeFromSetup(s) {
   plane.torus = Number(s.gridWalls) !== 1;
   plane.shape = ['square', 'rhombus'].includes(s.gridOutline) ? s.gridOutline : 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
-  if (s.gridSize !== undefined) picked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
+  if (s.gridSize !== undefined) cellsAsked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
   spaceTime = Number(s.popStacked) === 1 && !plane.torus; // (3D: with walls only)
   startFromSetup(s);
 }
@@ -27367,7 +27380,6 @@ function renderPlaneRow() {
     [
       gridSize(planeKind(kind), plane.side) &&
         `${sizeHow(planeKind(kind), plane.side)}\n${sizeSides(planeKind(kind), plane.side)}`,
-      lastPicked(),
     ]
       .filter(Boolean)
       .join('\n'), // (as a surface's, see surfaceCard)
@@ -27380,7 +27392,7 @@ function renderPlaneRow() {
     sides.indexOf(plane.side),
     (k) => label(sides[k]),
     (k) => {
-      picked = planeCells(sides[k]);
+      cellsAsked = planeCells(sides[k]);
       compute();
     },
   );
@@ -35775,7 +35787,7 @@ function getSetup() {
           ...torusDims(surfaceOf(variant), gridSizePlayed()),
           twistOf(surfaceOf(variant), gridSizePlayed()),
         )
-      : withTwist($('gridSizeField').value, twistOf(surfaceOf(variant), $('gridSizeField').value)); // (a pinwheel ring's twist written too)
+      : sizeAsked(surfaceOf(variant)); // (a pinwheel ring's width and twist written too)
   if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
   for (const f of Object.keys(RING_SHAPES)) if (shapeOn(f, w)) s[`${f}Shape`] = shapeOn(f, w); // (its place in its family's shapes: the first, 0, in no link)
@@ -43075,7 +43087,7 @@ for (const [id, k] of [
 ]) {
   $(id).addEventListener('click', () => {
     const sides = planeSides(planeKind(VARIANTS[tabVariant()].plane));
-    picked = planeCells(sides[Math.min(sides.length - 1, Math.max(0, sides.indexOf(plane.side) + k))]);
+    cellsAsked = planeCells(sides[Math.min(sides.length - 1, Math.max(0, sides.indexOf(plane.side) + k))]);
     compute();
   });
 }
@@ -43829,7 +43841,7 @@ function layCells({ cells, w, h }) {
     cells.map(([x, y, v]) => [kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)), v]),
   );
   if (!kind) return lifeReseed(); // (a sheet: its size kept)
-  picked = planeCells(side);
+  cellsAsked = planeCells(side);
   plane.start = 'draw';
   compute();
 }

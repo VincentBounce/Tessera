@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.696';
+const VERSION = '0.5.697';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14532,10 +14532,9 @@ const pinwheelLeast = (k) =>
   2 * pinwheelAlong(k) * pinwheelAcross(k) * (PINWHEEL_SHEETS[k].turned ? 4 : 1) * PINWHEEL_SHEETS[k].faces;
 // its frame: its cuts, a brick's short side R, its bricks along, its sides on the plane (a brick's way round the ring, across),
 // its sheet's length round the ring and width round the tube
-function pinwheelFrame(k, cells) {
-  const n = pinwheelCuts(cells, pinwheelLeast(k)),
+function pinwheelFrame(k, cells, count = pinwheelAlong(k)) {
+  const n = pinwheelCuts(cells, pinwheelLeast(k)), // (cells: its size's, at its usual bricks along; count: its own, see torusDims)
     R = 5 ** (n / 2),
-    count = pinwheelAlong(k),
     [A, B] = PINWHEEL_SHEETS[k].turned
       ? [
           [2 * R, 2 * R],
@@ -14547,9 +14546,9 @@ function pinwheelFrame(k, cells) {
         ];
   return { n, R, count, A, B, L: count * Math.hypot(...A), W: Math.hypot(...B) };
 }
-function pinwheelSheet(k, cells, shift = 0) {
+function pinwheelSheet(k, cells, shift = 0, along = undefined) {
   const F = PINWHEEL_SHEETS[k],
-    { n, R, count, A, B, L, W } = pinwheelFrame(k, cells),
+    { n, R, count, A, B, L, W } = pinwheelFrame(k, cells, along),
     onSheet = ([x, y]) => [(x * A[0] + y * A[1]) / Math.hypot(...A), (x * B[0] + y * B[1]) / W];
   // its bricks over it (turned along x: (u, v) → (v, R − u)), those its box meets, each tile counterclockwise (as a
   // tiling's, see tilingStrip)
@@ -14601,12 +14600,12 @@ function pinwheelSheet(k, cells, shift = 0) {
 }
 // a pinwheel ring's mesh: its sheet's, as a tiling's ring's (foldMesh: its corners glued by their places on the sheet, in
 // steps and rows of about a tile; a Möbius strip's two faces, see mobiusFaces), its corners' places its uv
-function pinwheelRingMesh(k, cells, twist = 0) {
+function pinwheelRingMesh(k, cells, twist = 0, along = pinwheelAlong(k)) {
   const F = PINWHEEL_SHEETS[k],
-    key = `${k}${cells}+${twist}|${F.fold === 'klein' ? kleinShapeKey() : shapeOn('torus')}`; // (its twist, see torusTwists; its shape, see RING_SHAPES)
+    key = `${k}${cells}x${along}+${twist}|${F.fold === 'klein' ? kleinShapeKey() : shapeOn('torus')}`; // (its bricks along, see torusDims; its twist, see torusTwists; its shape, see RING_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const shift = twist * pinwheelFrame(k, cells).R, // (its twist in bricks round the tube)
-    sheet = pinwheelSheet(k, cells, shift),
+    sheet = pinwheelSheet(k, cells, shift, along),
     { L, W, sides, mids } = sheet,
     marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true, seamTwist: shift }, // (asManyCells: see pinwheelSolidMesh)
     halves = Int32Array.from(
@@ -18160,16 +18159,27 @@ for (const k of PINWHEEL_SOLIDS) {
 }
 // the pinwheel's rings (see pinwheelSheet): their sizes their cells (2 · 5ⁿ a brick, its bricks as many at every size), their
 // radius their sheet's length round
-for (const k of Object.keys(PINWHEEL_SHEETS))
+// (a size "cells x bricks along": its cells at its usual length, so many bricks round the ring, see torusDims; its cells as many
+// bricks' worth)
+for (const k of Object.keys(PINWHEEL_SHEETS)) {
+  const cellsOf = (size) => {
+    const [cells, along] = torusDims(k, size);
+    return (cells * along) / pinwheelAlong(k);
+  };
   SURFACES[k] = {
-    mesh: (size) => pinwheelRingMesh(k, untwisted(size), torusTwist(size, k)),
-    radius: (size) => pinwheelFrame(k, untwisted(size)).L / (2 * Math.PI),
+    mesh: (size) => {
+      const [cells, along] = torusDims(k, size);
+      return pinwheelRingMesh(k, cells, torusTwist(size, k), along);
+    },
+    radius: (size) => pinwheelFrame(k, ...torusDims(k, size)).L / (2 * Math.PI),
     ownSizes: () => pinwheelSizes(pinwheelLeast(k)),
-    how: (size) => pinwheelHow(untwisted(size), pinwheelFrame(k, untwisted(size)).n),
-    tiles: (size) => untwisted(size),
+    perRow: 1,
+    how: (size) => pinwheelHow(cellsOf(size), pinwheelFrame(k, ...torusDims(k, size)).n),
+    tiles: cellsOf,
     unit: 'triangles',
     tiling: 'pinwheel',
   }; // (tiling: its rules the pinwheel's)
+}
 // the rosette spheres (see rosetteSphereMesh): their sizes their discs' W, their discs' houses twice, a unit each
 for (const [k, table] of Object.entries(ROSETTE_SPHERES)) {
   const cells = Object.fromEntries(table.flatMap((W, i) => (i % 2 ? [] : [[W, table[i + 1]]]))); // (a size's cells: its table's pairs)
@@ -18303,7 +18313,7 @@ function syncSizeStepper() {
     (k) => pickSize(options[k]),
   );
   // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere none (hidden)
-  const [rows, width] = TORI.includes(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
+  const [rows, width] = ringSized(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
     widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 };
   sizeGauge(
     $('widthGauge'),
@@ -18414,7 +18424,7 @@ function sizeRows() {
 function sizeTo(option) {
   const sel = $('gridSizeField'),
     kind = surfaceOf(VARIANTS[tabVariant()]);
-  const [rows, width] = TORI.includes(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
+  const [rows, width] = ringSized(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
     usual = rows && torusDims(kind, rows)[1],
     share =
       rows &&
@@ -18473,11 +18483,15 @@ function torusDims(kind, size) {
     // a Möbius strip: its rows and its length, as a count of steps along (see MOBIUS_ALONG)
     return [mobiusSize(size)[0], Math.round(mobiusLength(kind, size) / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
   }
+  if (PINWHEEL_SHEETS[kind])
+    return [Number(String(size).split('x')[0]), Number(String(size).split('x')[1]) || pinwheelAlong(kind)]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
   if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
   return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 // a torus's size at a height and a width (round the ring: its tiles per row; along a strip: its steps), as a size of its own
+// a surface sized as a ring is, its rows (a pinwheel ring's: its cells at its usual length) × its width (its bricks along)
+const ringSized = (kind) => TORI.includes(kind) || !!PINWHEEL_SHEETS[kind];
 const widthSize = (kind, rows, width, twist) =>
   withTwist(`${rows}x${width * (MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow)}`, twist);
 // A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): the same
@@ -18535,8 +18549,10 @@ const sizeShape = (kind, f) => {
         ? hexagonOf(kind, f)
         : d
           ? `${formatNumber(d[0])} × ${formatNumber(d[1])}`
-          : `Edge ${formatNumber(SURFACES[kind]?.edge?.(f) ?? f)}`;
-}; // (a circle: its diameter; a solid: its edge, a frame's and a sponge's their cube's)
+          : PINWHEEL_SHEETS[kind]
+            ? `${formatNumber(torusDims(kind, f)[1])} brick${torusDims(kind, f)[1] === 1 ? '' : 's'} along`
+            : `Edge ${formatNumber(SURFACES[kind]?.edge?.(f) ?? f)}`;
+}; // (a circle: its diameter; a pinwheel ring: its length in bricks; a solid: its edge, a frame's and a sponge's their cube's)
 // how its cells are counted (the size's tooltip): its own words (Pits, Frame, Menger, theirs as tetrakis triangles), else its
 // count's form, c × f² (+ k: a sphere of hexagons' 12 pentagons, see goldberg), else the grid's rows × cells a row
 // a size's tooltip on its block, − + its label and its slider, as its motif shows on it (see drawMotif); its words
@@ -18757,7 +18773,7 @@ const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${siz
 // a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
 function selectSize(kind, size) {
   const sel = $('gridSizeField'),
-    dims = (s) => (TORI.includes(kind) ? torusDims(kind, s) : [untwisted(s)]),
+    dims = (s) => (ringSized(kind) ? torusDims(kind, s) : [untwisted(s)]),
     [rows] = dims(size);
   for (const o of [...sel.options]) if (o.dataset.own) o.remove();
   const usual =
@@ -18783,7 +18799,7 @@ function linkSize(kind, s) {
     step *
       Math.round(Math.min(sizes[sizes.length - 1], Math.max(least, Math.round(Number(rows)) || sizes[0])) / step) ||
     sizes.find((f) => f % step === 0); // (a block rule's: a size its blocks come round at)
-  return `${TORI.includes(kind) && along ? `${n}x${along}` : n}${String(s).match(/\+.*/)?.[0] ?? ''}`; // (its twist as written, see torusTwist)
+  return `${ringSized(kind) && along ? `${n}x${along}` : n}${String(s).match(/\+.*/)?.[0] ?? ''}`; // (its twist as written, see torusTwist)
 }
 
 // Fill the Sphere size menu for the kind of sphere of the current variant

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.699';
+const VERSION = '0.5.700';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18434,10 +18434,14 @@ function sizeTo(option) {
   const now = Number(option.value),
     to =
       share && !option.dataset.own ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1])) : option.value;
+  const [from, at] = [sel.value, to].map((z) => torusTwists(kind, z)),
+    turn = from.length > 1 ? torusTwist(sel.value, kind) / from.at(-1) : 0; // (its twist's share of half a turn, kept: its angle)
   return withTwist(
     to,
-    torusTwists(kind, to).findLast((t) => t <= torusTwist(sel.value, kind)),
-  ); // (its twist kept, as far as it goes)
+    at.length
+      ? at.reduce((a, b) => (Math.abs(b - turn * at.at(-1)) < Math.abs(a - turn * at.at(-1)) ? b : a))
+      : undefined,
+  ); // (its twist at the same angle, the nearest notch: a quarter turn a quarter turn at any rows)
 }
 const pickSize = (option) => useSize(surfaceOf(VARIANTS[tabVariant()]), sizeTo(option));
 // a size used: the menu's (a size of its own added, see selectSize), the surface built again

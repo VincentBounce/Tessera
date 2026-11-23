@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.711';
+const VERSION = '0.5.712';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18508,9 +18508,14 @@ function torusDims(kind, size) {
     return [mobiusSize(size)[0], Math.round(mobiusLength(kind, size) / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
   }
   if (PINWHEEL_SHEETS[kind]) {
-    const [cells, along] = String(size).split('x').map(Number),
-      c = ringCorners(kind); // (a whole count of bricks a side: see ringCorners)
-    return [cells, Math.max(c, c * Math.round((along || pinwheelAlong(kind)) / c))]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
+    const F = PINWHEEL_SHEETS[kind],
+      [cells, along] = String(size).split('x').map(Number);
+    if (F.fold !== 'torus') return [cells, along || pinwheelAlong(kind)];
+    const across = pinwheelAcross(kind); // (a torus's bricks along as a tiling's columns: its colours' blocks square, its corners' sides alike, see ringColumns)
+    return [
+      cells,
+      ringColumns(across / (F.tube() * (F.turned ? 1 : 2)), across, 1, false, undefined, along || undefined),
+    ]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
   }
   if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.708';
+const VERSION = '0.5.709';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15582,7 +15582,7 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own) {
   return ringLength(own ?? x, own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b, [whole], ok);
 }
 // a ring's corners, its shape's (see TORUS_SHAPES: a Triangle's 3), 1 a round one's or a bottle's: its length a whole count of
-// them (its sides alike: see ringColumns, torusDims), its teams Solo or one a side (see teamsFit)
+// them (its sides alike: see ringColumns, torusDims), its teams Solo or as many a side (see teamsFit)
 const ringCorners = (kind) => (kind?.startsWith('torus') ? (TORUS_SHAPES[shapeOn('torus')][2].corners ?? 1) : 1);
 
 // A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies: its middle at 0,
@@ -28716,7 +28716,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
   }
   if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
   if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
-  if (g?.nu) return [1, k].includes(ringCorners(surfaceOf(variant))); // a torus: its blocks (twisted: those its seam glues in line, see torusBlocks), a Triangle's one a side (see ringCorners) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
+  if (g?.nu) return k % ringCorners(surfaceOf(variant)) === 0; // a torus: its blocks (twisted: those its seam glues in line, see torusBlocks), a Triangle's as many a side (see ringCorners) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count

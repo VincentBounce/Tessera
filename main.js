@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.657';
+const VERSION = '0.5.658';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11672,6 +11672,7 @@ function renderModePicker() {
           ringShape[ring] = k;
         },
         null,
+        () => (ring === 'klein' && walk.variant === tabVariant() ? reshapeKlein() : compute()), // (the bottle shown: its form only; a torus's shapes their own sizes: built again)
       ),
     );
   }
@@ -17555,6 +17556,14 @@ function placePoint(p) {
   return [X[c] * R, X[c + 1] * R, X[c + 2] * R];
 }
 // Put the current shape in place: the walk's points on it (see placePoint), the frame and the view
+// a Klein bottle's other shape, as Morph's (see morphStep): its cells the same whatever its shape (its sheet's, see kleinLength),
+// its mesh that shape's, its form at the morph's m; the walk or the game going on
+function reshapeKlein() {
+  walk.surface = SURFACES[surfaceOf(VARIANTS[walk.variant])].mesh(gridSizePlayed());
+  Object.assign(walk.shape, shapeAt(walk.surface, walk.shape.m));
+  applyShape();
+  renderModePicker();
+}
 function applyShape() {
   const sh = walk.shape,
     R = walk.R;
@@ -18072,7 +18081,7 @@ function syncSizeStepper() {
     (k) => label(sizeOf(sizeTo(options[k]))),
     (k) => pickSize(options[k]),
   );
-  // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere greyed
+  // its width under it (a torus's, a strip's, a bottle's: see widthsOf), its usual one marked; elsewhere none (hidden)
   const [rows, width] = TORI.includes(kind) && sel.selectedOptions[0] ? torusDims(kind, sizeOf(sel.value)) : [],
     widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 };
   sizeGauge(
@@ -18082,7 +18091,6 @@ function syncSizeStepper() {
     (k) => label(sizeOf(widths.list[k][1])),
     (k) => useSize(kind, widths.list[k][1]),
     widths.usual,
-    ({ w }) => (TORI.includes(surfaceOf(VARIANTS[w])) ? '' : 'On a torus, a Klein bottle or a Möbius strip only.'),
   );
   const starts = variantStarts();
   $('startRow').hidden = !starts;
@@ -18100,14 +18108,14 @@ function syncSizeStepper() {
 }
 // The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once;
-// byDefault: the default's notch, in the text's colour (none: −1); whyNot: greyed where it says why (shown then, see greyInput)
-function sizeGauge(el, n, i, preview, pick, byDefault = -1, whyNot = null) {
-  el.hidden = n < 2 && !whyNot?.({ w: tabVariant() });
+// byDefault: the default's notch, in the text's colour (none: −1)
+function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
+  el.hidden = n < 2;
   if (el.hidden) return;
   const range = Object.assign(document.createElement('input'), {
     type: 'range',
     min: 0,
-    max: Math.max(0, n - 1), // (none: greyed, see whyNot)
+    max: n - 1,
     step: 1,
     value: i,
   }); // (its tooltip the size's, on the gauge: see sizeTips)
@@ -18120,7 +18128,6 @@ function sizeGauge(el, n, i, preview, pick, byDefault = -1, whyNot = null) {
     ),
   );
   el.replaceChildren(range, notches);
-  if (whyNot) greyInput(range, el, whyNot);
 }
 // a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
 function greyInput(input, row, whyNot) {

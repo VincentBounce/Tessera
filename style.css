@@ -533,9 +533,6 @@ h3 {
 .size-gauge .notches .default {
   background: var(--text-color);
 } /* (the default's notch, see sizeGauge's byDefault) */
-.size-gauge:has(input:disabled) .notches .default {
-  background: var(--border-color);
-} /* (greyed, no default to tell: its notch as the others) */
 .stepper span small {
   display: block;
   font-size: var(--caption-text-size);

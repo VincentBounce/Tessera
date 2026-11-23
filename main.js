@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.648';
+const VERSION = '0.5.649';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22915,6 +22915,7 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
+  most: alternationOf(g.tiling ?? g.cells)?.colours, // (a piece's colours no more than its tiling's on the plane, see pieceByPiece)
   alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
 });
 // two neighbouring cells of a surface parted by a fold: a solid's across its edge (its faces), a rosette sphere's north and
@@ -22977,9 +22978,21 @@ function groundColours() {
 }
 // A surface's Tiles piece by piece: a solid's face by face, a rosette sphere's half by half, each a patch of its tiling's
 // plane coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold not counted: two cells alike may meet
-// there (apart: see cellsApart)
-const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = explorePalette()) {
+// there (apart: see cellsApart). Its colours no more than its tiling's on the plane (most): a cell DSatur gives one more (a
+// dodecahedron's hexagons along its pentagons' spokes, where the plane's pattern cannot close) the one its piece's neighbours
+// have least, two cells alike there as across a fold
+const pieceByPiece = (n, bySide, apart, most = Infinity) => {
+  const inPiece = (t, put) => bySide(t, (u) => !apart(t, u) && put(u)),
+    colour = dsatur(n, inPiece).colour;
+  for (let t = 0; t < n; t++)
+    if (colour[t] > most) {
+      const near = new Array(most + 1).fill(0);
+      inPiece(t, (u) => colour[u] <= most && near[colour[u]]++);
+      colour[t] = near.reduce((best, c, k) => (k && c < near[best] ? k : best), 1);
+    }
+  return colour;
+};
+function exploreLevels(nbr, n, { faces, kinds, apart, most, alternated }, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -22991,7 +23004,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = ex
     level = alternated
       ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
       : apart
-        ? pieceByPiece(n, bySide, apart)
+        ? pieceByPiece(n, bySide, apart, most)
         : dsatur(n, bySide).colour; // (a periodic grid, on the plane or a sheet, by its alternation: see alternationOf; a surface else piece by piece; else DSatur)
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
@@ -36568,13 +36581,15 @@ function alternationOf(kind) {
       for (const block of ALTERNATION_BLOCKS) {
         const colour = blockColours(xy, pairs, m, P, block);
         if (colour) {
-          found = { colour, k: block[0] * m, l: block[1] };
+          found = { colour, k: block[0] * m, l: block[1], P };
           break;
         }
       }
       if (found) break;
     }
-    alternationMemo[kind] = found && ((x, y) => found.colour[mod(x, found.k) * found.l + mod(y, found.l)] - 1);
+    alternationMemo[kind] =
+      found &&
+      Object.assign((x, y) => found.colour[mod(x, found.k) * found.l + mod(y, found.l)] - 1, { colours: found.P }); // (colours: as many as it takes)
   }
   return alternationMemo[kind];
 }

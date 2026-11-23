@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.668';
+const VERSION = '0.5.669';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43815,11 +43815,11 @@ $('startRow').addEventListener('mouseleave', () => {
   if ($('autoFit').checked) fitWhole();
 });
 for (const el of [$('sizeBox'), $('planeBox')]) el.tipColours = coloursUsed; // (Explore's Tiles' colours used, under its size: see coloursUsed)
-for (const el of [$('sizeBox'), $('planeBox')])
+for (const el of [$('sizeDown'), $('sizeUp'), $('planeDown'), $('planeUp')])
   el.onmouseenter = el.onmouseleave = (e) => {
     motifShown = e.type === 'mouseenter';
     statsDirty = true;
-  }; // a size hovered: its motif shown (see drawMotif): the cells redrawn, not the view (its grid behind as it was)
+  }; // a size's − or + hovered: its motif shown (see drawMotif): the cells redrawn, not the view (its grid behind as it was); its label and sliders, their tooltip only
 // Upright: the view from the front exactly, level (its heading kept), a drag turning it round the vertical only
 $('upright').addEventListener('change', () => {
   if (!$('upright').checked) return;

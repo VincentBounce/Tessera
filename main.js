@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.712';
+const VERSION = '0.5.713';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36079,16 +36079,18 @@ function parseHash(hash = location.hash) {
 // own, the last it wrote or read (linkHeld), else its hashchange still to come (a window of a few ms, a Life's batch back
 // between the two: rare by hand, two check passes in three till v0.4.845)
 let linkHeld = location.hash;
-// a click on a choice of the menu's graph (its key, data-choice: an edge, see choicesAt): the link it leads to a new entry of the
-// browser's history, its Back and Forward going from choice to choice (see hashchange); anything else (a step, the view) its
-// own entry's
-let choiceClicked = false;
-document.addEventListener('click', (e) => (choiceClicked ||= !!e.target.closest?.('[data-choice]')), true);
+// a hand's change of the setup (a choice of the menu's graph clicked, data-choice: an edge, see choicesAt; or any control of the
+// menu clicked or let go: a size, a width, a twist, Shape): the link it leads to a new entry of the browser's history, its Back
+// and Forward going from change to change (see hashchange); anything else (a step, the view, a setup built) its own entry's
+let handChanged = false;
+const markHandChange = (e) => (handChanged ||= e.isTrusted && !!e.target.closest?.('[data-choice], .panel')); // (isTrusted: the page's own events, a link opened, none)
+document.addEventListener('click', markHandChange, true);
+document.addEventListener('change', markHandChange, true);
 function syncLink() {
   if (busy || pendingChampion || location.hash !== linkHeld) return; // not while a setup is still being built
   const h = `#${toHash(getSetup())}`,
-    pushed = choiceClicked;
-  choiceClicked = false;
+    pushed = handChanged;
+  handChanged = false;
   if (h !== location.hash) history[pushed ? 'pushState' : 'replaceState'](null, '', h);
   linkHeld = location.hash;
   syncSaveButton();

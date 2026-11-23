@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.715';
+const VERSION = '0.5.716';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15670,22 +15670,26 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0, 
   let w = Y,
     h = 0; // w: offset away from the ring's centre (the north goes into the hole), h: height
   if (b > 1e-6 && knot.square) {
-    // folded at its four corners by b of a quarter turn each, its middle the top of a face (see TORUS_SHAPES' square)
-    const L = (Math.PI * tube) / 2;
+    // folded at its four corners by b of a quarter turn each, a corner at its middle row (its folds between its teams' bands,
+    // a face each: see teamBlocksFit), turned back an eighth of a turn by b: a face its top (see TORUS_SHAPES' square)
+    const L = (Math.PI * tube) / 2,
+      half = (b * Math.PI) / 4;
     let x = 0,
       y = 0,
-      way = 0,
+      way = -half,
       rest = Math.abs(Y);
-    for (let len = L / 2; rest > 0; len = L) {
-      // (from a face's middle to its corner, then corner to corner: past its seam on round, as a circle's)
-      const d = Math.min(rest, len);
+    while (rest > 0) {
+      // (corner to corner: past its seam on round, as a circle's)
+      const d = Math.min(rest, L);
       x += Math.cos(way) * d;
       y += Math.sin(way) * d;
       rest -= d;
-      way -= (b * Math.PI) / 2;
+      way -= 2 * half;
     }
-    w = Math.sign(Y) * x;
-    h = y + (L / 2) * b;
+    const across = Math.sign(Y) * x,
+      up = y + (L / Math.SQRT2) * b; // (its middle at 0, whole: half its diagonal under its top corner)
+    w = across * Math.cos(half) - up * Math.sin(half);
+    h = across * Math.sin(half) + up * Math.cos(half);
   } else if (b > 1e-6) {
     // it curls down round the tube, closing in front, so its middle becomes the top of the torus
     const rt = tube / b,

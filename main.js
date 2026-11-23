@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.640';
+const VERSION = '0.5.641';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17933,7 +17933,9 @@ for (const [name, kind, turned, unit] of [
 // in its colour; else '': a tooltip's section of its own, made when hovered, the grid built (see tipOf: its shape's, its size's)
 const coloursUsed = () => {
   if (!walk.life?.palette || exploreLook.rule !== 'tiles') return '';
-  const levels = [...new Set(walk.life.seed)].sort((a, b) => a - b);
+  const seen = new Uint8Array(walk.life.palette.length + 1); // (its levels 1 to its palette's: a mark each, no set of millions)
+  for (const l of walk.life.seed) seen[l] = 1;
+  const levels = [...seen.keys()].filter((l) => l > 0 && seen[l]);
   return `${levels.length} ${levels.map((l) => `<span style="color:${walk.life.palette[l - 1]}">●</span>`).join('')}`;
 };
 const surfaceCard = (kind, f, shown = true) => [

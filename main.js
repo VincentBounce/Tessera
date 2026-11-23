@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.697';
+const VERSION = '0.5.698';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15450,7 +15450,7 @@ const TORUS_SHAPES = [
     "A tube of square section round a triangle with rounded corners (twisted by a quarter, its four faces one: Penrose's triangle)",
     {
       line: (tube) => roundedTriangle(tube),
-      tube: 0.2,
+      tube: (0.2 * 4) / 3, // (its branch thicker than a knot's: the width's ¾ notch of a tube of 0.2)
       square: true,
       corners: 3,
     },

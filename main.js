@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.646';
+const VERSION = '0.5.647';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22915,8 +22915,79 @@ const surfaceColouring = (g) => ({
   faces: g.cellFaces ?? null,
   kinds: tileKinds(meshCorners(g)),
   apart: cellsApart(g),
-  alternated: g.cellPlaces && alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]), // (a sheet's by its plane cells)
+  alternated: g.cellPlaces
+    ? alternatedBy(g.tiling ?? g.cells, (t) => g.cellPlaces[t]) // (a sheet's by its plane cells)
+    : facePlaces(g) && ((t) => facePlaces(g)[t] && alternationOf(g.tiling ?? g.cells)(...facePlaces(g)[t])), // (a solid's face by face; a cell none placed, none)
 });
+// A solid's cells as its tiling's plane cells, face by face (Tiles: the plane's alternation on each face, its cells across a
+// fold not counted): each face laid flat (its points seen from the centre on the plane of its middle cell), that cell onto a
+// plane cell of as many corners, a corner on each corner in turn, the one laying the most of a dozen of its cells on the
+// plane's (their middles on theirs, as many corners). A face no patch of the plane (a pentagon's triangles, a rhombus's
+// squares, a carved cube's walls): no cell placed, coloured face by face (see pieceByPiece); null off a periodic tiling
+function facePlaces(g) {
+  const kind = g.tiling ?? g.cells;
+  if (!g.cellFaces || !alternationOf(kind)) return null;
+  return (g.facePlaces ??= (() => {
+    const { start, list } = meshCorners(g),
+      point = (v) => Array.from(g.verts.subarray(3 * v, 3 * v + 3)),
+      cornersOf = (t) => Array.from(list.subarray(start[t], start[t + 1]), point),
+      middle = (t) => Array.from(g.cen.subarray(3 * t, 3 * t + 3)),
+      faces = new Map(),
+      places = new Array(g.n).fill(null);
+    for (let t = 0; t < g.n; t++)
+      (faces.get(g.cellFaces[t]) ?? faces.set(g.cellFaces[t], []).get(g.cellFaces[t])).push(t);
+    for (const T of faces.values()) {
+      const towards = unit(T.reduce((sum, t) => sum.map((v, d) => v + g.cen[3 * t + d]), [0, 0, 0])),
+        seed = T.reduce((b, t) => (dot3(unit(middle(t)), towards) > dot3(unit(middle(b)), towards) ? t : b)),
+        S = cornersOf(seed),
+        N = unit(newellNormal(S.flat(), 0, S.length, [0, 0, 0])),
+        flat = (p) => (dot3(p, N) > 1e-9 ? p.map((v) => v / dot3(p, N)) : null),
+        [m0, q0] = [flat(middle(seed)), flat(S[0])];
+      if (!m0 || !q0) continue;
+      const u = unit(sub(q0, m0)),
+        w = cross(N, u),
+        r = Math.hypot(...sub(q0, m0)),
+        sample = T.filter((_, i) => i % Math.ceil(T.length / 12) === 0),
+        on = (map, t) => {
+          const z = map(middle(t)),
+            c = z && planeCellAt(kind, 1, ...z, 'free');
+          return (
+            c &&
+            Math.hypot(...sub(cellMiddle(kind, ...c), z)) < 0.05 * r * map.scale &&
+            planeCorners(kind, ...c).length === start[t + 1] - start[t] &&
+            c
+          );
+        };
+      let best = null;
+      for (let x = 0; x < gridCells(kind) && best?.hits !== sample.length; x++) {
+        const P = planeCorners(kind, x, 0),
+          M = cellMiddle(kind, x, 0);
+        if (P.length !== S.length) continue;
+        for (let e = 0; e < P.length && best?.hits !== sample.length; e++) {
+          const D = sub(P[e], M),
+            [scale, a] = [Math.hypot(...D) / r, Math.atan2(D[1], D[0])],
+            map = Object.assign(
+              (p) => {
+                const f = flat(p),
+                  [x2, y2] = f ? [dot3(sub(f, m0), u), dot3(sub(f, m0), w)] : [];
+                return (
+                  f && [
+                    M[0] + scale * (x2 * Math.cos(a) - y2 * Math.sin(a)),
+                    M[1] + scale * (x2 * Math.sin(a) + y2 * Math.cos(a)),
+                  ]
+                );
+              },
+              { scale },
+            ),
+            hits = sample.filter((t) => on(map, t)).length;
+          if (hits > (best?.hits ?? sample.length / 2)) best = { map, hits };
+        }
+      }
+      if (best) for (const t of T) places[t] = on(best.map, t) || null;
+    }
+    return places;
+  })());
+}
 // two neighbouring cells of a surface parted by a fold: a solid's across its edge (its faces), a rosette sphere's north and
 // south; null, none (a sheet's coloured by its grid's alternation, see surfaceColouring)
 function cellsApart(g) {
@@ -22987,12 +23058,13 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = ex
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
   };
-  if (rule === 'tiles')
-    level = alternated
-      ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
-      : apart
-        ? pieceByPiece(n, bySide, apart)
-        : dsatur(n, bySide).colour; // (a periodic grid, on the plane or a sheet, by its alternation: see alternationOf; a surface else piece by piece; else DSatur)
+  if (rule === 'tiles') {
+    // (a periodic grid, on the plane, a sheet or a solid's faces, by its alternation: see alternationOf; its cells none placed,
+    // a surface piece by piece, else DSatur)
+    const own = Array.from({ length: n }, (_, t) => (alternated ? alternated(t) : undefined)),
+      rest = !own.every(Number.isInteger) && (apart ? pieceByPiece(n, bySide, apart) : dsatur(n, bySide).colour);
+    level = Uint8Array.from(own, (c, t) => (Number.isInteger(c) ? 1 + c : rest[t]));
+  }
   if (rule === 'sides') {
     // (the faces' graph, their sides touching)
     const touching = Array.from({ length: faces.reduce((m, f) => Math.max(m, f), -1) + 1 }, () => new Set());
@@ -23032,18 +23104,15 @@ const exploreColours = (levels, P = explorePalette()) => {
 // the plane (Explore's Tiles there; 0: the plane's own, DSatur's more than 3, its lattice cell not cloned): measured once by
 // a run (2026-11-17, v0.5.288: every Explore grid against its tiling on the plane, the same name in the menu), its tile's
 // mark (see tilesBroken). The plane and a sheet (a torus, a Möbius strip, a Klein bottle), coloured by their grid's
-// alternation (see alternationOf: every periodic grid's, a block of its lattice cells cloned), never broken; a surface else piece by piece (see
-// pieceByPiece): its colours more inside a piece (a face, a rosette sphere's half), DSatur's
+// alternation (see alternationOf: every periodic grid's, a block of its lattice cells cloned), never broken, and a solid's
+// faces each a patch of its plane alike (see facePlaces); a surface else piece by piece (see pieceByPiece): its colours more
+// inside a piece (a pentagon's triangles, a carved cube's face, a rosette sphere's half), DSatur's
 const TILES_BROKEN = {
   exploreCubePitsSquares: [3, 2],
   exploreCubeBumpsSquares: [3, 2],
-  exploreTetrahedronKites: [4, 3],
-  exploreOctahedronKites: [4, 3],
   exploreDodecahedronTriangles: [3, 2],
   exploreDodecahedronKites: [4, 3],
   exploreDodecahedronHex: [4, 3],
-  exploreIcosahedronKites: [4, 3],
-  exploreStellaOctangulaKites: [4, 3],
   exploreRosettesFlower6: [5, 4],
   exploreRosettesFlower7: [5, 4],
   exploreRosettesFlower8: [5, 3],

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.689';
+const VERSION = '0.5.690';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7052,7 +7052,7 @@ const tile = ({
 }) => {
   const b = document.createElement('button');
   b.type = 'button';
-  if (choice) b.dataset.choice = choice; // (its choice's key, lifeTeams:3: a greyed one's path, see choicesAt)
+  if (choice) b.dataset.choice = choice; // (its choice's key, shape:Cube: a greyed one's path, see choicesAt)
   if (id) b.id = id;
   if (toggle) b.dataset.toggle = '';
   if (row) b.classList.add('row-tile');
@@ -11092,14 +11092,10 @@ const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // own navigation (navPick, modeLeft, nearestVariant, walksThere): the tabs, spaces, shapes, tilings, sides, walks' kinds, then a
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo). reads: the fields
 // a search asks (see pathsTo), the others' edges not made (their greyed words the costliest: colours', teams'); none, all
-function choicesAt(s, reads = null, teamsMemo = new Map()) {
-  // (each [key, the setup it leads to, its button's words]; teamsMemo: a search's, its colours by variant, one state all along)
+function choicesAt(s, reads = null) {
+  // (each [key, the setup it leads to, its button's words]; the teams no edges for now, their counts kept along: see
+  // DISCONTINUED.md, but Newcomer)
   const wants = (field) => !reads || reads.has(field);
-  const teamsAt = (v) => {
-    const k = `${v}|${s.lifeTeams}|${s.rule}`;
-    if (!teamsMemo.has(k)) teamsMemo.set(k, teamsOn(v, s.lifeTeams, null, s.rule));
-    return teamsMemo.get(k);
-  };
   const w = s.w,
     [kind, space, shape, rule] = NAV[w],
     out = [],
@@ -11109,7 +11105,6 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
         ...s,
         w: v,
         size: null,
-        lifeTeams: wants('lifeTeams') ? teamsAt(v) : s.lifeTeams,
         walkRule: VARIANTS[v].net ? walkRuleAt(s, v) : null,
         ...more,
       };
@@ -11146,12 +11141,7 @@ function choicesAt(s, reads = null, teamsMemo = new Map()) {
   const set = (key, field, v, why, words) => {
     if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]);
   }; // (a choice greyed there: no click)
-  if (VARIANTS[w].life && wants('lifeTeams'))
-    for (const k of TEAM_COUNTS)
-      set(`lifeTeams:${k}`, 'lifeTeams', k, lifeTeamsWhyNot(k, w, s.size, s.rule), TEAM_NAMES[k]);
   if (battleVariant(w)) {
-    if (wants('teams'))
-      for (const k of TEAM_COUNTS) set(`teams:${k}`, 'teams', k, teamsWhyNot(k, w, s.size, s.startNo), TEAM_NAMES[k]);
     if (s.teams > 1 && wants('battleRule'))
       BATTLE_RULES.forEach(([kind, name], p) =>
         set(`battleRule:${p}`, 'battleRule', p, battleRuleWhyNot(kind, w), name),
@@ -11256,8 +11246,7 @@ const OFF_GRAPH = {
 // the menu's edges found from the setup in use, by their setup and the fields asked: one search's, kept for the next greyed
 // control hovered (a row's tiles ask the same: the four symmetries, each 170 ms of the same edges), while that setup is the
 // same: the menu is a graph of setups (see choicesAt), a tile drawn again changes none of it
-const menuEdges = new Map(),
-  menuTeams = new Map(); // (its colours by variant, see choicesAt's teamsMemo: as long)
+const menuEdges = new Map();
 let menuEdgesFrom = null; // (the setup they were found from)
 // a greyed control's paths (see pathsTo), found once a setup and kept on it (holder) while the setup in use is the same:
 // before v0.5.458 found again each time its tile was drawn, and Display's tiles are drawn as the view turns (Display › Age
@@ -11275,7 +11264,6 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
     seen = new Set([setupKey(start)]);
   if (menuEdgesFrom !== setupKey(start)) {
     menuEdges.clear();
-    menuTeams.clear();
     menuEdgesFrom = setupKey(start);
   } // (another setup in use: the menu's edges found from it anew)
   const w = start.w,
@@ -11284,7 +11272,7 @@ function pathsTo(fits, budget = 5000, judgedAt = null) {
   const reads = new Set(['w']),
     edges = (s) => {
       const key = `${setupKey(s)}|${[...reads].sort()}`;
-      if (!menuEdges.has(key)) menuEdges.set(key, choicesAt(s, reads, menuTeams));
+      if (!menuEdges.has(key)) menuEdges.set(key, choicesAt(s, reads));
       return menuEdges.get(key);
     },
     judged = (t) =>
@@ -28760,7 +28748,6 @@ function renderTeams() {
         text: TEAM_NAMES[k],
         title: `${k === 1 ? 'One colour: alive or dead' : `${k} teams: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
         on: k === lifeTeams,
-        choice: `lifeTeams:${k}`,
         whyNot: ({ w, size, rule }) => lifeTeamsWhyNot(k, w, size, rule),
         mark: colourMissing(k),
         byDefault: k === 1 ? 'yes' : '',
@@ -28839,7 +28826,6 @@ function walkTeamTiles() {
       on: k === (battleOn() ? walkTeams : 1),
       byDefault: k === 1 ? 'yes' : '',
       whyNot: ({ w: v, size, startNo: j }) => teamsWhyNot(k, v, size, j),
-      choice: `teams:${k}`,
       click: () => {
         if (k !== walkTeams) {
           walkTeams = k;

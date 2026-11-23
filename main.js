@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.693';
+const VERSION = '0.5.694';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14450,6 +14450,9 @@ const pinwheelSizes = (least) => {
   return sizes;
 };
 const pinwheelCuts = (cells, least) => Math.max(0, Math.round(Math.log(cells / least) / Math.log(5)));
+// its size in words, as its motif is drawn (see motifOf): its bricks, each two halves, each 5ⁿ triangles
+const pinwheelHow = (cells, n) =>
+  `{y:${formatNumber(cells / (2 * 5 ** n))} brick${cells === 2 * 5 ** n ? '' : 's'}} × {s:2 halves each} × {k:${formatNumber(5 ** n)} triangles each}`;
 // the pinwheel's brick, a rectangle L × 2L (L = √5ⁿ, along x and y), its two triangles across its diagonal (their right
 // angle's corner, long leg's end, short leg's), cut n times: a solid's face two side by side, a ring's sheet laid with them
 function pinwheelBrick(n) {
@@ -14495,6 +14498,7 @@ function pinwheelSolidMesh(k, cells) {
     ),
     {
       cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
+      halves: Int32Array.from(tiles, (_, t) => Math.floor(t / 5 ** n)), // (its bricks' halves in turn, 5ⁿ cells each: see motifOf)
       solid: { corners: solidCorners(SURFACES[k].mesh(1)), centres: solidFaceCentres(SURFACES[k].mesh(1)) }, // (its solid's)
       asManyCells: true, // (its tiles turned every way, none alike face to face: its colours' parts as many cells, see spotColours)
     },
@@ -14553,13 +14557,25 @@ function pinwheelSheet(k, cells, shift = 0) {
       Math.ceil(Math.max(...xs) / (2 - d) / R - 1e-9),
     ]),
     tris = [];
+  const halves = [],
+    bricks = new Map(),
+    brickOf = (i, j) => {
+      // (a brick by its middle on the sheet, brought within it as its surface glues it: one id a brick, see motifOf)
+      const [x, y] = onSheet([2 * R * i + R, R * j + R / 2]),
+        k = Math.floor(x / L + 1e-9),
+        key = `${Math.round((x - k * L) * 1e3)},${Math.round(((((y - k * shift) % W) + W) % W) * 1e3)}`;
+      return bricks.get(key) ?? bricks.set(key, bricks.size).get(key);
+    };
   for (let i = i0; i < i1; i++)
     for (let j = j0; j < j1; j++)
-      for (const T of brick) {
+      brick.forEach((T, q) => {
         const P = T.map(([x, y]) => onSheet([x + 2 * R * i, y + R * j])),
           [u, v] = [0, 1].map((d) => (P[0][d] + P[1][d] + P[2][d]) / 3);
-        if (u >= -1e-6 && u < L - 1e-6 && v >= -1e-6 && v < W - 1e-6) tris.push(signedArea(P) > 0 ? P : P.reverse()); // (a middle on a seam on its near side, its twin past it not)
-      }
+        if (u >= -1e-6 && u < L - 1e-6 && v >= -1e-6 && v < W - 1e-6) {
+          tris.push(signedArea(P) > 0 ? P : P.reverse()); // (a middle on a seam on its near side, its twin past it not)
+          halves.push(2 * brickOf(i, j) + (q < brick.length / 2 ? 0 : 1)); // (its brick's first triangle's 5ⁿ, then its second's)
+        }
+      });
   // its tiles near a seam glued past it (i along, turned over past a Möbius strip's or a Klein bottle's end; j across, but
   // on a Möbius strip), for the corners of the sides across it
   const twist = F.fold !== 'torus',
@@ -14576,6 +14592,7 @@ function pinwheelSheet(k, cells, shift = 0) {
     sides,
     twist,
     tiles: polys.map((c) => [...c, ...Array(sides - c.length).fill(c.at(-1))]),
+    halves,
     mids: tris.flatMap((T) => [0, 1].map((d) => (T[0][d] + T[1][d] + T[2][d]) / 3)),
   };
 }
@@ -14588,7 +14605,10 @@ function pinwheelRingMesh(k, cells, twist = 0) {
   const shift = twist * pinwheelFrame(k, cells).R, // (its twist in bricks round the tube)
     sheet = pinwheelSheet(k, cells, shift),
     { L, W, sides, mids } = sheet,
-    marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true, seamTwist: shift }; // (asManyCells: see pinwheelSolidMesh)
+    marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true, seamTwist: shift }, // (asManyCells: see pinwheelSolidMesh)
+    halves = Int32Array.from(
+      F.fold === 'mobius' ? [...sheet.halves, ...sheet.halves.map((h) => h + 2 * sheet.halves.length)] : sheet.halves,
+    ); // (a Möbius strip's back its own)
   if (F.fold === 'mobius') {
     const { verts, tiles, uv } = mobiusFaces(sheet.tiles, L, W);
     return (meshCache[key] = Object.assign(finishMesh(verts, tiles, sides, cells, null), marks, {
@@ -14596,6 +14616,7 @@ function pinwheelRingMesh(k, cells, twist = 0) {
       L,
       W,
       front: sheet.tiles.length,
+      halves,
       uv: new Float64Array(uv),
       uvMid: new Float64Array([...mids, ...mids]),
     }));
@@ -14610,6 +14631,7 @@ function pinwheelRingMesh(k, cells, twist = 0) {
     );
   return (meshCache[key] = Object.assign(mesh, marks, {
     klein: sheet.twist,
+    halves,
     uv: new Float64Array(tiles.flat(2)),
     uvMid: new Float64Array(mids),
   }));
@@ -18095,6 +18117,7 @@ for (const k of PINWHEEL_SOLIDS) {
     radius: (cells) => SURFACES[k].radius(edge(cells)),
     edge: (cells) => Math.round(10 * edge(cells)) / 10,
     ownSizes: () => pinwheelSizes(4 * pinwheelFaces(k).length),
+    how: (cells) => pinwheelHow(cells, pinwheelCuts(cells, 4 * pinwheelFaces(k).length)),
     tiles: (cells) => cells,
     unit: 'triangles',
     tiling: 'pinwheel',
@@ -18107,6 +18130,7 @@ for (const k of Object.keys(PINWHEEL_SHEETS))
     mesh: (size) => pinwheelRingMesh(k, untwisted(size), torusTwist(size, k)),
     radius: (size) => pinwheelFrame(k, untwisted(size)).L / (2 * Math.PI),
     ownSizes: () => pinwheelSizes(pinwheelLeast(k)),
+    how: (size) => pinwheelHow(untwisted(size), pinwheelFrame(k, untwisted(size)).n),
     tiles: (size) => untwisted(size),
     unit: 'triangles',
     tiling: 'pinwheel',
@@ -28287,6 +28311,16 @@ const latticeCellTiles = (g) =>
 // tetrakis square, a square of a solid of squares and triangles: blue), violet; its first cell green when it has several; a
 // solid's face red round it (its sector blue); a solid of hexagons' corners' cells gold
 function motifOf(g, t) {
+  if (g.halves) {
+    // (a pinwheel's: its brick, what repeats; its half, a big triangle (its two halves alike by a half turn only); its cell)
+    const h = g.halves[t],
+      of = (keep) => [...g.halves.keys()].filter((u) => keep(g.halves[u]));
+    return [
+      [motifColour(), of((x) => x >> 1 === h >> 1)],
+      [cssColour('--sector-color'), of((x) => x === h)],
+      [cssColour('--cell-color'), [t]],
+    ];
+  }
   const m = g.kite ? 3 : (g.per ?? 1), // (a kite's triangle, 3 kites; a cell cut again, its cells: see HULL_CUTS)
     motif = g.rosette
       ? g.middles[t >= g.south ? 1 : 0]

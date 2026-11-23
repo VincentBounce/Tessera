@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.683';
+const VERSION = '0.5.684';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18225,7 +18225,7 @@ function syncSizeStepper() {
   // (a torus that turns: its turn too, 0° or its own)
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : ''; // (as its tiles lie)
   const label = (f) => {
-    const twist = torusTwists(kind, f) ? ` · +${torusTwist(f)}` : ''; // (its twist, see torusTwist)
+    const twist = torusTwists(kind, f).length ? ` · +${torusTwist(f)}` : ''; // (its twist, see torusTwist)
     $('sizeLabel').innerHTML = `${sizeShape(kind, f)}${turn}${twist}<small>${shortCells(sizeCells(kind, f))}</small>`;
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
@@ -18256,11 +18256,12 @@ function syncSizeStepper() {
     widths.usual,
   );
   // its twist under them (a torus of rows: see torusTwists), the straight one marked; elsewhere none
-  const twisted = (k) => sizeOf(withTwist(sel.value, k));
+  const twists = sel.selectedOptions[0] ? torusTwists(kind, sel.value) : [],
+    twisted = (k) => sizeOf(withTwist(sel.value, twists[k]));
   sizeGauge(
     $('twistGauge'),
-    sel.selectedOptions[0] ? torusTwists(kind, sel.value) : 0,
-    torusTwist(sel.value),
+    twists.length,
+    twists.findLastIndex((t) => t <= torusTwist(sel.value)),
     (k) => label(twisted(k)),
     (k) => useSize(kind, twisted(k)),
     0,
@@ -18364,7 +18365,7 @@ function sizeTo(option) {
   const now = Number(option.value),
     to =
       share && !option.dataset.own ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1])) : option.value;
-  return withTwist(to, Math.min(torusTwist(sel.value), Math.max(0, torusTwists(kind, to) - 1))); // (its twist kept, as far as it goes)
+  return withTwist(to, torusTwists(kind, to).findLast((t) => t <= torusTwist(sel.value)) ?? 0); // (its twist kept, as far as it goes)
 }
 const pickSize = (option) => useSize(surfaceOf(VARIANTS[tabVariant()]), sizeTo(option));
 // a size used: the menu's (a size of its own added, see selectSize), the surface built again
@@ -18378,15 +18379,17 @@ function useSize(kind, size) {
 // taller or wider)
 const sizeOf = (v) => (/[x+]/.test(String(v)) ? String(v) : Number(v)); // (a size as the list has it, "16" or "16x10": 16, or "16x10"; a twist's, "16+3", "16x10+3")
 // A torus's twist: its sheet glued k cells of its lattice further round the tube at its seam round the ring ((x + nu, y) ≡
-// (x, y + k): its tube a helix closing k cells on), a size's "+k" (72x180+3); twists, how many it takes at a size: 0 to half
-// its lattice cells round the tube (past it, the same mirrored), its lattice cell its steps' (Cairo's 2 squares), on a torus
-// of rows only (a tiling's, Cairo's; none elsewhere)
+// (x, y + k): its tube a helix closing k cells on), a size's "+k" (72x180+3); twists, those it takes at a size: 0 to half
+// its lattice cells round the tube (past it, the same mirrored), its lattice cell its steps' (Cairo's 2 squares), a square
+// section's by quarter turns (0, ¼, ½), on a torus of rows only (a tiling's, Cairo's; none elsewhere)
 const torusTwist = (size) => Number(String(size).split('+')[1] ?? 0),
   withTwist = (size, k) => `${String(size).split('+')[0]}${k ? `+${k}` : ''}`,
-  torusTwists = (kind, size) =>
-    SURFACES[kind]?.perRow && kind.startsWith('torus') // (a surface's: none on the plane)
-      ? Math.floor(torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1) / 2) + 1
-      : 0,
+  torusTwists = (kind, size) => {
+    if (!SURFACES[kind]?.perRow || !kind.startsWith('torus')) return []; // (a surface's: none on the plane)
+    const cells = torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube)
+      step = TORUS_SHAPES[shapeOn('torus')][2].square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
+    return Number.isInteger(step) ? Array.from({ length: Math.floor(cells / 2 / step) + 1 }, (_, q) => q * step) : [0];
+  },
   twistedRow = (i, j, nu, k) => j - (k * i) / nu; // (a sheet point's row as its twist lays it: k rows on once round)
 const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeOf($('gridSizeField').value)); // (the size played: the menu's the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given

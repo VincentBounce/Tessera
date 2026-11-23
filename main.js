@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.694';
+const VERSION = '0.5.695';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14451,8 +14451,11 @@ const pinwheelSizes = (least) => {
 };
 const pinwheelCuts = (cells, least) => Math.max(0, Math.round(Math.log(cells / least) / Math.log(5)));
 // its size in words, as its motif is drawn (see motifOf): its bricks, each two halves, each 5ⁿ triangles
-const pinwheelHow = (cells, n) =>
-  `{y:${formatNumber(cells / (2 * 5 ** n))} brick${cells === 2 * 5 ** n ? '' : 's'}} × {s:2 halves each} × {k:${formatNumber(5 ** n)} triangles each}`;
+// (skewed: laid on a rhombus, its right triangles skewed with it)
+const pinwheelHow = (cells, n, skewed = false) => {
+  const right = skewed ? 'right triangles skewed with its face' : 'right triangles';
+  return `{y:${formatNumber(cells / (2 * 5 ** n))} brick${cells === 2 * 5 ** n ? '' : 's'}} × {s:2 ${right} each (its halves)} × {k:${formatNumber(5 ** n)} ${right} each${skewed ? '' : ' (legs 1 and 2)'}}`;
+};
 // the pinwheel's brick, a rectangle L × 2L (L = √5ⁿ, along x and y), its two triangles across its diagonal (their right
 // angle's corner, long leg's end, short leg's), cut n times: a solid's face two side by side, a ring's sheet laid with them
 function pinwheelBrick(n) {
@@ -18117,7 +18120,7 @@ for (const k of PINWHEEL_SOLIDS) {
     radius: (cells) => SURFACES[k].radius(edge(cells)),
     edge: (cells) => Math.round(10 * edge(cells)) / 10,
     ownSizes: () => pinwheelSizes(4 * pinwheelFaces(k).length),
-    how: (cells) => pinwheelHow(cells, pinwheelCuts(cells, 4 * pinwheelFaces(k).length)),
+    how: (cells) => pinwheelHow(cells, pinwheelCuts(cells, 4 * pinwheelFaces(k).length), k !== 'cube'),
     tiles: (cells) => cells,
     unit: 'triangles',
     tiling: 'pinwheel',
@@ -28349,7 +28352,11 @@ function outlineRibbons(D, name, key, g, sh, R, sets, width = (s) => Math.max(2,
   for (const [colour, tiles] of sets()) {
     const from = data.count,
       rim = rimSides(
-        tiles.flatMap((t) => Array.from({ length: k }, (_, j) => [t, j])),
+        tiles.flatMap((t) =>
+          Array.from({ length: k }, (_, j) => [t, j]).filter(
+            ([, j]) => g.poly[k * t + j] !== g.poly[k * t + ((j + 1) % k)],
+          ),
+        ), // (a repeated corner's side, of length 0, none: a tile of fewer corners, see finishMesh)
         ([t, j]) => [g.poly[k * t + j], g.poly[k * t + ((j + 1) % k)]].sort().join('|'),
       );
     for (const [t, j] of rim) {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.688';
+const VERSION = '0.5.689';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11668,8 +11668,13 @@ function renderModePicker() {
         RING_SHAPES[ring],
         shapeOn(ring, w),
         (k) => {
-          seek(surfaceOf(VARIANTS[w])); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
+          const kind = surfaceOf(VARIANTS[w]);
+          seek(kind); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
           ringShape[ring] = k;
+          if (!RING_SHAPES[ring][k][2].square) return;
+          fillGridSizes(kind, VARIANTS[w].initial); // (a square section's twist its slider's default, its middle; its sizes first, a pinwheel's)
+          const t = torusTwists(kind, $('gridSizeField').value);
+          selectSize(kind, withTwist($('gridSizeField').value, t[t.length >> 1]));
         },
         null,
         () => (ring === 'klein' && walk.variant === tabVariant() ? reshapeKlein() : compute()), // (the bottle shown: its form only; a torus's shapes their own sizes: built again)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.638';
+const VERSION = '0.5.639';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11338,7 +11338,7 @@ const enablersFor = (fits, judgedAt = null) =>
     .filter(Boolean);
 // a rule card's greyed words in a variant (see rulesFor): its why there, or none there at all
 const ruleWhyNot = (v, source) => {
-  const c = rulesFor(v).find((r) => r.source === source);
+  const c = (rulesForMemo[v] ??= rulesFor(v)).find((r) => r.source === source); // (its cards once a variant, as the graph keeps them: see choicesAt)
   return c ? c.why : 'Not a rule here.';
 };
 // whether a rules list has a card for the rule in use (else it is your own: Custom rule)

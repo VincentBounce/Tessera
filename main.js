@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.698';
+const VERSION = '0.5.699';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15450,7 +15450,8 @@ const TORUS_SHAPES = [
     "A tube of square section round a triangle with rounded corners (twisted by a quarter, its four faces one: Penrose's triangle)",
     {
       line: (tube) => roundedTriangle(tube),
-      tube: (0.2 * 4) / 3, // (its branch thicker than a knot's: the width's ¾ notch of a tube of 0.2)
+      tube: (0.2 * 4) / 3, // (its branch thicker than a knot's: a tube of 0.2's width at ¾)
+      notch: 1, // (its usual the width's 2nd notch, see widthShares)
       square: true,
       corners: 3,
     },
@@ -18428,7 +18429,7 @@ function sizeTo(option) {
     usual = rows && torusDims(kind, rows)[1],
     share =
       rows &&
-      (WIDTH_SHARES.find((s) => torusDims(kind, widthSize(kind, rows, Math.round(s * usual)))[1] === width) ??
+      (widthShares().find((s) => torusDims(kind, widthSize(kind, rows, Math.round(s * usual)))[1] === width) ??
         width / usual); // (a width of the gauge, its share as it is: no drift by roundings from height to height)
   const now = Number(option.value),
     to =
@@ -18498,10 +18499,15 @@ const widthSize = (kind, rows, width, twist) =>
 // shares of its usual one at every height (WIDTH_SHARES), and the one in use (a link's: a notch of its own), as its tiling allows
 // them, no more cells than CELLS.most: [width, size] each, narrowest first, and the usual one's place
 const WIDTH_SHARES = [1 / 2, 3 / 4, 1, 3 / 2, 2];
+// the widths' shares of its usual one, its usual at its shape's notch (the Triangle's the 2nd: see TORUS_SHAPES), the 3rd else
+const widthShares = () => {
+  const at = WIDTH_SHARES[TORUS_SHAPES[shapeOn('torus')][2].notch ?? 2];
+  return WIDTH_SHARES.map((s) => s / at);
+};
 function widthsOf(kind, rows, width) {
   const usual = torusDims(kind, rows)[1],
     widths = new Map();
-  for (const c of [...WIDTH_SHARES.map((share) => Math.round(share * usual)), width]) {
+  for (const c of [...widthShares().map((share) => Math.round(share * usual)), width]) {
     const size = widthSize(kind, rows, c),
       w = torusDims(kind, size)[1];
     if (!widths.has(w) && SURFACES[kind].tiles(size) <= CELLS.most) widths.set(w, w === usual ? rows : size);

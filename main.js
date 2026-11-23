@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.680';
+const VERSION = '0.5.681';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15397,9 +15397,10 @@ const TORUS_SHAPES = [
       curve: (t) => [Math.cos(t) + 0.2 * Math.cos(2 * t), Math.sin(t) - 0.2 * Math.sin(2 * t), 0],
       tube: 0.2,
       square: true,
+      corners: 3,
     },
   ],
-]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section)
+]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
@@ -15593,10 +15594,14 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0) 
   const b = Math.min(1, 3 * m),
     c = Math.max(0, (3 * m - 1) / 2); // tube bend (a third: rolled, as fast whatever comes after), then ring bend
   const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2], // (form: its shape's, once for all its points)
-    turned = knot.square ? Math.trunc((4 * twist) / nv) * (nv / 4) : twist; // (its twist, its rows: its section turned as far as it lies on itself, a circle all of it, a square by quarters; the rest its cells slid round it, see torusTwist)
+    quarters = Math.trunc((4 * twist) / nv), // (a square's section turned by whole quarters, the rest its cells slid round it)
+    corners = knot.corners ?? 1,
+    whole = knot.square ? [0, 1, -1, 2, -2].map((m) => quarters + 4 * m).find((r) => r % corners === 0) : 0, // (as many quarters at each of its line's turns: the same quarters once round, a full turn more or less, its corners alike)
+    turned = knot.square ? (whole * nv) / 4 : twist, // (its twist, its rows: its section turned as far as it lies on itself, a circle all of it, a square by quarters; see torusTwist)
+    slid = knot.square ? twist - (quarters * nv) / 4 : 0;
   // flat, the sheet lies in the east–south plane, as the plane's grids and a picture read: i towards the east, j towards the south
   const X = (i / nu - 0.5) * 2 * Math.PI,
-    Y = (twistedRow(i, j, nu, twist - turned) / nv - 0.5) * 2 * Math.PI * tube;
+    Y = (twistedRow(i, j, nu, slid) / nv - 0.5) * 2 * Math.PI * tube;
   let w = Y,
     h = 0; // w: offset away from the ring's centre (the north goes into the hole), h: height
   if (b > 1e-6 && knot.square) {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.705';
+const VERSION = '0.5.706';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28669,7 +28669,7 @@ function torusBlocks(K, g = walk.surface) {
   if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
-      const fits = !g?.nv || (g.nv % b === 0 && (g.seamTwist ?? 0) % (g.nv / b) === 0), // (a twisted torus's: its seam's shift whole blocks, each glued onto one of its colour)
+      const fits = !g?.nv || (g.nv % b === 0 && (b === 1 || (g.seamTwist ?? 0) % (g.nv / b) === 0)), // (a twisted torus's: its seam's shift whole blocks, a band round the tube onto itself)
         e = (fits ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
       if (e < err) {
         err = e;

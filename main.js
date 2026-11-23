@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.674';
+const VERSION = '0.5.675';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18348,7 +18348,7 @@ const sizeOf = (v) => (/[x+]/.test(String(v)) ? String(v) : Number(v)); // (a si
 const torusTwist = (size) => Number(String(size).split('+')[1] ?? 0),
   withTwist = (size, k) => `${String(size).split('+')[0]}${k ? `+${k}` : ''}`,
   torusTwists = (kind, size) =>
-    kind.startsWith('torus') && SURFACES[kind]?.perRow
+    SURFACES[kind]?.perRow && kind.startsWith('torus') // (a surface's: none on the plane)
       ? Math.floor(torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1) / 2) + 1
       : 0,
   twistedRow = (i, j, nu, k) => j - (k * i) / nu; // (a sheet point's row as its twist lays it: k rows on once round)

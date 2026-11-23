@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.636';
+const VERSION = '0.5.637';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18196,7 +18196,7 @@ const leastMeshes = remember('leastMeshes', {}),
 // a surface's solid's faces, by its cells' (see cellFaces); none off a solid (a torus, a globe), a ring's known by its kind
 // (no mesh built: a greyed control's search judges hundreds of them, 2.3 s a hover of Sides till v0.5.360)
 const facesCount = (kind) => {
-  const g = SURFACES[kind]?.sizes && !TORI.includes(kind) && leastMesh(kind);
+  const g = !TORI.includes(kind) && SURFACES[kind]?.sizes && leastMesh(kind); // (a ring first: its sizes a ladder of counts)
   return g?.cellFaces ? g.cellFaces.reduce((m, f) => Math.max(m, f + 1), 0) : 0;
 };
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a

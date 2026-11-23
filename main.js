@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.661';
+const VERSION = '0.5.662';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15632,16 +15632,15 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
     const s = (y - up * m) / nv - 0.5;
     return ringRoll((x / nu - 0.5) * 2 * Math.PI, kleinRolls()(s, m, tube), m);
   }
-  // (in thirds: rolled into a straight tube as a torus is, turned round its axis, then its circles carried to the bottle)
+  // (rolled into a straight tube as a torus is while turned round its axis, to ⅔; then its circles carried to the bottle)
   if (m >= 1) return kleinOnBottle(x, y, nu, nv, up);
-  if (m <= 1 / 3) return torusPoint(x, y, nu, nv, 1.5 * m, tube);
-  if (m <= 2 / 3) return kleinStraightTube(x, y, nu, nv, tube, 3 * m - 1);
+  if (m <= 2 / 3) return kleinStraightTube(x, y, nu, nv, tube, 1.5 * m);
   return kleinOnCircle(kleinCircle(x, y, nu, nv, tube, up), m);
 }
-// The straight tube (torusPoint's, rolled, its sheet's middle on top) turned round its axis, east, by t of a quarter turn: its
-// middle then south, as the bottle shows it (see kleinOnBottle), its circles only bent from there
+// The sheet rolled into the straight tube by t (torusPoint's, its sheet's middle on top) while turned round its axis, east, by t
+// of a quarter turn: at t = 1 its middle south, as the bottle shows it (see kleinOnBottle), its circles only bent from there
 const kleinStraightTube = (x, y, nu, nv, tube, t) =>
-  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, 0.5, tube));
+  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, t / 2, tube));
 // a sheet point on the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned
 // over (u to π − u), round the tube from the sheet's mirror line (up: Cairo's half square, so that the bottle glues as its
 // sheet does), its sheet half a turn round the tube (its middle, its pictures, in front)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.709';
+const VERSION = '0.5.710';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15616,7 +15616,8 @@ function bentLine(knot, mu) {
       [, ...B] = shapeLine(knot, X(k + e + 1)),
       Q = (i, j) => B.reduce((sum, b, c) => sum + b[i] * A[c][j], 0), // (the turn from A to B: B Aᵀ)
       angle = Math.acos(Math.max(-1, Math.min(1, (Q(0, 0) + Q(1, 1) + Q(2, 2) - 1) / 2))),
-      axis = unit([Q(2, 1) - Q(1, 2), Q(0, 2) - Q(2, 0), Q(1, 0) - Q(0, 1)]);
+      spin = [Q(2, 1) - Q(1, 2), Q(0, 2) - Q(2, 0), Q(1, 0) - Q(0, 1)],
+      axis = Math.hypot(...spin) > 1e-12 ? unit(spin) : A[0]; // (a straight step, a Triangle's side's: no turn, any axis)
     return [A.map((f) => dot3(axis, f)), angle];
   });
   const last = n + 2 * e,

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.660';
+const VERSION = '0.5.661';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15597,7 +15597,10 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
   if (c < 1e-6) return [X, -w, h];
   const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2]; // (form: its shape's, once for all its points)
   if (!knot.p) {
-    // (the ring: bent all along at once, a length L into an arc of a circle whose circumference is L / c)
+    // the ring: bent all along at once, a length L into an arc of a circle whose circumference is L / c. bentLine would make
+    // the same arc (its turn the same everywhere: a circle, to 10⁻⁷), only centred otherwise; but a circle has its formula,
+    // a sine and a cosine a point, where bentLine makes its line again each step: 7.8 ms a step of Morph against 14.9 on
+    // 40,960 cells (2026-11-23). A knot's turns change along it: no formula, its line made step by step (see bentLine)
     const rr = 1 / c,
       ph = X / rr;
     return [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h]; // (− c: no jump from the flat sheet)

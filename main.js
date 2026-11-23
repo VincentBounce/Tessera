@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.655';
+const VERSION = '0.5.656';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22967,13 +22967,13 @@ function fitLifeTeams(variant) {
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
 const EXPLORE_RULES = [
   ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
-  ['sides', 'Sides', "Two faces of the solid touching never the same colour (a solid's only)"],
-  ['kind', 'Kind of tile', "A colour for each tile's shape, by its number of sides"],
   [
     'distance',
     'Distance',
     "The steps from the grid's middle, side by side: a ring each, in the palette's colours in turn",
   ],
+  ['kind', 'Kind of tile', "A colour for each tile's shape, by its number of sides"],
+  ['sides', 'Sides', "Two faces of the solid touching never the same colour (a solid's only)"],
 ];
 const EXPLORE_PALETTES = [
   ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B'], 'Baked clay, apricot and a sea green'],

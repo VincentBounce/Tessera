@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.654';
+const VERSION = '0.5.655';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -22969,7 +22969,11 @@ const EXPLORE_RULES = [
   ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
   ['sides', 'Sides', "Two faces of the solid touching never the same colour (a solid's only)"],
   ['kind', 'Kind of tile', "A colour for each tile's shape, by its number of sides"],
-  ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
+  [
+    'distance',
+    'Distance',
+    "The steps from the grid's middle, side by side: a ring each, in the palette's colours in turn",
+  ],
 ];
 const EXPLORE_PALETTES = [
   ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B'], 'Baked clay, apricot and a sea green'],
@@ -23121,6 +23125,7 @@ function groundColours() {
         M ? cellNeighbours(M.start, M.list, M.nv) : (walk.life?.nbr ?? cornerNeighbours(g)),
         M ? M.start.length - 1 : n,
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
+        middleCells(),
         palette,
       ),
       colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA)),
@@ -23139,7 +23144,7 @@ function groundColours() {
 // plane coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold not counted: two cells alike may meet
 // there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = explorePalette()) {
+function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, middle, palette = explorePalette()) {
   const side = sideOf(nbr),
     P = palette.length,
     rule = exploreLook.rule === 'sides' && !faces ? 'tiles' : exploreLook.rule;
@@ -23166,16 +23171,15 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated }, palette = ex
   }
   if (rule === 'distance') {
     const steps = new Int32Array(n).fill(-1),
-      queue = [0];
-    steps[0] = 0;
+      queue = [...middle]; // (its middle's cells, all at step 0: see middleCells)
+    for (const t of queue) steps[t] = 0;
     for (let i = 0; i < queue.length; i++)
       for (let q = nbr.start[queue[i]]; q < nbr.start[queue[i] + 1]; q++)
         if (side[q] && steps[nbr.list[q]] < 0) {
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    const far = steps.reduce((m, x) => Math.max(m, x), 1); // (a loop: a spread of a large grid's overflows the stack)
-    for (let t = 0; t < n; t++) level[t] = 1 + Math.round((Math.max(0, steps[t]) / far) * (P - 1));
+    for (let t = 0; t < n; t++) level[t] = 1 + (Math.max(0, steps[t]) % P); // (a ring a step, the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
     return level;
   }
   return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)
@@ -23285,15 +23289,14 @@ function renderExplore() {
 // freshWalk's (a grid's own given after, by its builder)
 function startLife(seq, rule, n, grid) {
   const explore = !!VARIANTS[walk.variant].explore;
-  if (explore) grid.seed = exploreLevels(grid.nbr, n, grid); // (Explore: each cell alive in its colour, see exploreLevels)
   walk.life = {
     B: rule.B,
     S: rule.S,
     share: rule.share,
     C: rule.C,
     two: rule.two,
-    colours: explore ? exploreColours(grid.seed).length : rule.colours,
-    palette: explore ? exploreColours(grid.seed) : null,
+    colours: rule.colours,
+    palette: null,
     ruleText: ruleBody(rule.text),
     loops: rule.loops ?? null,
     loopStates: rule.loopStates,
@@ -23303,6 +23306,12 @@ function startLife(seq, rule, n, grid) {
     ...grid,
     alive: new Uint8Array(n),
   };
+  if (explore) {
+    // (Explore: each cell alive in its colour, see exploreLevels; once its grid is the walk's, for its middle)
+    const seed = exploreLevels(grid.nbr, n, grid, middleCells()),
+      palette = exploreColours(seed);
+    Object.assign(walk.life, { seed, palette, colours: palette.length });
+  }
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n); // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)
   lifeCells(walk.life);
   countSeed(walk.life);
@@ -23341,6 +23350,7 @@ function buildLife(seq, variant) {
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
   const seed = surfaceSeed(seq, g.n, rule.colours, rule.C);
+  walk.surface = g; // (the grid first: all that is made of it reads it, Explore's middle too: see middleCells)
   startLife(seq, rule, g.n, {
     nbr,
     ring: rule.loops ? loopRing(rule, meshSides(meshCorners(g))) : rule.iso && rule.iso !== 'vertex' ? ring : null,
@@ -23352,7 +23362,6 @@ function buildLife(seq, variant) {
   });
   Object.assign(walk, {
     is3d: true,
-    surface: g,
     R: radius(size),
     tile: new Int32Array(1),
     visits: new Int32Array(g.n),
@@ -35178,7 +35187,7 @@ function middleCells(i = 0, K = 1) {
   if (middleMemo.has(key)) return middleMemo.get(key);
   const g = walk.surface,
     { start } = walk.life.nbr,
-    n = walk.life.seed.length;
+    n = start.length - 1;
   if (K === 1 && !walk.plane && g.faceMids?.length < g.faces?.length)
     return centreCells(g.faceMids[g.cellFaces[frontCell()]]); // (a face of several triangles, a dodecahedron's pentagon: its middle)
   if (APERIODIC[patternKind()] && !cellsPlane() && !g.disc) {

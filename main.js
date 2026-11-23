@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.704';
+const VERSION = '0.5.705';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20780,9 +20780,7 @@ const lifeTeamsWhyNot = (k, w, size = null, rule = $('lifeRule').value, f = pick
     ? TEAMS_STATES_WHERE
     : teamsFit(k, f, rule)
       ? ''
-      : f.g?.twist
-        ? 'A twisted torus: Solo only (its seam glues its blocks out of line).'
-        : 'The shape has no parts alike for so many teams.';
+      : 'The shape has no parts alike for so many teams.';
 const TEAMS_WHERE =
   "At this size and start, no group of the surface's symmetries sets so many walkers apart, each walking as A. Try another size or start."; // (a team count's greyed words)
 // A surface's turns in space that lay its mesh onto itself (each a matrix, the identity among them), once a mesh: a closed
@@ -28662,7 +28660,8 @@ const TEAM_GRID = {
 };
 // a torus's colour blocks: a round the ring, b round the tube, as square as can be on the torus as seen (its
 // ring 1 / TORUS_TUBE times as long as its tube): 12 colours 6 × 2 rather than 4 × 3; of those whose b divides its rows
-// first (its columns made for a, see ringColumns); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
+// first (its columns made for a, see ringColumns), and on a twisted torus those its twist shifts by whole blocks (b = 1 always:
+// bands round the tube); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
 // round the tube), Cairo's slices along the ring only
 function torusBlocks(K, g = walk.surface) {
   let best = [K, 1],
@@ -28670,7 +28669,7 @@ function torusBlocks(K, g = walk.surface) {
   if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
-      const fits = !g?.nv || g.nv % b === 0,
+      const fits = !g?.nv || (g.nv % b === 0 && (g.seamTwist ?? 0) % (g.nv / b) === 0), // (a twisted torus's: its seam's shift whole blocks, each glued onto one of its colour)
         e = (fits ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
       if (e < err) {
         err = e;
@@ -28698,7 +28697,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
   }
   if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
   if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
-  if (g?.nu) return !g.twist; // a torus (twisted: Solo, its blocks not glued alike across its seam): its blocks (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
+  if (g?.nu) return true; // a torus: its blocks (twisted: those its seam glues in line, see torusBlocks) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
@@ -28796,7 +28795,13 @@ function surfaceFrame(kind, size) {
   }
   if (!TORI.includes(kind)) return {}; // (a solid: its counts by its kind, see solidCounts)
   const [nv, nu] = torusDims(kind, size);
-  return { torus: true, klein: kind === 'kleinCairo', nu, nv, twist: torusTwist(size, kind) };
+  return {
+    torus: true,
+    klein: kind === 'kleinCairo',
+    nu,
+    nv,
+    seamTwist: torusTwist(size, kind) * (SURFACES[kind].steps?.[0] ?? 1),
+  }; // (its twist in its rows, as its mesh's: see torusCairoMesh)
 }
 // a surface variant's size: the one in the menu where the menu holds its surface's sizes (the tab's, once filled), else the one
 // it opens at (see sizeAt: another variant's, or the tab's a moment after it changed, its menu still the surface before's)

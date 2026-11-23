@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.692';
+const VERSION = '0.5.693';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6484,7 +6484,7 @@ const DISPLAY_BY_TAB = {
 };
 // The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
 // only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
-// state, as long as none picks it; ant: an ant coming in), its value: one for all, or each tab's ({ all, Life… }:
+// state, as long as none picks it; ant: an ant coming in; theme: the page's switched), its value: one for all, or each tab's ({ all, Life… }:
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
 // Each shape's view at first, by the menu's name, in every mode: inflated, its Shape (Flat 0 ── Inflated 1: the balls and
@@ -6540,9 +6540,10 @@ const DISPLAY_DEFAULTS = {
   glass: ['glass', 'open', false],
   cellsFinish: [
     'cellsFinish',
-    ['open', 'tab'],
-    (variant, w) => (NAV[w][0] === 'Life' && NAV[w][1] === '3D solids' ? CELLS_FINISH.LED : 0),
-  ], // (Life in 3D: LED; else Off)
+    ['open', 'tab', 'theme'],
+    (variant, w) =>
+      NAV[w][0] === 'Life' && NAV[w][1] === '3D solids' && themeName() === 'dark' ? CELLS_FINISH.LED : 0,
+  ], // (Life in 3D on a dark page: LED; else Off)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],
@@ -43350,6 +43351,7 @@ const themeSwitch = tile({
       /* not kept */
     }
     applyTheme(theme);
+    applyDefaults('theme'); // (its defaults the theme's: Cells', see DISPLAY_DEFAULTS)
   },
 });
 function applyTheme(theme) {

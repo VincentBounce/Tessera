@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.637';
+const VERSION = '0.5.638';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16122,23 +16122,30 @@ function stripCount(kind, kind0, size, across = false) {
     across,
   ));
 }
+// (a row's middles counted at once: |a| apart from its first to the length, no middle visited)
 function stripCounted(kind, kind0, size, across) {
   let count = 0;
-  eachStripMiddle(stripFrame(kind, kind0, size, across), across, () => count++);
+  eachStripRow(stripFrame(kind, kind0, size, across), across, (x, y, end, la) => (count += Math.ceil((end - x) / la)));
   return count;
 }
-// a strip's frame's tiles' middles (see stripFrame), fn(x, y) each, as tilingStrip keeps them: each of a lattice cell's
-// middles, row by row of its lattice (b: a row up, bx along), every copy along within its length (on the fine grid a middle on an
-// edge lands on it: here 10⁻⁵ of it, as near); across: below its top (a bottle's or a torus's), else to it
-function eachStripMiddle({ m, nv, L, W, cells, la, bx }, across, fn) {
+// a strip's frame's rows of tiles' middles (see stripFrame), fn(x, y, end, la) each, its first middle (x, y), the others |a|
+// apart below end: each of a lattice cell's middles, row by row of its lattice (b: a row up, bx along), every copy along
+// within its length (on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near); across: below its top (a
+// bottle's or a torus's), else to it
+function eachStripRow({ m, nv, L, W, cells, la, bx }, across, fn) {
   const e = 1e-5,
     by = W / nv;
   for (let k = 0; k < m; k++) {
     const [mx, my] = meanPoint(cells(0, 0, k));
     for (let j = Math.ceil((-e - my) / by); across ? my + j * by < W - e : my + j * by <= W + e; j++)
-      for (let x = mx + j * bx - la * Math.floor((mx + j * bx + e) / la); x < L - e; x += la) fn(x, my + j * by);
+      fn(mx + j * bx - la * Math.floor((mx + j * bx + e) / la), my + j * by, L - e, la);
   }
 }
+// its tiles' middles as tilingStrip keeps them, fn(x, y) each
+const eachStripMiddle = (frame, across, fn) =>
+  eachStripRow(frame, across, (x0, y, end, la) => {
+    for (let x = x0; x < end; x += la) fn(x, y);
+  });
 // A tiling's Klein bottle or torus: its strip's sheet (see tilingStrip), L along and W across, glued across, (x, y + W) →
 // (x, y), and at its ends turned over as the strip's, (x + L, y) → (x, W − y) (a Klein bottle), or straight, (x + L, y) →
 // (x, y) (a torus): W, nv rows of b, then a lattice's way across (nv·b_x a whole count of |a|: rows by sheetRows), the
@@ -16173,8 +16180,13 @@ const kleinCount = (kindK, size) => {
   const { kind, strip, nv, n } = kleinLength(kindK, size);
   return stripCount(kind, strip, `${nv}x${n}`, true);
 };
+// (K: the colours it is made for, the count asked when judging one, see teamsFair; kept: the sizes' ladders of every bottle
+// ask for it at each count of colours a search judges, 2,400 a hover of Octet till v0.5.637)
+const kleinLengths = remember('kleinLengths', {});
 function kleinLength(kindK, size, K = ringColours(ringVariant())) {
-  // (K: the colours it is made for, the count asked when judging one, see teamsFair)
+  return (kleinLengths[`${kindK}|${size}|${K}|${plane.start === 'draw'}`] ??= kleinLengthOf(kindK, size, K));
+}
+function kleinLengthOf(kindK, size, K) {
   const strip = kleinStrip(kindK),
     {
       kind,
@@ -16248,6 +16260,13 @@ function kleinBlocksSlid(strip, nv, n, blocks) {
 function kleinBlocksAlike(strip, nv, n, blocks) {
   const K = blocks[0] * blocks[1];
   if (kleinBlocksSlid(strip, nv, n, blocks)) return true;
+  // (judged on the least sheet alike: a block's whole copies of its tiling along and its lattice's rows across taken out two
+  // by two, the same verdict, 317,448 sheets of 54 bottles compared; a sheet of 168 rows walked 1,000 times a hover of Octet
+  // till v0.5.638)
+  const { step, copyLength } = MOBIUS_ALONG[strip],
+    rows = sheetRows(MOBIUS_STRIPS[strip].basis),
+    least = (x, period) => x - period * Math.max(0, Math.floor(x / period) - 1);
+  [nv, n] = [least(nv, 2 * rows * blocks[1]), least(n, 2 * blocks[0] * Math.round(copyLength / step))];
   return (alikeMemo[`${strip}|${nv}|${n}|${blocks}`] ??= (() => {
     const frame = stripFrame(MOBIUS_STRIPS[strip].kind, strip, `${nv}x${n}`, true),
       { L, W, cells, ta, tb, mirrorY, t } = frame,

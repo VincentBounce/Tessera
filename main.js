@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.658';
+const VERSION = '0.5.659';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15388,7 +15388,7 @@ const TORUS_SHAPES = [
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
-// steps as a share of the one it falls in: a knot's (see knotPoint), a Klein bottle's (see kleinBottlePoint)
+// steps as a share of the one it falls in: a knot's (see knotFrame), a Klein bottle's (see kleinBottlePoint)
 const stepAt = (along, at) => {
   let lo = 0,
     hi = along.length - 1;
@@ -15399,10 +15399,10 @@ const stepAt = (along, at) => {
   }
   return lo + (at - along[lo]) / (along[hi] - along[lo] || 1);
 };
-// A torus knot's point (see TORUS_SHAPES), as the ring's at the same place: x round it (−π to π, along the knot by its
-// length), w out from its middle and h up, the ring's, here across the knot: its tangent turned level (as Desmos's
-// automata on a trefoil knot, cq17lqjgb7), and up (as the ring's, its turn the same: no mirror)
-function knotPoint(knot, x, w, h) {
+// A torus knot's frame (see TORUS_SHAPES) at x round it (−π to π, along the knot by its length): its point, its tangent, its
+// side (its tangent turned level, as Desmos's automata on a trefoil knot, cq17lqjgb7) and its up (as the ring's, its turn
+// the same: no mirror)
+function knotFrame(knot, x) {
   const { p, q, a } = knot,
     curve = (t) => [
       (2 + a * Math.cos(q * t)) * Math.cos(p * t),
@@ -15427,7 +15427,7 @@ function knotPoint(knot, x, w, h) {
     T = unit(curve(t + 1e-5).map((v, d) => v - C[d])),
     N0 = unit([-T[1], T[0], 0]),
     B = [N0[1] * T[2] - N0[2] * T[1], N0[2] * T[0] - N0[0] * T[2], N0[0] * T[1] - N0[1] * T[0]]; // (N0 × T: up, as the ring's)
-  return C.map((v, d) => v * scale + w * N0[d] + h * B[d]);
+  return [C.map((v) => v * scale), T, N0, B];
 }
 // One length for every ring and strip (a torus's, a Klein bottle's round its ring, a Möbius strip's along it), in its steps: near
 // x (its usual), its colours' blocks square (as long round as across: square) when that is 20 % shorter to 60 % longer, a whole
@@ -15510,11 +15510,82 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own) {
   );
 }
 
+// A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies: its middle at 0,
+// its tangent east, its side north (−y), its up up; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
+function shapeLine(knot, x) {
+  const [O, ...F0] = (knot.middle ??= knotFrame(knot, 0)),
+    flat = [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, 1],
+    ],
+    place = (v) => [0, 1, 2].map((d) => F0.reduce((sum, f, k) => sum + dot3(v, f) * flat[k][d], 0)); // (the middle's frame onto the flat one)
+  const [P, ...F] = knotFrame(knot, x);
+  return [place(sub(P, O)), ...F.map(place)];
+}
+// A knot's bend, once a shape: BEND_STEPS steps along its line, each its frame's turn to the next (an axis in the
+// frame's own words, see shapeLine, and an angle), its line and turns going on past its ends by BEND_PAST steps (a sheet's
+// corners half a tile past its seam: a knot's line goes round again); bent by mu ∈ [0, 1], each step's turn by its weight, a
+// front from the middle out past the ends (smooth: its middle bends first, its ends last), the line made again from the
+// middle each way: its points and frames, centred (the straight tube's middle at 0); mu = 1, the line itself
+const BEND_STEPS = 2048,
+  BEND_PAST = BEND_STEPS / 8,
+  BEND_FRONT = Math.PI / 3;
+function bentLine(knot, mu) {
+  if (knot.bent?.mu === mu) return knot.bent;
+  const n = BEND_STEPS,
+    e = BEND_PAST,
+    ds = (2 * Math.PI) / n,
+    far = Math.PI + e * ds,
+    X = (k) => (k - e) * ds - Math.PI; // (k: its place in the line's table, from e steps before its start)
+  knot.turns ??= Array.from({ length: n }, (_, k) => {
+    const [, ...A] = shapeLine(knot, X(k + e)),
+      [, ...B] = shapeLine(knot, X(k + e + 1)),
+      Q = (i, j) => B.reduce((sum, b, c) => sum + b[i] * A[c][j], 0), // (the turn from A to B: B Aᵀ)
+      angle = Math.acos(Math.max(-1, Math.min(1, (Q(0, 0) + Q(1, 1) + Q(2, 2) - 1) / 2))),
+      axis = unit([Q(2, 1) - Q(1, 2), Q(0, 2) - Q(2, 0), Q(1, 0) - Q(0, 1)]);
+    return [A.map((f) => dot3(axis, f)), angle];
+  });
+  const last = n + 2 * e,
+    middle = n / 2 + e,
+    lines =
+      mu >= 1
+        ? Array.from({ length: last + 1 }, (_, k) => shapeLine(knot, X(k)))
+        : Array.from({ length: last + 1 }, (_, k) =>
+            k === middle
+              ? [
+                  [0, 0, 0],
+                  [1, 0, 0],
+                  [0, -1, 0],
+                  [0, 0, 1],
+                ]
+              : null,
+          );
+  const weight = (s) => {
+      const t = Math.max(0, Math.min(1, (mu * (far + BEND_FRONT) - Math.abs(s)) / BEND_FRONT));
+      return t * t * (3 - 2 * t);
+    },
+    step = (from, to, k) => {
+      const [P, ...F] = lines[from],
+        [a, angle] = knot.turns[(k - e + n) % n],
+        axis = unit([0, 1, 2].map((d) => F.reduce((sum, f, c) => sum + a[c] * f[d], 0))),
+        turn = (to > from ? 1 : -1) * weight(X(k) + ds / 2) * angle,
+        T = turnAbout(axis, turn / 2, F[0]);
+      lines[to] = [P.map((v, d) => v + (to > from ? 1 : -1) * T[d] * ds), ...F.map((f) => turnAbout(axis, turn, f))];
+    };
+  if (mu < 1)
+    for (let k = middle; k < last; k++) {
+      step(k, k + 1, k);
+      step(last - k, last - k - 1, last - k - 1);
+    }
+  const centre = [0, 1, 2].map((d) => lines.slice(e, last - e + 1).reduce((sum, [P]) => sum + P[d], 0) / (n + 1)); // (its own n steps')
+  return (knot.bent = { mu, lines: lines.map(([P, ...F]) => [sub(P, centre), ...F]) });
+}
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
  * (2π by 2π·TUBE, in the x–z plane), at m = 1 the torus. The rectangle first curls into a tube
- * (m from 0 to ½: its short side bends into a circle), then the tube bends into a ring (½ to 1).
- * Bending a length L into an arc of a circle whose circumference is L / k keeps lengths along it. */
-function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
+ * (m from 0 to ½: its short side bends into a circle), then the tube bends (½ to 1): into a ring all along at once, or along
+ * a knot's line, its middle first, its ends last (see bentLine). Bending keeps lengths along it. */
+function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
   const b = Math.min(1, 2 * m),
     c = Math.max(0, 2 * m - 1); // tube bend, then ring bend
   // flat, the sheet lies in the east–south plane, as the plane's grids and a picture read: i towards the east, j towards the south
@@ -15530,13 +15601,24 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE) {
     h = rt * (Math.cos(th) - 1) + tube * b;
   }
   if (c < 1e-6) return [X, -w, h];
-  const rr = 1 / c,
-    ph = X / rr,
-    ring = [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h], // (− c: no jump from the flat sheet)
-    knot = TORUS_SHAPES[shapeOn('torus')][2];
-  if (!knot.p) return ring;
-  const K = knotPoint(knot, X, w, h);
-  return ring.map((v, d) => v + (K[d] - v) * c); // (a knot: from the ring, as it closes)
+  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2]; // (form: its shape's, once for all its points)
+  if (!knot.p) {
+    // (the ring: bent all along at once, a length L into an arc of a circle whose circumference is L / c)
+    const rr = 1 / c,
+      ph = X / rr;
+    return [(rr + w) * Math.sin(ph), rr - c - (rr + w) * Math.cos(ph), h]; // (− c: no jump from the flat sheet)
+  }
+  const { lines } = bentLine(knot, c),
+    u = Math.max(
+      0,
+      Math.min(BEND_STEPS + 2 * BEND_PAST - 1e-9, ((X + Math.PI) / (2 * Math.PI)) * BEND_STEPS + BEND_PAST),
+    ),
+    k = Math.floor(u),
+    f = u - k,
+    [P0, , S0, U0] = lines[k],
+    [P1, , S1, U1] = lines[k + 1],
+    at = (A, B, d) => A[d] + (B[d] - A[d]) * f; // (between its two steps)
+  return [0, 1, 2].map((d) => at(P0, P1, d) + w * at(S0, S1, d) + h * at(U0, U1, d));
 }
 
 /* ---- 7.4a Klein bottle -------------------------------------------------------------------- */
@@ -16582,10 +16664,10 @@ function mobiusFaces(sheet, L, W) {
   return { verts: cv, tiles, uv, edge: ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : [])) };
 }
 // The sheet point of a surface: a torus, or a Möbius strip
-const sheetPoint = (g, i, j, m) => {
+const sheetPoint = (g, i, j, m, form = null) => {
   if (g.mobius) return mobiusPoint(i, j, g.L, g.W, m);
   if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
-  return torusPoint(i, j, g.nu, g.nv, m, tubeOf(g));
+  return torusPoint(i, j, g.nu, g.nv, m, tubeOf(g), form);
 };
 
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:
@@ -17381,8 +17463,9 @@ function tileCornerPlaces(g) {
 }
 // the points of a sheet's places in its form m (see sheetPoint), three numbers each
 function sheetPointsAt(g, places, m) {
-  const P = new Float64Array((3 * places.length) / 2);
-  for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m), 3 * i);
+  const P = new Float64Array((3 * places.length) / 2),
+    form = TORUS_SHAPES[shapeOn('torus')][2]; // (a torus's shape, once: see torusPoint)
+  for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m, form), 3 * i);
   return P;
 }
 function shapeAt(g, m) {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.665';
+const VERSION = '0.5.666';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16676,8 +16676,12 @@ function mobiusFaces(sheet, L, W) {
 const sheetPoint = (g, i, j, m, form = null) => {
   if (g.mobius) return mobiusPoint(i, j, g.L, g.W, m);
   if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
-  const row = twistedRow(i, j, g.nu, (g.seamTwist ?? 0) * Math.max(0, 2 * m - 1)); // (its twist as it bends, the sheet and its tube straight before: see torusTwist)
-  return torusPoint(i, row, g.nu, g.nv, m, tubeOf(g), form);
+  // (a twisted one in thirds: rolled into its straight tube, twisted, then bent round the ring; see torusTwist)
+  const k = g.seamTwist ?? 0,
+    [rolled, twisted] = k
+      ? [m < 2 / 3 ? Math.min(1.5 * m, 0.5) : 1.5 * m - 0.5, Math.min(1, Math.max(0, 3 * m - 1))]
+      : [m, 1];
+  return torusPoint(i, twistedRow(i, j, g.nu, k * twisted), g.nu, g.nv, rolled, tubeOf(g), form);
 };
 
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:

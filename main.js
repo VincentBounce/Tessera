@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.669';
+const VERSION = '0.5.670';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15577,11 +15577,11 @@ function bentLine(knot, mu) {
 }
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
  * (2π by 2π·TUBE, in the x–z plane), at m = 1 the torus. The rectangle first curls into a tube
- * (m from 0 to ½: its short side bends into a circle), then the tube bends all along at once (½ to 1): into a ring, or
+ * (m from 0 to ⅓: its short side bends into a circle), then the tube bends all along at once (⅓ to 1): into a ring, or
  * along a knot's line, its twist too (see bentLine). Bending keeps lengths along it. */
 function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
-  const b = Math.min(1, 2 * m),
-    c = Math.max(0, 2 * m - 1); // tube bend, then ring bend
+  const b = Math.min(1, 3 * m),
+    c = Math.max(0, (3 * m - 1) / 2); // tube bend (a third: rolled, as fast whatever comes after), then ring bend
   // flat, the sheet lies in the east–south plane, as the plane's grids and a picture read: i towards the east, j towards the south
   const X = (i / nu - 0.5) * 2 * Math.PI,
     Y = (j / nv - 0.5) * 2 * Math.PI * tube;
@@ -15632,15 +15632,15 @@ function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
     const s = (y - up * m) / nv - 0.5;
     return ringRoll((x / nu - 0.5) * 2 * Math.PI, kleinRolls()(s, m, tube), m);
   }
-  // (rolled into a straight tube as a torus is while turned round its axis, to ⅔; then its circles carried to the bottle)
+  // (rolled into a straight tube as a torus is while turned round its axis, to ⅓; then its circles carried to the bottle)
   if (m >= 1) return kleinOnBottle(x, y, nu, nv, up);
-  if (m <= 2 / 3) return kleinStraightTube(x, y, nu, nv, tube, 1.5 * m);
+  if (m <= 1 / 3) return kleinStraightTube(x, y, nu, nv, tube, 3 * m);
   return kleinOnCircle(kleinCircle(x, y, nu, nv, tube, up), m);
 }
 // The sheet rolled into the straight tube by t (torusPoint's, its sheet's middle on top) while turned round its axis, east, by t
 // of a quarter turn: at t = 1 its middle south, as the bottle shows it (see kleinOnBottle), its circles only bent from there
 const kleinStraightTube = (x, y, nu, nv, tube, t) =>
-  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, t / 2, tube));
+  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, t / 3, tube));
 // a sheet point on the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned
 // over (u to π − u), round the tube from the sheet's mirror line (up: Cairo's half square, so that the bottle glues as its
 // sheet does), its sheet half a turn round the tube (its middle, its pictures, in front)
@@ -15650,9 +15650,9 @@ function kleinOnBottle(x, y, nu, nv, up) {
     k = Math.floor(w); // (its turns round the bottle, before its start or past its end: each turns it over)
   return kleinBottlePoint(w - k, k % 2 ? -Math.PI / 2 - f : f + 1.5 * Math.PI);
 }
-// A sheet point's circle round the tube, the straight tube's turned (m = ⅔, see kleinStraightTube) and the bottle's: each its middle, its
+// A sheet point's circle round the tube, the straight tube's turned (m = ⅓, see kleinStraightTube) and the bottle's: each its middle, its
 // radius, its point's way from it, a quarter turn on and their normal (its frame), and the turn from one frame to the
-// other (axis, angle); its circle carried whole from the tube to the bottle as m goes from ⅔ to 1 (see kleinOnCircle)
+// other (axis, angle); its circle carried whole from the tube to the bottle as m goes from ⅓ to 1 (see kleinOnCircle)
 function kleinCircle(x, y, nu, nv, tube, up) {
   const circle = (P) => {
     const c = P(0).map((v, d) => (v + P(nv / 2)[d]) / 2),
@@ -15677,10 +15677,10 @@ function kleinCircle(x, y, nu, nv, tube, up) {
           : [0, 1, 2].map((j) => (j === i ? ki : (Q[i][j] + Q[j][i]) / (4 * ki)));
   return { from, to, axis, angle };
 }
-// a sheet point carried with its circle at m ∈ [⅔, 1]: its middle and radius from the tube's to the bottle's, its way turned
+// a sheet point carried with its circle at m ∈ [⅓, 1]: its middle and radius from the tube's to the bottle's, its way turned
 // as its frame is
 function kleinOnCircle({ from, to, axis, angle }, m) {
-  const t = 3 * m - 2,
+  const t = (3 * m - 1) / 2,
     r = from.r + (to.r - from.r) * t,
     way = turnAbout(axis, angle * t, from.F[0]);
   return [0, 1, 2].map((d) => from.c[d] + (to.c[d] - from.c[d]) * t + r * way[d]);
@@ -16701,9 +16701,7 @@ const sheetPoint = (g, i, j, m, form = null) => {
   if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
   // (a twisted one in thirds: rolled into its straight tube, twisted, then bent round the ring; see torusTwist)
   const k = g.seamTwist ?? 0,
-    [rolled, twisted] = k
-      ? [m < 2 / 3 ? Math.min(1.5 * m, 0.5) : 1.5 * m - 0.5, Math.min(1, Math.max(0, 3 * m - 1))]
-      : [m, 1];
+    [rolled, twisted] = k ? [m < 2 / 3 ? Math.min(m, 1 / 3) : 2 * m - 1, Math.min(1, Math.max(0, 3 * m - 1))] : [m, 1];
   return torusPoint(i, twistedRow(i, j, g.nu, k * twisted), g.nu, g.nv, rolled, tubeOf(g), form);
 };
 
@@ -17517,7 +17515,7 @@ function shapeAt(g, m) {
     const { places, at } = tileCornerPlaces(g),
       np = places.length / 2,
       P = new Float64Array(3 * np);
-    if (g.klein && !kleinRolls() && m > 2 / 3 && m < 1) {
+    if (g.klein && !kleinRolls() && m > 1 / 3 && m < 1) {
       // (a bottle's circles carried from its tube: each made once, see kleinCircle)
       const circles = (g.kleinCircles ??= Array.from({ length: np }, (_, p) =>
         kleinCircle(places[2 * p], places[2 * p + 1], g.nu, g.nv, tubeOf(g), g.cairo ? 0.5 : 0),

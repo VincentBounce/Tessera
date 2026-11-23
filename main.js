@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.695';
+const VERSION = '0.5.696';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15396,6 +15396,38 @@ const tubeOf = (g) => g.tube ?? TORUS_TUBE; // a grid's own tube (its tiles regu
 // (p, q) lying on a torus (2 round its axis, a round its tube), as long as the ring (2π: its tiles as long); tube: its
 // usual one, the most it can be without crossing itself (a trefoil's 0.17 at most), its sheet that much longer than the
 // ring's (see torusTube: its tiles square, as the ring's)
+// the Triangle's line at a tube (see TORUS_SHAPES): three sides of 1, three arcs round its corners, their radius 1.2 times its
+// square section's half diagonal once laid 2π long (the inside of a bend never folds over itself), a corner's middle at 0
+function roundedTriangle(tube) {
+  const rn = (1.2 * Math.PI * tube) / (2 * Math.SQRT2), // (its radius on the line laid 2π long, see knotFrame)
+    r = (3 * rn) / (2 * Math.PI * (1 - rn)), // (the same on sides of 1)
+    arc = (Math.PI * r) / 3,
+    piece = 2 * arc + 1, // (a corner's half arc, a side, the next corner's half arc)
+    way = (a) => [Math.cos(a), Math.sin(a)];
+  return (t) => {
+    let s = ((((t / (2 * Math.PI)) % 1) + 1) % 1) * 3 * piece;
+    const k = Math.floor(s / piece),
+      f = (2 * Math.PI * k) / 3,
+      [V, U] = [f, f + (2 * Math.PI) / 3].map((a) => way(a).map((v) => v / Math.sqrt(3))); // (its corners, 1 apart)
+    s -= k * piece;
+    const p =
+      s < arc
+        ? V.map((v, d) => v + r * way(f + s / r)[d])
+        : s < arc + 1
+          ? V.map((v, d) => v + r * way(f + Math.PI / 3)[d] + (s - arc) * way(f + (5 * Math.PI) / 6)[d])
+          : U.map((v, d) => v + r * way(f + Math.PI / 3 + (s - arc - 1) / r)[d]);
+    return [...p, 0];
+  };
+}
+// a torus shape's form at a tube: its own, or its line made for it (line: the Triangle's, its corners as round as its tube asks)
+const formsAt = new Map();
+const formAt = (form, tube) => {
+  if (!form.line) return form;
+  const key = form.line;
+  if (!formsAt.has(key)) formsAt.set(key, new Map());
+  const byTube = formsAt.get(key);
+  return byTube.get(tube) ?? byTube.set(tube, { ...form, curve: form.line(tube) }).get(tube);
+};
 // a torus knot's line: p times round the axis, q times round a tube of radius a about the circle of radius 2
 const torusKnot = (p, q, a) => (t) => [
   (2 + a * Math.cos(q * t)) * Math.cos(p * t),
@@ -15418,7 +15450,7 @@ const TORUS_SHAPES = [
     'Triangle',
     "A tube of square section round a triangle with rounded corners (twisted by a quarter, its four faces one: Penrose's triangle)",
     {
-      curve: (t) => [Math.cos(t) + 0.2 * Math.cos(2 * t), Math.sin(t) - 0.2 * Math.sin(2 * t), 0],
+      line: (tube) => roundedTriangle(tube),
       tube: 0.2,
       square: true,
       corners: 3,
@@ -15617,7 +15649,7 @@ function bentLine(knot, mu) {
 function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0, done = 1) {
   const b = Math.min(1, 3 * m),
     c = Math.max(0, (3 * m - 1) / 2); // tube bend (a third: rolled, as fast whatever comes after), then ring bend
-  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2], // (form: its shape's, once for all its points)
+  const knot = formAt(form ?? TORUS_SHAPES[shapeOn('torus')][2], tube), // (form: its shape's, once for all its points; its line at its tube)
     quarters = Math.trunc((4 * twist) / nv), // (a square's section turned by whole quarters, the rest its cells slid round it)
     corners = knot.corners ?? 1,
     whole = knot.square ? [0, 1, -1, 2, -2].map((m) => quarters + 4 * m).find((r) => r % corners === 0) : 0, // (as many quarters at each of its line's turns: the same quarters once round, a full turn more or less, its corners alike)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.701';
+const VERSION = '0.5.702';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18357,12 +18357,12 @@ function syncSizeStepper() {
   setTile($('startUp'), { whyNot: symmetricOnly });
   setTile($('startLabel'), { whyNot: symmetricOnly });
 }
-// The sizes as a slider under the stepper, across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
+// The sizes as a slider under the stepper (a ring's width and twist: as Glint's, titled, a pill with its knob, see .shape-slider), across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once;
 // byDefault: the default's notch, in the text's colour (none: −1)
 function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
-  el.hidden = n < 2;
-  if (el.hidden) return;
+  (el.closest('.pill-row') ?? el).hidden = n < 2; // (a titled one, Width's, Twist's: its row)
+  if (n < 2) return;
   const range = Object.assign(document.createElement('input'), {
     type: 'range',
     min: 0,

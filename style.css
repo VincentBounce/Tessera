@@ -524,6 +524,17 @@ h3 {
   padding: 0 7px;
   margin-top: -2px;
 }
+.pill-row .size-gauge {
+  margin: 0;
+} /* a ring's width and twist: Glint's pill (see .shape-slider), its notches in its track */
+.pill-row .size-gauge .notches {
+  position: absolute;
+  inset: 0 15px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+} /* (a notch under the knob's middle at each end: the input's 3 px in, half the knob's 24) */
 .size-gauge .notches span {
   width: 2px;
   height: 5px;

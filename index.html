@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.701">
+  <link rel="stylesheet" href="style.css?v=0.5.702">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -58,8 +58,8 @@
               <button id="sizeUp">+</button>
             </div>
             <div id="sizeGauge" class="size-gauge" hidden></div>
-            <div id="widthGauge" class="size-gauge" hidden></div>  <!-- a torus's, a strip's, a bottle's width round it (see widthsOf) -->
-            <div id="twistGauge" class="size-gauge" hidden></div>  <!-- a torus's twist at its seam (see torusTwist) -->
+            <div class="pill-row" hidden><h3>Width</h3><div id="widthGauge" class="size-gauge shape-slider"></div></div>  <!-- a torus's, a strip's, a bottle's width round it (see widthsOf), a slider as Glint's -->
+            <div class="pill-row" hidden><h3>Twist</h3><div id="twistGauge" class="size-gauge shape-slider"></div></div>  <!-- a torus's twist at its seam (see torusTwist) -->
           </div>
           <select id="gridSizeField" hidden></select>
         </div>
@@ -348,11 +348,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.701"></script>
-  <script src="punks.js?v=0.5.701"></script>
-  <script src="loops.js?v=0.5.701"></script>
-  <script src="emoji.js?v=0.5.701"></script>
-  <script src="debug.js?v=0.5.701"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.701"></script>
+  <script src="pixelarticons.js?v=0.5.702"></script>
+  <script src="punks.js?v=0.5.702"></script>
+  <script src="loops.js?v=0.5.702"></script>
+  <script src="emoji.js?v=0.5.702"></script>
+  <script src="debug.js?v=0.5.702"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.702"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.659';
+const VERSION = '0.5.660';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15525,18 +15525,16 @@ function shapeLine(knot, x) {
 }
 // A knot's bend, once a shape: BEND_STEPS steps along its line, each its frame's turn to the next (an axis in the
 // frame's own words, see shapeLine, and an angle), its line and turns going on past its ends by BEND_PAST steps (a sheet's
-// corners half a tile past its seam: a knot's line goes round again); bent by mu ∈ [0, 1], each step's turn by its weight, a
-// front from the middle out past the ends (smooth: its middle bends first, its ends last), the line made again from the
-// middle each way: its points and frames, centred (the straight tube's middle at 0); mu = 1, the line itself
+// corners half a tile past its seam: a knot's line goes round again); bent by mu ∈ [0, 1], every step's turn mu of its own
+// (all along at once, as the ring's: its curvature and its twist), the line made again from the middle each way: its points
+// and frames, centred (the straight tube's middle at 0); mu = 1, the line itself
 const BEND_STEPS = 2048,
-  BEND_PAST = BEND_STEPS / 8,
-  BEND_FRONT = Math.PI / 3;
+  BEND_PAST = BEND_STEPS / 8;
 function bentLine(knot, mu) {
   if (knot.bent?.mu === mu) return knot.bent;
   const n = BEND_STEPS,
     e = BEND_PAST,
     ds = (2 * Math.PI) / n,
-    far = Math.PI + e * ds,
     X = (k) => (k - e) * ds - Math.PI; // (k: its place in the line's table, from e steps before its start)
   knot.turns ??= Array.from({ length: n }, (_, k) => {
     const [, ...A] = shapeLine(knot, X(k + e)),
@@ -15561,18 +15559,14 @@ function bentLine(knot, mu) {
                 ]
               : null,
           );
-  const weight = (s) => {
-      const t = Math.max(0, Math.min(1, (mu * (far + BEND_FRONT) - Math.abs(s)) / BEND_FRONT));
-      return t * t * (3 - 2 * t);
-    },
-    step = (from, to, k) => {
-      const [P, ...F] = lines[from],
-        [a, angle] = knot.turns[(k - e + n) % n],
-        axis = unit([0, 1, 2].map((d) => F.reduce((sum, f, c) => sum + a[c] * f[d], 0))),
-        turn = (to > from ? 1 : -1) * weight(X(k) + ds / 2) * angle,
-        T = turnAbout(axis, turn / 2, F[0]);
-      lines[to] = [P.map((v, d) => v + (to > from ? 1 : -1) * T[d] * ds), ...F.map((f) => turnAbout(axis, turn, f))];
-    };
+  const step = (from, to, k) => {
+    const [P, ...F] = lines[from],
+      [a, angle] = knot.turns[(k - e + n) % n],
+      axis = unit([0, 1, 2].map((d) => F.reduce((sum, f, c) => sum + a[c] * f[d], 0))),
+      turn = (to > from ? 1 : -1) * mu * angle,
+      T = turnAbout(axis, turn / 2, F[0]);
+    lines[to] = [P.map((v, d) => v + (to > from ? 1 : -1) * T[d] * ds), ...F.map((f) => turnAbout(axis, turn, f))];
+  };
   if (mu < 1)
     for (let k = middle; k < last; k++) {
       step(k, k + 1, k);
@@ -15583,8 +15577,8 @@ function bentLine(knot, mu) {
 }
 /* Grid point (i, j) of an nu × nv torus, rolled up by m ∈ [0, 1]: at m = 0 a flat rectangle
  * (2π by 2π·TUBE, in the x–z plane), at m = 1 the torus. The rectangle first curls into a tube
- * (m from 0 to ½: its short side bends into a circle), then the tube bends (½ to 1): into a ring all along at once, or along
- * a knot's line, its middle first, its ends last (see bentLine). Bending keeps lengths along it. */
+ * (m from 0 to ½: its short side bends into a circle), then the tube bends all along at once (½ to 1): into a ring, or
+ * along a knot's line, its twist too (see bentLine). Bending keeps lengths along it. */
 function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
   const b = Math.min(1, 2 * m),
     c = Math.max(0, 2 * m - 1); // tube bend, then ring bend

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.675';
+const VERSION = '0.5.676';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15372,19 +15372,34 @@ const tubeOf = (g) => g.tube ?? TORUS_TUBE; // a grid's own tube (its tiles regu
 // (p, q) lying on a torus (2 round its axis, a round its tube), as long as the ring (2π: its tiles as long); tube: its
 // usual one, the most it can be without crossing itself (a trefoil's 0.17 at most), its sheet that much longer than the
 // ring's (see torusTube: its tiles square, as the ring's)
+// a torus knot's line: p times round the axis, q times round a tube of radius a about the circle of radius 2
+const torusKnot = (p, q, a) => (t) => [
+  (2 + a * Math.cos(q * t)) * Math.cos(p * t),
+  (2 + a * Math.cos(q * t)) * Math.sin(p * t),
+  a * Math.sin(q * t),
+];
 const TORUS_SHAPES = [
   ['Ring', 'The torus: a ring, its tube round it', { tube: TORUS_TUBE }],
   [
     'Trefoil',
     'A tube round a trefoil knot: twice round the axis, three times round the tube',
-    { p: 2, q: 3, a: 0.8, tube: 0.16 },
+    { curve: torusKnot(2, 3, 0.8), tube: 0.16 },
   ],
   [
     'Cinquefoil',
     'A tube round a cinquefoil knot: twice round the axis, five times round the tube',
-    { p: 2, q: 5, a: 0.6, tube: 0.1 },
+    { curve: torusKnot(2, 5, 0.6), tube: 0.1 },
   ],
-];
+  [
+    'Triangle',
+    "A tube of square section round a triangle with rounded corners (twisted by a quarter, its four faces one: Penrose's triangle)",
+    {
+      curve: (t) => [Math.cos(t) + 0.2 * Math.cos(2 * t), Math.sin(t) - 0.2 * Math.sin(2 * t), 0],
+      tube: 0.2,
+      square: true,
+    },
+  ],
+]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
@@ -15403,12 +15418,7 @@ const stepAt = (along, at) => {
 // side (its tangent turned level, as Desmos's automata on a trefoil knot, cq17lqjgb7) and its up (as the ring's, its turn
 // the same: no mirror)
 function knotFrame(knot, x) {
-  const { p, q, a } = knot,
-    curve = (t) => [
-      (2 + a * Math.cos(q * t)) * Math.cos(p * t),
-      (2 + a * Math.cos(q * t)) * Math.sin(p * t),
-      a * Math.sin(q * t),
-    ];
+  const { curve } = knot;
   if (!knot.along) {
     // (its length at N steps, once a knot: t from a share of its length)
     const N = 4096,
@@ -15585,9 +15595,26 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
   // flat, the sheet lies in the east–south plane, as the plane's grids and a picture read: i towards the east, j towards the south
   const X = (i / nu - 0.5) * 2 * Math.PI,
     Y = (j / nv - 0.5) * 2 * Math.PI * tube;
+  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2]; // (form: its shape's, once for all its points)
   let w = Y,
     h = 0; // w: offset away from the ring's centre (the north goes into the hole), h: height
-  if (b > 1e-6) {
+  if (b > 1e-6 && knot.square) {
+    // folded at its four corners by b of a quarter turn each, its middle the top of a face (see TORUS_SHAPES' square)
+    const L = (Math.PI * tube) / 2;
+    let x = 0,
+      y = 0,
+      way = 0,
+      rest = Math.abs(Y);
+    for (const len of [L / 2, L, L / 2]) {
+      const d = Math.min(rest, len);
+      x += Math.cos(way) * d;
+      y += Math.sin(way) * d;
+      rest -= d;
+      way -= (b * Math.PI) / 2;
+    }
+    w = Math.sign(Y) * x;
+    h = y + (L / 2) * b;
+  } else if (b > 1e-6) {
     // it curls down round the tube, closing in front, so its middle becomes the top of the torus
     const rt = tube / b,
       th = Y / rt;
@@ -15595,8 +15622,7 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
     h = rt * (Math.cos(th) - 1) + tube * b;
   }
   if (c < 1e-6) return [X, -w, h];
-  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2]; // (form: its shape's, once for all its points)
-  if (!knot.p) {
+  if (!knot.curve) {
     // the ring: bent all along at once, a length L into an arc of a circle whose circumference is L / c. bentLine would make
     // the same arc (its turn the same everywhere: a circle, to 10⁻⁷), only centred otherwise; but a circle has its formula,
     // a sine and a cosine a point, where bentLine makes its line again each step: 7.8 ms a step of Morph against 14.9 on

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.672';
+const VERSION = '0.5.673';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -3731,6 +3731,17 @@ const HULL_SOLIDS = {
     mark: '◈',
     place: [0, 'Cuboctahedron'],
     where: 'a square pyramid of squares and triangles',
+  },
+  // a ring round an equilateral hole of side 2, its section a square of 1 (a torus: its faces its own, see triRingFaces)
+  triRing: {
+    name: 'Triangular ring',
+    short: 'Tri ring',
+    faces: () => triRingFaces(),
+    pic: ['M12 2L22 20H2Z', 'M12 9L16 16H8Z'], // (from above: its outline, its hole)
+    mark: '◈',
+    place: [1, 'Square pyramid'],
+    where: 'a ring round a triangle, of squares and triangles',
+    hole: true, // (a torus: no inflated form, see updateMorphButton)
   },
   // (±1, ±1, ±(1 + √2)) and their turns: edge 2, 18 squares and 8 triangles
   rhombi: {
@@ -14231,7 +14242,8 @@ function mengerMesh(L, m = 1) {
 // a hull solid's faces, once (see HULL_SOLIDS)
 // a hull solid's surfaces cut again (see HULL_CUTS): [solid, cut, its surface's key]
 const hullFacesMemo = remember('hullFacesMemo', {}),
-  hullFacesOf = (kind) => (hullFacesMemo[kind] ??= hullFaces(HULL_SOLIDS[kind].corners()));
+  hullFacesOf = (kind) =>
+    (hullFacesMemo[kind] ??= HULL_SOLIDS[kind].faces?.() ?? hullFaces(HULL_SOLIDS[kind].corners())); // (its own, a solid not convex: see triRingFaces)
 function hullFaces(P) {
   const faces = new Map();
   for (let a = 0; a < P.length; a++)
@@ -14246,16 +14258,100 @@ function hullFaces(P) {
         const on = P.flatMap((q, k) => (Math.abs(dot3(n, q) - h) < 1e-9 ? [k] : [])),
           key = on.join();
         if (faces.has(key)) continue;
-        const m = [0, 1, 2].map((d) => on.reduce((sum, k) => sum + P[k][d], 0) / on.length),
-          u = unit(sub(P[on[0]], m)),
-          w = cross(n, u);
-        const angle = (k) => {
-          const e = sub(P[k], m);
-          return Math.atan2(dot3(e, w), dot3(e, u));
-        };
-        faces.set(key, { corners: on.sort((p, q) => angle(p) - angle(q)).map((k) => P[k]), n });
+        faces.set(
+          key,
+          faceAround(
+            on.map((k) => P[k]),
+            n,
+          ),
+        );
       }
   return [...faces.values()];
+}
+// a face of its corners round its outward normal n, counterclockwise seen from outside (its cells listed so: see hullMesh)
+function faceAround(corners, n) {
+  const m = meanPoint(corners, 3),
+    u = unit(sub(corners[0], m)),
+    w = cross(n, u),
+    angle = (p) => Math.atan2(dot3(sub(p, m), w), dot3(sub(p, m), u));
+  return { corners: [...corners].sort((p, q) => angle(p) - angle(q)), n };
+}
+// The triangular ring's faces (see HULL_SOLIDS.triRing), by construction: its hole an equilateral triangle of side 2, its
+// section a square of 1 (z from −½ to ½). On top and below: a square along each unit of the hole's sides, its corners' 120°
+// two triangles fanned (each corner's two sides' squares, and the line half way between); round it, its walls a square
+// along each unit of the hole's sides (inside) and of its outline's (outside: a long side 2, two short ones a corner)
+function triRingFaces() {
+  const P = [0, 1, 2].map((k) => {
+      const a = Math.PI / 2 + (2 * Math.PI * k) / 3;
+      return [(2 / Math.sqrt(3)) * Math.cos(a), (2 / Math.sqrt(3)) * Math.sin(a)];
+    }),
+    plus = (p, v) => [p[0] + v[0], p[1] + v[1]],
+    side = (k) => {
+      const [A, B] = [P[k], P[(k + 1) % 3]],
+        d = [(B[0] - A[0]) / 2, (B[1] - A[1]) / 2]; // (a unit along it)
+      return { A, d, o: [d[1], -d[0]].map((v) => v * Math.sign(d[1] * A[0] - d[0] * A[1])) }; // (o: out from the hole)
+    },
+    S = [0, 1, 2].map(side),
+    fan = (k) => {
+      const [o1, o2] = [S[(k + 2) % 3].o, S[k].o],
+        b = [o1[0] + o2[0], o1[1] + o2[1]].map((v, _, h) => v / Math.hypot(...h));
+      return [plus(P[k], o1), plus(P[k], b), plus(P[k], o2)];
+    },
+    tops = S.flatMap(({ A, d, o }) =>
+      [0, 1]
+        .map((s) => [
+          plus(
+            A,
+            d.map((v) => v * s),
+          ),
+          plus(
+            A,
+            d.map((v) => v * (s + 1)),
+          ),
+        ])
+        .map(([p, q]) => [p, q, plus(q, o), plus(p, o)]),
+    ).concat(
+      P.flatMap((p, k) => [
+        [p, fan(k)[0], fan(k)[1]],
+        [p, fan(k)[1], fan(k)[2]],
+      ]),
+    ),
+    hole = S.flatMap(({ A, d }) =>
+      [0, 1].map((s) =>
+        plus(
+          A,
+          d.map((v) => v * s),
+        ),
+      ),
+    ),
+    outline = S.flatMap(({ A, d, o }, k) => [...fan(k), plus(plus(A, o), d)]), // (its outer corners in turn)
+    at = (p, z) => [p[0], p[1], z],
+    walls = (ring, inward) =>
+      ring.map((p, i) => {
+        const q = ring[(i + 1) % ring.length],
+          n = unit([q[1] - p[1], p[0] - q[0], 0]),
+          out = Math.sign(n[0] * (p[0] + q[0]) + n[1] * (p[1] + q[1])) * (inward ? -1 : 1);
+        return faceAround(
+          [at(p, -0.5), at(q, -0.5), at(q, 0.5), at(p, 0.5)],
+          n.map((v) => v * out),
+        );
+      });
+  return [
+    ...tops.map((c) =>
+      faceAround(
+        c.map((p) => at(p, 0.5)),
+        [0, 0, 1],
+      ),
+    ),
+    ...tops.map((c) =>
+      faceAround(
+        c.map((p) => at(p, -0.5)),
+        [0, 0, -1],
+      ),
+    ),
+    ...walls(hole, true),
+    ...walls(outline, false),
+  ];
 }
 // a face's point: its corner A, then u along its side to B and v along its side to D (u, v from 0 to 1)
 const facePoint = (A, B, D, u, v) => [0, 1, 2].map((d) => A[d] + (B[d] - A[d]) * u + (D[d] - A[d]) * v);
@@ -14286,7 +14382,7 @@ function hullMesh(kind, f) {
           tiles.push([...t2, t2[2]]);
         }
       }
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, 4, f), {
+  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, 4, f, null), {
     squareFaces,
     triFaces,
     triFirst: squareFaces.length * f * f,
@@ -17441,7 +17537,7 @@ function boyMesh(base, f) {
  * each vertex straight from there to the sphere). The cells and their neighbours never change, so a walk or a
  * Game of Life run goes on unchanged: only the drawing and the 3D positions move. */
 const MORPH_WHERE =
-  'This surface has no other form (the pits, the bumps and the sponge: their holes leave none between).'; // (Morph's greyed words)
+  'This surface has no other form (the pits, the bumps, the sponge, the triangular ring: their holes leave none between).'; // (Morph's greyed words)
 const MORPHABLE = [
   ...Object.keys(TETRAKIS_SOLIDS).map((k) => `${k}Tetrakis`),
   ...BASE_SURFACES.filter((B) => B.fold !== 'mobius').map((B) => B.name), // (the base grids' tori and bottles)
@@ -17698,6 +17794,9 @@ function applyShape() {
 
 // Flat | Inflated (Unrolled | Rolled for a torus) in the Display menu, for surfaces that can change
 // shape; the animation runs in tick (morphStep) and the walk or Life run goes on meanwhile
+// a surface with no form between flat and round: the pits and the sponge (their holes), a hull solid with a hole (a torus: no
+// sphere to inflate into, see HULL_SOLIDS.triRing)
+const noFormBetween = (k) => ['pits', 'bumps', 'menger'].includes(k.replace(/Tetrakis$/, '')) || !!HULL_SOLIDS[k]?.hole;
 function updateMorphButton() {
   const sh = walk.shape;
   $('shapeRow').hidden = !sh || !shows('shape', tabVariant());
@@ -17707,20 +17806,18 @@ function updateMorphButton() {
     : ['Flat', 'Inflated'];
   if (document.activeElement !== $('shapeM')) $('shapeM').value = sh.target;
   showShapeAt();
-  // greyed on the pits and the sponge (their holes: no form between); its default, told in its tooltip, each shape's of
-  // this tab (round: a sheet rolled up, a solid inflated)
+  // greyed where it has no form between (see noFormBetween); its default, told in its tooltip, each shape's of this tab
+  // (round: a sheet rolled up, a solid inflated)
   greyInput($('shapeM'), $('shapeRow'), ({ w: v }) => {
     const k = surfaceOf(VARIANTS[v]);
-    return MORPHABLE.includes(k) && !['pits', 'bumps', 'menger'].includes(k.replace(/Tetrakis$/, ''))
-      ? ''
-      : MORPH_WHERE;
+    return MORPHABLE.includes(k) && !noFormBetween(k) ? '' : MORPH_WHERE;
   });
   const [kind, space] = NAV[walk.variant],
     sheet = ['Torus', 'Möbius strip', 'Klein bottle'],
     ways = { Inflated: [], Rolled: [], 'Half inflated': [], Flat: [] };
   for (const s of navValues(2, [kind, space])) {
     const w = Object.keys(NAV).find((v) => NAV[v][0] === kind && NAV[v][1] === space && NAV[v][2] === s);
-    if (!['pits', 'bumps', 'menger'].includes(VARIANTS[w].surface.replace(/Tetrakis$/, '')))
+    if (!noFormBetween(VARIANTS[w].surface))
       ways[
         (SHAPE_DEFAULTS[s]?.inflated ?? 0) === 0
           ? 'Flat'

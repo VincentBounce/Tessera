@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.641';
+const VERSION = '0.5.642';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12447,8 +12447,9 @@ const polyArea = (P) => Math.abs(signedArea(P));
 // a polygon's triangles, its corners' indices three by three: a convex one fanned; else ear by ear (a corner turning its way
 // with no other corner in its triangle cut off; one in line with its neighbours dropped), a hat's, a spectre's too: once a
 // shape (its sides and its turns, in their order: the same, turned or mirrored, the same triangles)
-const polygonTrianglesMemo = remember('polygonTrianglesMemo', new Map());
-const polygonTriangles = (shown) => {
+// (shapes: a memo of the polygons' shapes met, one a build, let go with it: a plane's few shapes cut once, a surface's tiles
+// each its own; one memo kept for all held a key a tile, 3 million after a night's clicks, till v0.5.642)
+const polygonTriangles = (shown, shapes = new Map()) => {
   // (its shape at size 1, its longest side: its tolerances and its memo the same at any size; before v0.4.3 a surface's tiles,
   // on the unit sphere, shared the memo's keys: one's triangles taken for another's, holes)
   const size =
@@ -12470,8 +12471,8 @@ const polygonTriangles = (shown) => {
     (p, i) =>
       `${roundOff(Math.hypot(P[(i + 1) % L][0] - p[0], P[(i + 1) % L][1] - p[1]), 1e9)},${roundOff(turn(i, (i + 1) % L, (i + 2) % L), 1e9)}`,
   ).join(';'); // (the same shape to a billionth: a corner nearly in line, in or out, not another's; before v0.4.3 to 1/10,000, holes on the rosette sphere)
-  if (polygonTrianglesMemo.has(shape)) return polygonTrianglesMemo.get(shape);
-  polygonTrianglesMemo.set(shape, out);
+  if (shapes.has(shape)) return shapes.get(shape);
+  shapes.set(shape, out);
   const left = [...P.keys()];
   while (left.length > 3) {
     const m = left.length,
@@ -37728,7 +37729,8 @@ const surfaceTriangles = (g) =>
   (g.triangles ??= (() => {
     const k = g.sides,
       out = [],
-      own = [];
+      own = [],
+      shapes = new Map(); // (its tiles' shapes, see polygonTriangles)
     // (a sheet's tile by its own corners, round, as shapeAt draws them: not its mesh's, welded across the seams, a Möbius
     // bottle's band's corner past its edge welded to the other edge, a hexagon's ears lost, half of it never drawn)
     const sheet = g.torus && tileCornerPlaces(g),
@@ -37758,7 +37760,7 @@ const surfaceTriangles = (g) =>
       const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]),
         w = cross(N, u);
       const Q = P.map((p) => [dot3(p, u), dot3(p, w)]);
-      for (const i of outwardFolds([...polygonTriangles(Q)], P, Q, N)) out.push(slots[i]);
+      for (const i of outwardFolds([...polygonTriangles(Q, shapes)], P, Q, N)) out.push(slots[i]);
       Object.assign(own[t], { to: out.length, d: slots.length });
     }
     return Uint32Array.from(out);
@@ -40757,7 +40759,8 @@ function planeVertices(F, k = 0) {
     d = k ? 3 : 2,
     pos = new Float32Array(d * N),
     ids = new Uint32Array(N),
-    tris = new Uint32Array(3 * F.start[F.m]);
+    tris = new Uint32Array(3 * F.start[F.m]),
+    shapes = new Map(); // (its cells' shapes, see polygonTriangles)
   let v = 0,
     c = 0;
   for (let t = 0; t < F.m; t++) {
@@ -40769,7 +40772,7 @@ function planeVertices(F, k = 0) {
       pos[d * v + 1] = y;
       ids[v++] = t;
     }
-    for (const i of polygonTriangles(P)) tris[c++] = v0 + i;
+    for (const i of polygonTriangles(P, shapes)) tris[c++] = v0 + i;
   }
   return { pos: pos.subarray(0, d * v), ids: ids.subarray(0, v), tris: tris.subarray(0, c) };
 }

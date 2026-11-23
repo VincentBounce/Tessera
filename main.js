@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.635';
+const VERSION = '0.5.636';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18061,7 +18061,11 @@ function sizeTo(option) {
   const sel = $('gridSizeField'),
     kind = surfaceOf(VARIANTS[tabVariant()]);
   const [rows, width] = TORI.includes(kind) ? torusDims(kind, sizeOf(sel.value)) : [],
-    share = rows && width / torusDims(kind, rows)[1];
+    usual = rows && torusDims(kind, rows)[1],
+    share =
+      rows &&
+      (WIDTH_SHARES.find((s) => torusDims(kind, widthSize(kind, rows, Math.round(s * usual)))[1] === width) ??
+        width / usual); // (a width of the gauge, its share as it is: no drift by roundings from height to height)
   const now = Number(option.value);
   return share && !option.dataset.own
     ? widthSize(kind, now, Math.round(share * torusDims(kind, now)[1]))
@@ -22749,8 +22753,8 @@ const lifeParts = () =>
     ? plane.start === 'random' && /24$/.test(hunt.zone)
       ? 3
       : 1
-    : !playsLife(walk.variant)
-      ? 1 // (Explore: its colours its tiles' looks, no teams, see teamsPlayed)
+    : !playsLife(walk.variant) || walk.life.loops
+      ? 1 // (Explore: its colours its tiles' looks; a loop rule: its colours its states, drawn; no teams, see teamsPlayed)
       : walk.life.colours - (newcomerOn() ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's)
 // colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
 // start's teams fewer with Newcomer, its states the same
@@ -33516,15 +33520,19 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     cellAt: (q) => find(q, on),
   });
 }
-// a pattern laid on a surface, from cell t as t's face's frame F places it (see cellPlace, patternFrame, headingOn): its
-// cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none); Anywhere's
+// a pattern laid by its tile's heading (a lattice tiling's on a surface), not moved by whole steps (the plane's own cells, a
+// tiling that never repeats): its shape then to be checked, see keepsShape
+const byHeading = (kind) => !APERIODIC[kind] && !cellsPlane();
+// a pattern laid from cell t as t's face's frame F places it (see cellPlace, patternFrame): on a surface by t's heading (see
+// headingOn), else its cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none):
+// the plane's own cells (the plane, a disc, a rosette sphere's), or a tiling that never repeats; Anywhere's
 function patternOnCell(F, cells, t) {
   const kind = patternKind();
-  if (!APERIODIC[kind]) return patternFrom(headingOn(walk.surface, F, t), cells);
+  if (byHeading(kind)) return patternFrom(headingOn(walk.surface, F, t), cells);
   const ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     p = F.from(F.place(t)),
     d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]);
-  return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]]))); // (a disc's, a rosette sphere's: its cells the plane's own)
+  return ms.map((m) => F.cellAt(F.at([m[0] + d[0], m[1] + d[1]])));
 }
 // A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
@@ -34906,7 +34914,7 @@ function laidChoices(centred, any = false) {
       const lay = ([cells, name], t) => {
         const F = frameOf(t),
           at = F && patternOnCell(F, cells, t);
-        if (!at || at[0] !== t || (!APERIODIC[kind] && !keepsShape(cells, at))) return null; // (its shape kept: see keepsShape)
+        if (!at || at[0] !== t || (byHeading(kind) && !keepsShape(cells, at))) return null; // (its shape kept: see keepsShape)
         const cs = [];
         for (let k = 0; k < cells.length; k++) {
           const c = at[k];

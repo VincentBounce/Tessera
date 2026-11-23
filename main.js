@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.706';
+const VERSION = '0.5.707';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14607,7 +14607,15 @@ function pinwheelRingMesh(k, cells, twist = 0, along = pinwheelAlong(k)) {
   const shift = twist * pinwheelFrame(k, cells).R, // (its twist in bricks round the tube)
     sheet = pinwheelSheet(k, cells, shift, along),
     { L, W, sides, mids } = sheet,
-    marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true, seamTwist: shift }, // (asManyCells: see pinwheelSolidMesh)
+    marks = {
+      torus: true,
+      nu: L,
+      nv: W,
+      tube: W / L,
+      asManyCells: true,
+      seamTwist: shift,
+      bricks: [along, pinwheelAcross(k)],
+    }, // (asManyCells: see pinwheelSolidMesh; bricks: its colours' blocks, see teamBlocksFit)
     halves = Int32Array.from(
       F.fold === 'mobius' ? [...sheet.halves, ...sheet.halves.map((h) => h + 2 * sheet.halves.length)] : sheet.halves,
     ); // (a Möbius strip's back its own)
@@ -28662,21 +28670,29 @@ const TEAM_GRID = {
 // ring 1 / TORUS_TUBE times as long as its tube): 12 colours 6 × 2 rather than 4 × 3; of those whose b divides its rows
 // first (its columns made for a, see ringColumns), and on a twisted torus those its twist shifts by whole blocks (b = 1 always:
 // bands round the tube); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
-// round the tube), Cairo's slices along the ring only
+// round the tube), Cairo's slices along the ring only; a pinwheel ring's of whole bricks (see teamBlocksFit)
 function torusBlocks(K, g = walk.surface) {
   let best = [K, 1],
     err = Infinity;
   if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
-      const fits = !g?.nv || (g.nv % b === 0 && (b === 1 || (g.seamTwist ?? 0) % (g.nv / b) === 0)), // (a twisted torus's: its seam's shift whole blocks, a band round the tube onto itself)
-        e = (fits ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
+      const e = (teamBlocksFit(K, g, b) ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
       if (e < err) {
         err = e;
         best = [K / b, b];
       }
     }
   return best;
+}
+// K colours' blocks, b round the tube, alike on torus g: its rows (a pinwheel ring's bricks both ways, its own tiles only in a
+// brick: see pinwheelRingMesh) divided by them, and its seam's twist shifting them by whole blocks (a band round the tube, b = 1,
+// onto itself at any twist)
+function teamBlocksFit(K, g, b) {
+  if (!g?.nv) return true;
+  const [along, across] = g.bricks ?? [K, g.nv],
+    twist = ((g.seamTwist ?? 0) * across) / g.nv; // (in its rows, its bricks)
+  return along % (K / b) === 0 && across % b === 0 && (b === 1 || twist % (across / b) === 0);
 }
 // Fair spots for k colours, that the figure's symmetries swap: a solid's faces, corners or edges'
 // middles (the cube: 2 opposite faces, 3 round a corner, 4 round its belt, 6 faces, 8 corners, 12
@@ -28793,6 +28809,11 @@ function surfaceFrame(kind, size) {
       size,
     }; // (as kleinTilingMesh's)
   }
+  if (PINWHEEL_SHEETS[kind]?.fold === 'torus') {
+    const [, along] = torusDims(kind, size),
+      across = pinwheelAcross(kind);
+    return { torus: true, nu: along, nv: across, seamTwist: torusTwist(size, kind), bricks: [along, across] }; // (in bricks: its mesh's in its units, the same shares)
+  }
   if (!TORI.includes(kind)) return {}; // (a solid: its counts by its kind, see solidCounts)
   const [nv, nu] = torusDims(kind, size);
   return {
@@ -28829,7 +28850,7 @@ const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
   if (g?.rosette) return rosetteTurns(g) % K === 0 || rosetteHalves(g, K); // (a rosette surface: its turns' lunes, or its two discs' each, see rosetteParts)
   if (g?.mobius) return true;
   if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks alike, see kleinBlocksSlid)
-  if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0; // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
+  if (g?.nu) return teamBlocksFit(K, g, torusBlocks(K, g)[1]); // (a torus: its blocks fitting it; its columns made for its colours, see ringColumns)
   return false;
 };
 // a count of colours whose battles can bring a colour back: the rule's birth with c live neighbours that K − 1 colours can share

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.684';
+const VERSION = '0.5.685';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14523,12 +14523,17 @@ function pinwheelSolidMesh(k, cells) {
 // there on each other's)
 // its sides round the ring (a brick's long one, or its diagonals' turned: those that keep its tube nearest its usual), its
 // tiles uncut (2 a brick, its sheet so many: a turned side 4 bricks' wide)
+// its bricks round the tube: one, or on a torus of square section four, a face each (a quarter turn of its section one
+// brick on: see torusTwists)
+const pinwheelAcross = (k) =>
+  PINWHEEL_SHEETS[k].fold === 'torus' && !PINWHEEL_SHEETS[k].turned && TORUS_SHAPES[shapeOn('torus')][2].square ? 4 : 1;
 const pinwheelAlong = (k) => {
   const F = PINWHEEL_SHEETS[k],
     along = F.turned ? 1 : 2; // (its side round the ring over the one round the tube, a brick's)
-  return Math.max(1, Math.round(1 / (F.tube() * along)));
+  return Math.max(1, Math.round(pinwheelAcross(k) / (F.tube() * along)));
 };
-const pinwheelLeast = (k) => 2 * pinwheelAlong(k) * (PINWHEEL_SHEETS[k].turned ? 4 : 1) * PINWHEEL_SHEETS[k].faces;
+const pinwheelLeast = (k) =>
+  2 * pinwheelAlong(k) * pinwheelAcross(k) * (PINWHEEL_SHEETS[k].turned ? 4 : 1) * PINWHEEL_SHEETS[k].faces;
 // its frame: its cuts, a brick's short side R, its bricks along, its sides on the plane (a brick's way round the ring, across),
 // its sheet's length round the ring and width round the tube
 function pinwheelFrame(k, cells) {
@@ -14542,11 +14547,11 @@ function pinwheelFrame(k, cells) {
         ]
       : [
           [2 * R, 0],
-          [0, R],
+          [0, R * pinwheelAcross(k)],
         ];
   return { n, R, count, A, B, L: count * Math.hypot(...A), W: Math.hypot(...B) };
 }
-function pinwheelSheet(k, cells) {
+function pinwheelSheet(k, cells, shift = 0) {
   const F = PINWHEEL_SHEETS[k],
     { n, R, count, A, B, L, W } = pinwheelFrame(k, cells),
     onSheet = ([x, y]) => [(x * A[0] + y * A[1]) / Math.hypot(...A), (x * B[0] + y * B[1]) / W];
@@ -14569,7 +14574,7 @@ function pinwheelSheet(k, cells) {
   // its tiles near a seam glued past it (i along, turned over past a Möbius strip's or a Klein bottle's end; j across, but
   // on a Möbius strip), for the corners of the sides across it
   const twist = F.fold !== 'torus',
-    glued = (i, j) => (p) => [p[0] + i * L, (twist && i % 2 ? W - p[1] : p[1]) + j * W],
+    glued = (i, j) => (p) => [p[0] + i * L, (twist && i % 2 ? W - p[1] : p[1]) + i * shift + j * W], // (shift: a torus's twist, see foldMesh)
     near = tris.filter((T) => T.some(([x, y]) => x < 3 || x > L - 3 || y < 3 || y > W - 3)),
     copies = [-1, 0, 1].flatMap((i) =>
       (F.fold === 'mobius' ? [0] : [-1, 0, 1]).flatMap((j) => (i || j ? near.map((T) => T.map(glued(i, j))) : [])),
@@ -14587,13 +14592,14 @@ function pinwheelSheet(k, cells) {
 }
 // a pinwheel ring's mesh: its sheet's, as a tiling's ring's (foldMesh: its corners glued by their places on the sheet, in
 // steps and rows of about a tile; a Möbius strip's two faces, see mobiusFaces), its corners' places its uv
-function pinwheelRingMesh(k, cells) {
+function pinwheelRingMesh(k, cells, twist = 0) {
   const F = PINWHEEL_SHEETS[k],
-    key = `${k}${cells}|${F.fold === 'klein' ? kleinShapeKey() : shapeOn('torus')}`; // (its shape, see RING_SHAPES)
+    key = `${k}${cells}+${twist}|${F.fold === 'klein' ? kleinShapeKey() : shapeOn('torus')}`; // (its twist, see torusTwists; its shape, see RING_SHAPES)
   if (meshCache[key]) return meshCache[key];
-  const sheet = pinwheelSheet(k, cells),
+  const shift = twist * pinwheelFrame(k, cells).R, // (its twist in bricks round the tube)
+    sheet = pinwheelSheet(k, cells, shift),
     { L, W, sides, mids } = sheet,
-    marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true }; // (asManyCells: see pinwheelSolidMesh)
+    marks = { torus: true, nu: L, nv: W, tube: W / L, asManyCells: true, seamTwist: shift }; // (asManyCells: see pinwheelSolidMesh)
   if (F.fold === 'mobius') {
     const { verts, tiles, uv } = mobiusFaces(sheet.tiles, L, W);
     return (meshCache[key] = Object.assign(finishMesh(verts, tiles, sides, cells, null), marks, {
@@ -14606,8 +14612,12 @@ function pinwheelRingMesh(k, cells) {
     }));
   }
   const frame = { step: L / Math.ceil(L), by: W / Math.ceil(W), n: Math.ceil(L), nv: Math.ceil(W) },
-    { mesh, tiles } = foldMesh(frame, sheet, sheet.twist, (x, y) =>
-      sheetPoint({ ...marks, klein: sheet.twist }, x, y, 1),
+    { mesh, tiles } = foldMesh(
+      frame,
+      sheet,
+      sheet.twist,
+      (x, y) => sheetPoint({ ...marks, klein: sheet.twist }, x, y, 1),
+      shift,
     );
   return (meshCache[key] = Object.assign(mesh, marks, {
     klein: sheet.twist,
@@ -16532,11 +16542,10 @@ function foldMesh({ step, by, n, nv }, sheet, twist, point, shift = 0) {
     ids = new Map(),
     verts = [];
   const id = ([x, y]) => {
-    let i = Math.round((x / step) * Q),
-      j = Math.round((y / by) * Q);
+    let i = Math.round((x / step) * Q);
     const k = Math.floor(i / (n * Q));
     i -= k * n * Q;
-    j -= k * shift * Q; // (a torus's twist: shift rows further round the tube once round, see torusTwist)
+    let j = Math.round(((y - k * shift) / by) * Q); // (a torus's twist: shift further round the tube once round, see torusTwist)
     if (twist && k % 2) j = nv * Q - j;
     j = ((j % (nv * Q)) + nv * Q) % (nv * Q);
     if (!ids.has(i * nv * Q + j)) {
@@ -16604,7 +16613,7 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
       sheet,
       false,
       (x, y) => torusPoint(x, y, sheet.L, sheet.W, 1, tube, null, (twist * sheet.W) / nv),
-      twist * rows,
+      (twist * sheet.W) / nv,
     ),
     units = (x, i) => x * (i % 2 ? nv / sheet.W : nu / sheet.L); // (x, then y: in its sides)
   // its lattice cells, the plane's cell each tile was laid from (i, j: see tilingStrip) brought within the torus's periods
@@ -18106,10 +18115,10 @@ for (const k of PINWHEEL_SOLIDS) {
 // radius their sheet's length round
 for (const k of Object.keys(PINWHEEL_SHEETS))
   SURFACES[k] = {
-    mesh: (cells) => pinwheelRingMesh(k, cells),
-    radius: (cells) => pinwheelFrame(k, cells).L / (2 * Math.PI),
+    mesh: (size) => pinwheelRingMesh(k, untwisted(size), torusTwist(size)),
+    radius: (size) => pinwheelFrame(k, untwisted(size)).L / (2 * Math.PI),
     ownSizes: () => pinwheelSizes(pinwheelLeast(k)),
-    tiles: (cells) => cells,
+    tiles: (size) => untwisted(size),
     unit: 'triangles',
     tiling: 'pinwheel',
   }; // (tiling: its rules the pinwheel's)
@@ -18226,7 +18235,8 @@ function syncSizeStepper() {
   const turn = kind && TURNED[kind.replace(/Turned$/, '')] ? ` · ${Math.round(Math.abs(tilesTurn(kind)))}°` : ''; // (as its tiles lie)
   const label = (f) => {
     const twist = torusTwists(kind, f).length ? ` · +${torusTwist(f)}` : ''; // (its twist, see torusTwist)
-    $('sizeLabel').innerHTML = `${sizeShape(kind, f)}${turn}${twist}<small>${shortCells(sizeCells(kind, f))}</small>`;
+    $('sizeLabel').innerHTML =
+      `${sizeShape(kind, untwisted(f))}${turn}${twist}<small>${shortCells(sizeCells(kind, f))}</small>`;
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
@@ -18384,7 +18394,9 @@ const sizeOf = (v) => (/[x+]/.test(String(v)) ? String(v) : Number(v)); // (a si
 // section's by quarter turns (0, ¼, ½), on a torus of rows only (a tiling's, Cairo's; none elsewhere)
 const torusTwist = (size) => Number(String(size).split('+')[1] ?? 0),
   withTwist = (size, k) => `${String(size).split('+')[0]}${k ? `+${k}` : ''}`,
+  untwisted = (size) => sizeOf(String(size).split('+')[0]), // (a size, its twist apart: a pinwheel ring's, its cells)
   torusTwists = (kind, size) => {
+    if (PINWHEEL_SHEETS[kind]) return pinwheelAcross(kind) === 4 ? [0, 1, 2] : []; // (a pinwheel's: by bricks, a quarter turn each)
     if (!SURFACES[kind]?.perRow || !kind.startsWith('torus')) return []; // (a surface's: none on the plane)
     const cells = torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube)
       step = TORUS_SHAPES[shapeOn('torus')][2].square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
@@ -18683,7 +18695,7 @@ const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${siz
 // a Möbius strip) or tiles across (a solid); a torus with the usual tiles per row is the usual size
 function selectSize(kind, size) {
   const sel = $('gridSizeField'),
-    dims = (s) => (TORI.includes(kind) ? torusDims(kind, s) : [Number(s)]),
+    dims = (s) => (TORI.includes(kind) ? torusDims(kind, s) : [untwisted(s)]),
     [rows] = dims(size);
   for (const o of [...sel.options]) if (o.dataset.own) o.remove();
   const usual =

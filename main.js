@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.687';
+const VERSION = '0.5.688';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11668,15 +11668,8 @@ function renderModePicker() {
         RING_SHAPES[ring],
         shapeOn(ring, w),
         (k) => {
-          const kind = surfaceOf(VARIANTS[w]);
-          seek(kind); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
+          seek(surfaceOf(VARIANTS[w])); // (its cells kept: the new shape's size the nearest to them, see fillGridSizes)
           ringShape[ring] = k;
-          const { turn } = RING_SHAPES[ring][k][2];
-          if (!turn) return;
-          fillGridSizes(kind, VARIANTS[w].initial); // (its sizes the shape's: a pinwheel's bricks, see pinwheelAcross)
-          const size = $('gridSizeField').value,
-            twists = torusTwists(kind, size); // (0 to half a turn)
-          if (twists.length) selectSize(kind, withTwist(size, 2 * turn * twists.at(-1))); // (its twist by default, its declaration's: the Triangle's a quarter, Penrose's)
         },
         null,
         () => (ring === 'klein' && walk.variant === tabVariant() ? reshapeKlein() : compute()), // (the bottle shown: its form only; a torus's shapes their own sizes: built again)
@@ -15415,10 +15408,9 @@ const TORUS_SHAPES = [
       tube: 0.2,
       square: true,
       corners: 3,
-      turn: 1 / 4,
     },
   ],
-]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint; turn: its twist by default, a share of a turn)
+]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
@@ -18282,7 +18274,7 @@ function syncSizeStepper() {
     twists.findLastIndex((t) => t <= torusTwist(sel.value)),
     (k) => label(twisted(k)),
     (k) => useSize(kind, twisted(k)),
-    0,
+    TORUS_SHAPES[shapeOn('torus')][2].square ? twists.length >> 1 : 0, // (its default: none, a square section's middle, Penrose's)
   );
   const starts = variantStarts();
   $('startRow').hidden = !starts;

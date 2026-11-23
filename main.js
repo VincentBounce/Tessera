@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.642';
+const VERSION = '0.5.643';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16641,6 +16641,7 @@ function twistedSphereMesh(f) {
   return (meshCache[key] = Object.assign(mesh, {
     tiling: SURFACES.twistedsphere.tiling,
     cellFaces: Int32Array.from([...cells.map(faceOfTriangles), ...round.map((_, t) => faceOfTriangles([t]))]),
+    cornerCells: cells.flatMap((ts, t) => (ts.length === 5 ? [t] : [])), // (its 12 pentagons, the icosahedron's corners: see solidCorners)
   }));
 }
 /* The Penrose sphere: Twarock and Konevtsova's spherical Penrose tilings, as Hamish Todd builds them (Bridges 2018, "A Class
@@ -18215,10 +18216,10 @@ const FACE_ADJECTIVES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hex
 // sides), read there
 const leastMeshes = remember('leastMeshes', {}),
   leastMesh = (kind) => (leastMeshes[kind] ??= SURFACES[kind].mesh(SURFACES[kind].sizes[0]));
-// a surface's solid's faces, by its cells' (see cellFaces); none off a solid (a torus, a globe), a ring's known by its kind
+// a surface's solid's faces, by its cells' (see cellFaces); none off SOLIDS (a ring, a globe, a rosette: known by the list)
 // (no mesh built: a greyed control's search judges hundreds of them, 2.3 s a hover of Sides till v0.5.360)
 const facesCount = (kind) => {
-  const g = !TORI.includes(kind) && SURFACES[kind]?.sizes && leastMesh(kind); // (a ring first: its sizes a ladder of counts)
+  const g = SOLIDS.includes(kind) && leastMesh(kind); // (a solid's only: no mesh built for a ring, a globe, a rosette)
   return g?.cellFaces ? g.cellFaces.reduce((m, f) => Math.max(m, f + 1), 0) : 0;
 };
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
@@ -18523,6 +18524,7 @@ const SOLIDS = [
   'stella',
   'dodeca',
   'icosa',
+  'twistedsphere', // (the icosahedron of hexagons turned and triangles: chiral, its counts its turns')
   'hexsphere',
   ...hexSolids.map((k) => `${k}Hex`),
   'tetraKite',

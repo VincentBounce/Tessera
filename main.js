@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.679';
+const VERSION = '0.5.680';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15397,10 +15397,9 @@ const TORUS_SHAPES = [
       curve: (t) => [Math.cos(t) + 0.2 * Math.cos(2 * t), Math.sin(t) - 0.2 * Math.sin(2 * t), 0],
       tube: 0.2,
       square: true,
-      corners: 3,
     },
   ],
-]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's, one at its seam (its curve at 0), its twist at them, see torusPoint)
+]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
 const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
@@ -15625,11 +15624,8 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0) 
     h = rt * (Math.cos(th) - 1) + tube * b;
   }
   if (turned) {
-    // (its section turned round the tube's axis, back by turned rows once round: row j's place then row j − turned's; on a
-    // line of corners, as much at each, none half way between: u + sin(2πku) / 2πk, its slope 2 there, 0 between)
-    const u = i / nu,
-      k = knot.corners,
-      a = -2 * Math.PI * (turned / nv) * (k ? u + Math.sin(2 * Math.PI * k * u) / (2 * Math.PI * k) : u);
+    // (its section turned round the tube's axis, back by turned rows once round: row j's place then row j − turned's)
+    const a = (-2 * Math.PI * turned * i) / (nv * nu);
     [w, h] = [w * Math.cos(a) + h * Math.sin(a), h * Math.cos(a) - w * Math.sin(a)];
   }
   if (c < 1e-6) return [X, -w, h];

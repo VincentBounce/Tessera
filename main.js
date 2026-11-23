@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.653';
+const VERSION = '0.5.654';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6549,10 +6549,10 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => {
       if (['Life', 'Ant', 'Rewind'].includes(NAV[w][0]))
         return GRID_LINES.length + TILES_PALETTES.light.indexOf('Mist');
-      if (variant.explore) return exploreLook.rule === 'kind' ? 2 : 0;
+      if (variant.explore) return ['kind', 'distance'].includes(exploreLook.rule) ? 3 : 0;
       return NAV[w][1].startsWith('2D') || NAV[w][1] === '3D' ? 1 : 2; // (11% in 2D and in a lattice, 20% on a solid)
     },
-  ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, Medium: see GRID_LINES)
+  ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's and its distances', Strong: see GRID_LINES)
   trail: ['lifeTrail', 'open', true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
   ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
   cut: [null, 'open', 0],
@@ -22972,12 +22972,12 @@ const EXPLORE_RULES = [
   ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
 ];
 const EXPLORE_PALETTES = [
-  ['Azulejo', ['#1F3A93', '#3E6FB0', '#A9C6E8', '#F4F1EA'], "Blues and cream, as Portugal's glazed tiles"],
   ['Terracotta', ['#C8553D', '#F28F3B', '#FFD5C2', '#588B8B'], 'Baked clay, apricot and a sea green'],
-  ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B'], 'Wine, plum, amber and jade'],
   ['Bauhaus', ['#E63946', '#F1C40F', '#1D3557', '#F1FAEE'], 'Red, yellow, navy and white'],
   ['Macaron', ['#FFB5A7', '#FCD5CE', '#B8E0D2', '#9DC3C2'], 'Soft pinks and mints'],
   ['Sage', ['#D4A373', '#FAEDCD', '#CCD5AE', '#8A9A5B'], 'Sand, cream and sage greens'],
+  ['Azulejo', ['#1F3A93', '#3E6FB0', '#A9C6E8', '#F4F1EA'], "Blues and cream, as Portugal's glazed tiles"],
+  ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B'], 'Wine, plum, amber and jade'],
   ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE'], 'From night blue to sea foam'],
   ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A'], 'From soot to flame'],
   ['Blush', ['#F6E6E1', '#F0DCD5', '#EAD1C9', '#E3C6BD'], 'Faded pinks of one hue, barely apart'],

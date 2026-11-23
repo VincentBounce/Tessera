@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.645';
+const VERSION = '0.5.646';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16123,30 +16123,21 @@ function stripCount(kind, kind0, size, across = false) {
     across,
   ));
 }
-// (a row's middles counted at once: |a| apart from its first to the length, no middle visited)
+// each of a lattice cell's middles, row by row of its lattice (b: a row up, bx along), every copy along within its length,
+// |a| apart: a row counted at once from its first (on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as
+// near); across: below its top (a bottle's or a torus's), else to it
 function stripCounted(kind, kind0, size, across) {
-  let count = 0;
-  eachStripRow(stripFrame(kind, kind0, size, across), across, (x, y, end, la) => (count += Math.ceil((end - x) / la)));
-  return count;
-}
-// a strip's frame's rows of tiles' middles (see stripFrame), fn(x, y, end, la) each, its first middle (x, y), the others |a|
-// apart below end: each of a lattice cell's middles, row by row of its lattice (b: a row up, bx along), every copy along
-// within its length (on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near); across: below its top (a
-// bottle's or a torus's), else to it
-function eachStripRow({ m, nv, L, W, cells, la, bx }, across, fn) {
-  const e = 1e-5,
+  const { m, nv, L, W, cells, la, bx } = stripFrame(kind, kind0, size, across),
+    e = 1e-5,
     by = W / nv;
+  let count = 0;
   for (let k = 0; k < m; k++) {
     const [mx, my] = meanPoint(cells(0, 0, k));
     for (let j = Math.ceil((-e - my) / by); across ? my + j * by < W - e : my + j * by <= W + e; j++)
-      fn(mx + j * bx - la * Math.floor((mx + j * bx + e) / la), my + j * by, L - e, la);
+      count += Math.ceil((L - e - (mx + j * bx - la * Math.floor((mx + j * bx + e) / la))) / la);
   }
+  return count;
 }
-// its tiles' middles as tilingStrip keeps them, fn(x, y) each
-const eachStripMiddle = (frame, across, fn) =>
-  eachStripRow(frame, across, (x0, y, end, la) => {
-    for (let x = x0; x < end; x += la) fn(x, y);
-  });
 // A tiling's Klein bottle or torus: its strip's sheet (see tilingStrip), L along and W across, glued across, (x, y + W) →
 // (x, y), and at its ends turned over as the strip's, (x + L, y) → (x, W − y) (a Klein bottle), or straight, (x + L, y) →
 // (x, y) (a torus): W, nv rows of b, then a lattice's way across (nv·b_x a whole count of |a|: rows by sheetRows), the
@@ -16201,8 +16192,7 @@ function kleinLengthOf(kindK, size, K) {
   // its colours' blocks a × b, as a torus's (see torusBlocks): a slices along, b = 1 or 2 round the tube, its half turn (a shift
   // by W / 2, the only one round it its gluing keeps: turned over, s comes back as −s), where half its rows are whole rows of
   // its lattice across (see sheetRows); its length as a ring's (see ringLength) for each: near its usual (W / TORUS_TUBE), its
-  // blocks square, as the twist allows, its blocks alike (see kleinBlocksAlike: a half turn may lay them where a slide does
-  // not, 25.5 hexagons in 3), by its preferences in turn (see prefer); of those, the ones alike (fits), then the squarest blocks
+  // blocks square, as the twist allows, its blocks alike by construction (see kleinBlocksSlid), by its preferences in turn (see prefer); of those, the ones alike (fits), then the squarest blocks
   const x = W / TORUS_TUBE / step,
     q = Math.round(copyLength / step),
     rows = sheetRows([a, b]); // (its lattice's, before b names the slices round the tube)
@@ -16213,10 +16203,10 @@ function kleinLengthOf(kindK, size, K) {
         drawn = plane.start === 'draw',
         length = (units, judged = () => true) =>
           ringLength(own ?? x, own ?? (x * TORUS_TUBE * K) / b / b, units, (c) => ok(c, nv, true) && judged(c));
-      // its blocks alike, judged on the nearest few that close (8) each time asked; drawn by hand, any (nothing laid by them)
+      // its blocks alike, among the nearest few that close (8) each time asked; drawn by hand, any (nothing laid by them)
       const fair = () => {
         let tries = 0;
-        return (c) => drawn || (tries++ < 8 && kleinBlocksAlike(strip, nv, c, blocks));
+        return (c) => drawn || (tries++ < 8 && kleinBlocksSlid(strip, nv, c, blocks));
       };
       // its preferences in turn, [units, judged] each, the first that finds one: its usual one closed by its tiling's second
       // mirror (the lengths it alone opened, see mobiusMirrors), fair by construction, a drawn start's too (kleinBlocksSlid:
@@ -16230,7 +16220,7 @@ function kleinLengthOf(kindK, size, K) {
         [own && (K === 1 || drawn) ? [] : [(K / b) * q], () => true],
       ];
       const n = prefer.reduce((found, [units, judged]) => found || length(units, judged), 0);
-      return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: kleinBlocksAlike(strip, nv, n, blocks) };
+      return { kind, strip, turn, nv, n, W, step, by, a, blocks, fits: kleinBlocksSlid(strip, nv, n, blocks) };
     })
     .reduce((p, c) => {
       const off = (m) => (m.fits ? 0 : 100) + Math.abs(Math.log((m.n * m.step * m.blocks[1]) / m.blocks[0] / m.W));
@@ -16238,81 +16228,19 @@ function kleinLengthOf(kindK, size, K) {
     });
 }
 // a place's block on a sheet nu × nv cut in a × b blocks (a along, b across), by its middle (u, v): a torus's and a bottle's
-// colours (see FIGURE_PARTS.sheet, kleinBlocksAlike)
+// colours (see FIGURE_PARTS.sheet)
 const sheetBlock = (u, v, nu, nv, [a, b]) => {
   const at = (x, m, k) => Math.max(0, Math.min(k - 1, Math.floor((x * k) / m + 1e-6)));
   return at(u, nu, a) * b + at(v, nv, b);
 };
-// Whether a tiling's Klein bottle, nv rows and n steps along, has its blocks alike (a × b, see kleinLength): each the first's
-// image by one of the bottle's symmetries, its tiles' middles on theirs. A symmetry: an isometry of the sheet's plane, x and y
-// each kept or reversed (a slide, a turn over along it, a half turn, a mirror across it), that lays the tiling on itself
-// (its lattice's sides on lattice steps, a lattice cell's corners and middles on theirs) and keeps the bottle's gluings, (x,
-// y + W) ≡ (x, y) and (x + L, y) ≡ (x, W − y): its shift across 0 or W / 2. The one sought sends the first block's middle to
-// the other's. By construction, the middles from the strip's frame (as stripCounted counts them), no mesh built
-const alikeMemo = remember('alikeMemo', {});
-// whether a bottle's blocks are alike by construction: one colour, or its slices whole copies of its tiling along (turned over
-// on its ends' mirror's glide), each slice the one before slid
+// whether a bottle's blocks are alike, by construction: one colour, or its slices whole copies of its tiling along (turned
+// over on its ends' mirror's glide), each slice the one before slid (a length laying them alike by a half turn only, 2 % of
+// those typed, none of the menu's, measured on its tiles till v0.5.645: no longer offered fair)
 function kleinBlocksSlid(strip, nv, n, blocks) {
   const { step, mirrorAt } = MOBIUS_ALONG[strip],
     { g, la } = mirrorAt(n, nv, true),
     copies = (n * step) / blocks[0] / (g > 1e-9 ? g : la);
   return blocks[0] * blocks[1] === 1 || Math.abs(copies - Math.round(copies)) < 1e-6;
-}
-function kleinBlocksAlike(strip, nv, n, blocks) {
-  const K = blocks[0] * blocks[1];
-  if (kleinBlocksSlid(strip, nv, n, blocks)) return true;
-  // (judged on the least sheet alike: a block's whole copies of its tiling along and its lattice's rows across taken out two
-  // by two, the same verdict, 317,448 sheets of 54 bottles compared; a sheet of 168 rows walked 1,000 times a hover of Octet
-  // till v0.5.638)
-  const { step, copyLength } = MOBIUS_ALONG[strip],
-    rows = sheetRows(MOBIUS_STRIPS[strip].basis),
-    least = (x, period) => x - period * Math.max(0, Math.floor(x / period) - 1);
-  [nv, n] = [least(nv, 2 * rows * blocks[1]), least(n, 2 * blocks[0] * Math.round(copyLength / step))];
-  return (alikeMemo[`${strip}|${nv}|${n}|${blocks}`] ??= (() => {
-    const frame = stripFrame(MOBIUS_STRIPS[strip].kind, strip, `${nv}x${n}`, true),
-      { L, W, cells, ta, tb, mirrorY, t } = frame,
-      each = (fn) => eachStripMiddle(frame, true, (x, y) => fn(x, y, sheetBlock(x, y, L, W, blocks))),
-      key = (x, y) => kleinSheetKey(x, y, L, W, 0); // (the bottle's place: within its length, past its end turned over)
-    // (first its blocks' counts and middles, then the maps the tiling and the gluings allow, before any tile is matched)
-    const count = new Array(K).fill(0),
-      centre = Array.from({ length: K }, () => [0, 0]);
-    each((x, y, p) => {
-      count[p]++;
-      centre[p][0] += x;
-      centre[p][1] += y;
-    });
-    if (count.some((c) => c !== count[0])) return false;
-    centre.forEach((c) => c.forEach((v, d) => (c[d] = v / count[0])));
-    // (the tiling: a lattice cell's middles and corners, its lattice's units from its mirror's line, laid on y = 0)
-    const tiling = {
-      ta,
-      tb,
-      mids: t.polys.map((_, k) => meanPoint(cells(0, 0, k))),
-      corners: t.polys.flatMap((_, k) => cells(0, 0, k)),
-      frac: (p) => inBasis([p[0], p[1] + mirrorY], ta, tb),
-    };
-    // each other block's maps: x and y kept or reversed, the first block's middle sent to its, its shift across 0 or W / 2 (the
-    // gluings kept), the tiling laid on itself
-    const whole = (z) => Math.abs(z - Math.round(z)) < 1e-6,
-      maps = centre.slice(1).map((c1) =>
-        [1, -1]
-          .flatMap((sx) =>
-            [1, -1].map((sy) => {
-              const ty = c1[1] - sy * centre[0][1];
-              return whole((2 * ty) / W) && (([x, y]) => [sx * (x - centre[0][0]) + c1[0], sy * y + ty]);
-            }),
-          )
-          .filter((f) => f && laysOnItself(f, tiling)),
-      );
-    if (maps.some((fs) => !fs.length)) return false;
-    const first = [],
-      at = Array.from({ length: K }, () => new Set());
-    each((x, y, p) => {
-      if (p) at[p].add(key(x, y));
-      else first.push([x, y]);
-    });
-    return maps.every((fs, i) => fs.some((f) => first.every((p) => at[i + 1].has(key(...f(p))))));
-  })());
 }
 // A sheet's mesh (see foldSheet), n steps along and nv rows of b across: a corner once, by its place on tilingStrip's fine
 // grid brought within the sheet (twist: past its end turned over, a Klein bottle's), placed by point; its tiles turned
@@ -28348,7 +28276,7 @@ const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
   if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
   if (g?.rosette) return rosetteTurns(g) % K === 0 || rosetteHalves(g, K); // (a rosette surface: its turns' lunes, or its two discs' each, see rosetteParts)
   if (g?.mobius) return true;
-  if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks alike, see kleinBlocksAlike)
+  if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks alike, see kleinBlocksSlid)
   if (g?.nu) return g.nv % torusBlocks(K, g)[1] === 0; // (a torus: its blocks' rows dividing its rows; its columns made for its colours, see ringColumns)
   return false;
 };

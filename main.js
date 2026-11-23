@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.707';
+const VERSION = '0.5.708';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -752,6 +752,7 @@ const rimSides = (sides, keyOf) => {
 };
 // two whole numbers' greatest common divisor (≥ 0)
 const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+const lcm = (a, b) => (a * b) / gcd(a, b);
 // cells' corners (polys: each its corners in turn, either way) whole round: their cells' angles there a whole turn (not by
 // the grid's edge, nor a wall)
 const wholeTurns = (polys) => {
@@ -15576,14 +15577,13 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own) {
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv }),
     unit = a % step ? a * step : a,
     v = VARIANTS[ringVariant()],
-    along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1; // (a reversible one's: its blocks' sets come round along it)
-  return ringLength(
-    own ?? x,
-    own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b,
-    [(unit * along) / gcd(unit, along)],
-    ok,
-  );
+    along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1, // (a reversible one's: its blocks' sets come round along it)
+    whole = lcm(lcm(unit, along), ringCorners(surfaceOf(v))); // (a Triangle's: as many on each side, see ringCorners)
+  return ringLength(own ?? x, own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b, [whole], ok);
 }
+// a ring's corners, its shape's (see TORUS_SHAPES: a Triangle's 3), 1 a round one's or a bottle's: its length a whole count of
+// them (its sides alike: see ringColumns, torusDims), its teams Solo or one a side (see teamsFit)
+const ringCorners = (kind) => (kind?.startsWith('torus') ? (TORUS_SHAPES[shapeOn('torus')][2].corners ?? 1) : 1);
 
 // A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies: its middle at 0,
 // its tangent east, its side north (−y), its up up; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
@@ -18506,8 +18506,11 @@ function torusDims(kind, size) {
     // a Möbius strip: its rows and its length, as a count of steps along (see MOBIUS_ALONG)
     return [mobiusSize(size)[0], Math.round(mobiusLength(kind, size) / MOBIUS_ALONG[kind].step)]; // (its length the one built: one of its own, the nearest its twist allows, see stripSteps)
   }
-  if (PINWHEEL_SHEETS[kind])
-    return [Number(String(size).split('x')[0]), Number(String(size).split('x')[1]) || pinwheelAlong(kind)]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
+  if (PINWHEEL_SHEETS[kind]) {
+    const [cells, along] = String(size).split('x').map(Number),
+      c = ringCorners(kind); // (a whole count of bricks a side: see ringCorners)
+    return [cells, Math.max(c, c * Math.round((along || pinwheelAlong(kind)) / c))]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
+  }
   if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
   const [rows, perRow] = size.split('x').map(Number);
   return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
@@ -28713,7 +28716,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
   }
   if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
   if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
-  if (g?.nu) return true; // a torus: its blocks (twisted: those its seam glues in line, see torusBlocks) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
+  if (g?.nu) return [1, k].includes(ringCorners(surfaceOf(variant))); // a torus: its blocks (twisted: those its seam glues in line, see torusBlocks), a Triangle's one a side (see ringCorners) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.643';
+const VERSION = '0.5.644';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14471,6 +14471,7 @@ function pinwheelSolidMesh(k, cells) {
     {
       cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
       solid: { corners: solidCorners(SURFACES[k].mesh(1)), centres: solidFaceCentres(SURFACES[k].mesh(1)) }, // (its solid's)
+      asManyCells: true, // (its tiles turned every way, none alike face to face: its colours' parts as many cells, see spotColours)
     },
   ));
 }
@@ -32016,6 +32017,32 @@ function spotColours(col, g) {
     }
     out[t] = k;
   }
+  return g.asManyCells ? asManyCells(col, g) : out;
+}
+// a colouring's parts as many cells each (a pinwheel solid's, see pinwheelSolidMesh; the plane's grids with no turn, their
+// slices, see planeSlices): each cell to its nearest colour with room left, the nearest pairs first (a cell's two nearest
+// colours: the others never nearer), each colour n / K cells, the first n % K one more
+function asManyCells({ items, colour }, g) {
+  const K = Math.max(...colour) + 1,
+    C = g.cen,
+    room = Array.from({ length: K }, (_, c) => Math.floor(g.n / K) + (c < g.n % K ? 1 : 0)),
+    pairs = [];
+  for (let t = 0; t < g.n; t++) {
+    const near = new Array(K).fill(-Infinity);
+    items.forEach((q, i) => {
+      near[colour[i]] = Math.max(near[colour[i]], q[0] * C[3 * t] + q[1] * C[3 * t + 1] + q[2] * C[3 * t + 2]);
+    });
+    const [a, b = a] = [...near.keys()].sort((x, y) => near[y] - near[x]);
+    pairs.push([near[a], t, a], [near[b], t, b]);
+  }
+  pairs.sort((p, q) => q[0] - p[0]);
+  const out = new Int32Array(g.n).fill(-1);
+  for (const [, t, c] of pairs)
+    if (out[t] < 0 && room[c] > 0) {
+      out[t] = c;
+      room[c]--;
+    }
+  for (let t = 0; t < g.n; t++) if (out[t] < 0) room[(out[t] = room.findIndex((r) => r > 0))]--; // (its two nearest full: any with room)
   return out;
 }
 // the patches' spots: the colours' patch items

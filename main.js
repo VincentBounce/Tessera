@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.639';
+const VERSION = '0.5.640';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26840,7 +26840,7 @@ const SYMMETRY_WHERE =
   'The grid is not its own copy this way (squares: all ways; a grid in a hexagon: as its tiles allow; a block rule: as its blocks and its rule allow too; in colours, as their parts do, each copy one whole part; the others: none). Not on Famous and Anywhere either: their patterns are laid whole where they are.'; // (a symmetry's greyed words)
 const DRAW_WHERE = 'On a reversible surface, a block rule has no patterns to show or draw.';
 // why a Life's start (its tab, see START_TABS) cannot be at variant v: Draw on a surface (its rule's patterns:
-// none for blocks); Text where no picture fits (its room known on the grid built only: another variant's not judged, not claimed)
+// none for blocks); Text where no picture fits (its room known on the grid built only: another variant's or other colours' not judged, not claimed)
 const startWhyNot = (start, v) =>
   start === 'draw'
     ? !VARIANTS[v].plane && VARIANTS[v].margolus
@@ -26849,7 +26849,10 @@ const startWhyNot = (start, v) =>
     : start === 'text'
       ? v !== tabVariant()
         ? TEXT_WHERE
-        : !walk.life || digitsComputed?.variant !== v || setFits(iconMax(textSet()), textSet())
+        : !walk.life ||
+            digitsComputed?.variant !== v ||
+            lifeParts() !== setupParts(setupNow()) || // (the grid built not yet the setup's: its colours picked a moment ago)
+            setFits(iconMax(textSet()), textSet())
           ? ''
           : TEXT_WHERE
       : '';
@@ -33562,13 +33565,15 @@ function headingOn(g, F, t) {
     k = g.sides,
     edges = liveEdges(g, t),
     cell = planeCellAt(kind, 1, ...F.from(F.place(t)), 'free'),
-    found = cell
-      ? planeCorners(kind, ...cell).flatMap((_, j) => {
-          const c = planeAcross(kind, cell, j)?.[0],
-            e = c ? edges.findIndex((f) => g.nbr[k * t + f] === F.cellAt(F.at(cellMiddle(kind, ...c)))) : -1;
-          return e < 0 ? [] : [[j, e, g.nbr[k * t + edges[e]]]];
-        })
-      : [];
+    // (a heading only on a tile as many sides as its cell: a mixed solid's triangle never a square's)
+    found =
+      cell && planeCorners(kind, ...cell).length === edges.length
+        ? planeCorners(kind, ...cell).flatMap((_, j) => {
+            const c = planeAcross(kind, cell, j)?.[0],
+              e = c ? edges.findIndex((f) => g.nbr[k * t + f] === F.cellAt(F.at(cellMiddle(kind, ...c)))) : -1;
+            return e < 0 ? [] : [[j, e, g.nbr[k * t + edges[e]]]];
+          })
+        : [];
   if (found.length > 1) {
     const [[j0, e0], [j1, e1]] = found,
       hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
@@ -33587,10 +33592,10 @@ function headingAcross(h, v) {
     kind = patternKind(),
     edges = liveEdges(g, t),
     e = edges.findIndex((f) => g.nbr[k * t + f] === v),
-    across = e < 0 ? null : planeAcross(kind, cell, mod(hand * (e - edges.indexOf(e0)), edges.length));
-  if (!across) return null;
+    across = e < 0 ? null : planeAcross(kind, cell, mod(hand * (e - edges.indexOf(e0)), edges.length)),
+    back = liveEdges(g, v);
+  if (!across || planeCorners(kind, ...across[0]).length !== back.length) return null; // (a tile of other sides than its cell's: no heading, as patternFrom steps)
   const a = g.nbrEdge[k * t + edges[e]],
-    back = liveEdges(g, v),
     turned = g.poly[k * v + a] === g.poly[k * t + edges[e]] ? -hand : hand;
   return { g, t: v, cell: across[0], e0: back[mod(back.indexOf(a) - turned * across[1], back.length)], hand: turned };
 }

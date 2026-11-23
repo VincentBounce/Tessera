@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.713';
+const VERSION = '0.5.714';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18338,12 +18338,13 @@ function syncSizeStepper() {
     },
     widths.usual,
   );
-  // its twist under them (a torus of rows: see torusTwists), its default marked; elsewhere none
+  // its twist under them (a torus of rows: see torusTwists), its default marked; on a torus that takes none greyed, its
+  // enablers the tilings that do (see twistWhyNot); elsewhere none
   const twists = sel.selectedOptions[0] ? torusTwists(kind, asked) : [],
     twistShare = (k) => twists[k] / twists.at(-1);
   sizeGauge(
     $('twistGauge'),
-    twists.length,
+    twists.length || 1,
     twists.findLastIndex((t) => t <= torusTwist(asked, kind)),
     (k) => label(walkersSize(kind, ringSize(kind, rowsNow, ringWidth, twistShare(k)))),
     (k) => {
@@ -18351,7 +18352,10 @@ function syncSizeStepper() {
       sizeChanged();
     },
     twists.indexOf(twistByDefault(kind, asked)),
+    !!kind?.startsWith('torus'),
   );
+  if (kind?.startsWith('torus'))
+    greyInput($('twistGauge').querySelector('input'), $('twistGauge').closest('.pill-row'), twistWhyNot);
   const starts = variantStarts();
   $('startRow').hidden = !starts;
   if (!starts) return;
@@ -18369,9 +18373,9 @@ function syncSizeStepper() {
 // The sizes as a slider under the stepper (a ring's width and twist: as Glint's, titled, a pill with its knob, see .shape-slider), across, a notch each under it, the one in use its knob (none: hidden); dragged, the label
 // shows the size under it (preview), the size picked when let go (pick: a surface is built again), a notch clicked at once;
 // byDefault: the default's notch, in the text's colour (none: −1)
-function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
-  (el.closest('.pill-row') ?? el).hidden = n < 2; // (a titled one, Width's, Twist's: its row)
-  if (n < 2) return;
+function sizeGauge(el, n, i, preview, pick, byDefault = -1, shown = n > 1) {
+  (el.closest('.pill-row') ?? el).hidden = !shown; // (a titled one, Width's, Twist's: its row; shown with one notch: greyed, see greyInput)
+  if (!shown) return;
   const range = Object.assign(document.createElement('input'), {
     type: 'range',
     min: 0,
@@ -18457,6 +18461,12 @@ const sizeOf = (v) => (/[x+]/.test(String(v)) ? String(v) : Number(v)); // (a si
 // Triangle's untwisted); twists, those it takes at a size: 0 to half
 // its lattice cells round the tube (past it, the same mirrored), its lattice cell its steps' (Cairo's 2 squares), a square
 // section's by quarter turns (0, ¼, ½), on a torus of rows only (a tiling's, Cairo's; none elsewhere)
+// a variant's twist allowed (its torus's tiling taking one at its size: see torusTwists), else why: the Twist slider's
+const TWIST_WHERE = 'This tiling takes no twist on this torus: its cells do not come round the tube in whole steps.';
+const twistWhyNot = ({ w }) => {
+  const kind = surfaceOf(VARIANTS[w]);
+  return kind && torusTwists(kind, figureSize(w)).length > 1 ? '' : TWIST_WHERE;
+};
 const torusTwist = (size, kind) => {
     const written = String(size).split('+')[1];
     return written === undefined ? twistByDefault(kind, size) : Number(written);

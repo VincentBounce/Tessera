@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.676';
+const VERSION = '0.5.677';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15589,13 +15589,14 @@ function bentLine(knot, mu) {
  * (2π by 2π·TUBE, in the x–z plane), at m = 1 the torus. The rectangle first curls into a tube
  * (m from 0 to ⅓: its short side bends into a circle), then the tube bends all along at once (⅓ to 1): into a ring, or
  * along a knot's line, its twist too (see bentLine). Bending keeps lengths along it. */
-function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
+function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0) {
   const b = Math.min(1, 3 * m),
     c = Math.max(0, (3 * m - 1) / 2); // tube bend (a third: rolled, as fast whatever comes after), then ring bend
+  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2], // (form: its shape's, once for all its points)
+    turned = knot.square ? Math.trunc((4 * twist) / nv) * (nv / 4) : twist; // (its twist, its rows: its section turned as far as it lies on itself, a circle all of it, a square by quarters; the rest its cells slid round it, see torusTwist)
   // flat, the sheet lies in the east–south plane, as the plane's grids and a picture read: i towards the east, j towards the south
   const X = (i / nu - 0.5) * 2 * Math.PI,
-    Y = (j / nv - 0.5) * 2 * Math.PI * tube;
-  const knot = form ?? TORUS_SHAPES[shapeOn('torus')][2]; // (form: its shape's, once for all its points)
+    Y = (twistedRow(i, j, nu, twist - turned) / nv - 0.5) * 2 * Math.PI * tube;
   let w = Y,
     h = 0; // w: offset away from the ring's centre (the north goes into the hole), h: height
   if (b > 1e-6 && knot.square) {
@@ -15605,7 +15606,8 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
       y = 0,
       way = 0,
       rest = Math.abs(Y);
-    for (const len of [L / 2, L, L / 2]) {
+    for (let len = L / 2; rest > 0; len = L) {
+      // (from a face's middle to its corner, then corner to corner: past its seam on round, as a circle's)
       const d = Math.min(rest, len);
       x += Math.cos(way) * d;
       y += Math.sin(way) * d;
@@ -15620,6 +15622,11 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null) {
       th = Y / rt;
     w = rt * Math.sin(th);
     h = rt * (Math.cos(th) - 1) + tube * b;
+  }
+  if (turned) {
+    // (its section turned round the tube's axis, back by turned rows once round: row j's place then row j − turned's)
+    const a = (-2 * Math.PI * turned * i) / (nv * nu);
+    [w, h] = [w * Math.cos(a) + h * Math.sin(a), h * Math.cos(a) - w * Math.sin(a)];
   }
   if (c < 1e-6) return [X, -w, h];
   if (!knot.curve) {
@@ -16028,9 +16035,7 @@ function torusCairoMesh(nv, nu, twist = 0, turned = false) {
     tube = nv / nu,
     { tiles, places, sides } = cairoSheet(nu, nv, turned),
     cell = turned ? 1 : 2; // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
-  const ids = tiles.map((c) =>
-    c.map(([i, j]) => add(...torusPoint(i, twistedRow(i, j, nu, cell * twist), nu, nv, 1, tube))),
-  );
+  const ids = tiles.map((c) => c.map(([i, j]) => add(...torusPoint(i, j, nu, nv, 1, tube, null, cell * twist))));
   return (meshCache[key] = Object.assign(finishTorus(verts, ids, 5, nu, nv, tiles.flat(2)), {
     tube,
     cairo: true,
@@ -16593,7 +16598,7 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
       frame,
       sheet,
       false,
-      (x, y) => torusPoint(x, twistedRow(x, y, sheet.L, (twist * sheet.W) / nv), sheet.L, sheet.W, 1, tube),
+      (x, y) => torusPoint(x, y, sheet.L, sheet.W, 1, tube, null, (twist * sheet.W) / nv),
       twist * rows,
     ),
     units = (x, i) => x * (i % 2 ? nv / sheet.W : nu / sheet.L); // (x, then y: in its sides)
@@ -16728,7 +16733,7 @@ const sheetPoint = (g, i, j, m, form = null) => {
   // (a twisted one rolled to 0.2, twisted to ⅓, the rest its bend's as a straight one's; see torusTwist)
   const twisted = Math.min(1, Math.max(0, (m - 0.2) / (1 / 3 - 0.2))),
     rolled = g.seamTwist && m < 1 / 3 ? Math.min((5 * m) / 3, 1 / 3) : m;
-  return torusPoint(i, twistedRow(i, j, g.nu, (g.seamTwist ?? 0) * twisted), g.nu, g.nv, rolled, tubeOf(g), form);
+  return torusPoint(i, j, g.nu, g.nv, rolled, tubeOf(g), form, (g.seamTwist ?? 0) * twisted);
 };
 
 // A torus of Cairo pentagons: nv squares of the Cairo grid round the tube, nu round the ring (both even:

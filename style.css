@@ -527,6 +527,9 @@ h3 {
 .pill-row .size-gauge {
   margin: 0;
 } /* a ring's width and twist: Glint's pill (see .shape-slider), its notches in its track */
+.pill-row:has(.size-gauge) {
+  margin-bottom: var(--short-gap);
+} /* (Width and Twist one block with Size: the short gap between them) */
 .pill-row .size-gauge .notches {
   position: absolute;
   inset: 0 15px;

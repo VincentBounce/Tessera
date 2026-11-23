@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.703';
+const VERSION = '0.5.704';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18379,6 +18379,7 @@ function sizeGauge(el, n, i, preview, pick, byDefault = -1) {
     ),
   );
   el.replaceChildren(range, notches);
+  el.classList.toggle('crowded', el.classList.contains('shape-slider') && (el.clientWidth - 30) / (n - 1) < 24); // (a pill's notches closer than its knob is wide: its default's only, see .crowded)
 }
 // a slider greyed as a tile is (see setTile): whyNot(setup) its one source, its row's greyed words, its enablers
 function greyInput(input, row, whyNot) {

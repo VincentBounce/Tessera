@@ -538,6 +538,9 @@ h3 {
   padding: 0;
   pointer-events: none;
 } /* (a notch under the knob's middle at each end: the input's 3 px in, half the knob's 24) */
+.size-gauge.crowded .notches span:not(.default) {
+  visibility: hidden;
+} /* (its notches closer than its knob is wide: its default's only) */
 .size-gauge .notches span {
   width: 2px;
   height: 5px;

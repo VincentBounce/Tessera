@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.652';
+const VERSION = '0.5.653';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -10260,7 +10260,7 @@ for (const k of [...PINWHEEL_SOLIDS, ...PINWHEEL_FOLDS]) {
     name = NAV[base][2];
   lifeGrid(variantName('Life', name, 'Pinwheel'), 'Surfaces', name, VARIANT_ICONS[base], {
     surface: `${k}Pinwheel`,
-    where: `the pinwheel's right triangles on ${name === 'Cube' ? 'a cube' : `a ${name.toLowerCase()}`}: ${PINWHEEL_FOLDS.includes(k) ? 'its sheet' : 'each face'} rectangles of two, cut in 5 again and again, turned every way`,
+    where: `the pinwheel's right triangles on ${name === 'Cube' ? 'a cube' : `a ${name.toLowerCase()}`}: ${PINWHEEL_FOLDS.includes(k) ? 'its sheet' : 'each face two'} rectangles of two, cut in 5 again and again, turned every way`,
   });
 }
 // the carved cubes' squares walked as the cube's (measured 2026-11-17: their hollow corners of 5 and 6 edges walked; their start

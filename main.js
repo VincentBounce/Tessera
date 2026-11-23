@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.650';
+const VERSION = '0.5.651';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17163,6 +17163,7 @@ function boyMesh(base, f) {
     projective: true,
     flatVerts: new Float64Array(flat),
     baseTiles: Int32Array.from(baseTiles),
+    cellFaces: g.cellFaces && Int32Array.from(baseTiles, (t) => g.cellFaces[t]), // (its solid's faces: Tiles face by face, see pieceByPiece)
   }));
 }
 
@@ -18496,6 +18497,7 @@ for (const [kind, base] of Object.entries(BOY_BASES))
     radius: SURFACES[base].radius,
     tiles: (f) => SURFACES[base].tiles(f) / 2,
     unit: SURFACES[base].unit,
+    how: (f) => `{y:${formatNumber(SURFACES[base].tiles(f))} ${SURFACES[base].unit}} of its solid / 2`,
   };
 for (const [kind, S] of Object.entries(SURFACES)) {
   const make = S.mesh;

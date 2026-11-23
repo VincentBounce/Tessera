@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.644';
+const VERSION = '0.5.645';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8341,15 +8341,15 @@ const icon = (name) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
 // Its picture doubled with bricks: walled (the cells past its edges always dead); else a torus (its edges glued: what leaves on one side comes back
 // on the other)
 const OUTLINES = [
-  ['square', true, 'Square', 'Square: a rectangle, a torus'],
-  ['square', false, 'Walls', 'Square walled: a rectangle, its cells past its edges always dead'],
+  ['square', true, 'Square', 'A rectangle, a torus'],
+  ['square', false, 'Walls', 'A rectangle, its cells past its edges always dead'],
   ['hex', false, 'Hex', 'A hexagon round its middle, walled: its cells past its edges always dead'],
-  ['rhombus', true, 'Rhombus', 'Rhombus: the grid as it is stored, a rhombus of cells, a torus'],
+  ['rhombus', true, 'Rhombus', 'The grid as it is stored, its cells a slanted block, a torus'],
   [
     'rhombus',
     false,
     'R. walls',
-    'Rhombus walled: the grid as it is stored, a rhombus of cells, its cells past its edges always dead',
+    'The grid as it is stored, its cells a slanted block, those past its edges always dead',
   ],
 ];
 $('planeEdges').append(
@@ -10634,11 +10634,11 @@ const baseFamily = (fold, variants) => ({
       deg = baseTurn(fold, kind);
     return [
       [f, false, pic, name, words],
-      ...(deg ? [[f, true, pic, name, `${name}, turned by ${deg}° (${FOLDS[fold].way})`]] : []),
+      ...(deg ? [[f, true, pic, name, `${name} at ${deg}° (${FOLDS[fold].way})`]] : []),
     ];
   }),
 });
-// shape, then ', turned by …' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
+// shape, then ' at …°' (its tile's tooltip those words, see renderModePicker)]; tab, the one in use or last chosen
 const familyPlaces = remember('familyPlaces', new Map()); // (each variant's family and tiling, see familyPlace)
 const FAMILIES = [
   baseFamily('torus', [
@@ -10790,8 +10790,7 @@ for (const Fo of Object.values(FOLDS))
       turned = FOLDED[`${Fo.of(kind)}Turned`],
       { name } = TILINGS[kind];
     F.tabs.push([F.variants.length, false, `tiling-${kind}`, name, name]);
-    if (turned)
-      F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name}, turned by ${turned.deg}° (${Fo.way})`]);
+    if (turned) F.tabs.push([F.variants.length, true, `tiling-${kind}`, name, `${name} at ${turned.deg}° (${Fo.way})`]);
     addTiling(F, [variantName('Life', Fo.name, name)]);
   }
 // the pinwheel solids' (see pinwheelSolidMesh): a tab after their solid's own in its Life menu
@@ -22880,8 +22879,8 @@ function fitLifeTeams(variant) {
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
 const EXPLORE_RULES = [
   ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
-  ['sides', 'Sides', "Two sides of the solid side by side never the same colour (a solid's only)"],
-  ['kind', 'Kind of tile', 'A colour for each kind of tile, by its number of sides'],
+  ['sides', 'Sides', "Two faces of the solid touching never the same colour (a solid's only)"],
+  ['kind', 'Kind of tile', "A colour for each tile's shape, by its number of sides"],
   ['distance', 'Distance', 'The steps from the first cell, side by side, as rings round it'],
 ];
 const EXPLORE_PALETTES = [
@@ -24380,7 +24379,7 @@ const SYMMETRIES = {
   mirror: [
     'Mirror',
     'mirrored',
-    'A quarter of the start mirrored across two lines through the middle, at right angles: four copies',
+    'A quarter of the start reflected across two lines through the middle, at right angles: four copies',
   ],
   kaleido: [
     'Kaleido',
@@ -26942,7 +26941,7 @@ function renderPlaneRow() {
     const where =
       shape === 'hex'
         ? 'Only on a six-fold grid (triangles, hexagons, kites…).'
-        : 'Only on a slanted grid, its cells stored as a rhombus (triangles, hexagons, parallelograms…).';
+        : 'Only on a slanted grid, its cells stored as a slanted block (triangles, hexagons, parallelograms…).';
     $(`outline-${shape}-${torus ? 'torus' : 'walled'}`).dataset.choice =
       `outline:${shape}-${torus ? 'torus' : 'walled'}`; // (its choice's key, see choicesAt)
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), {
@@ -28110,7 +28109,7 @@ const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${placeNow()}`
 // piecesOf); a colour's pieces through the centre are Symmetry's Opposite
 const PIECES = [
   ['Together', "Each colour's part in one piece"],
-  ['Apart', "Each colour's part in pieces as far apart as can be: a solid's faces, a torus's blocks"],
+  ['Apart', "Each colour's part in pieces as far from one another as can be: a solid's faces, a torus's blocks"],
 ];
 const piecesApart = () => teamsApart === 1 && piecesOf(tabVariant());
 // whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
@@ -31530,19 +31529,15 @@ let huntKept = 0; // the results kept so far, all hunts: each one's number its i
 // longest battle (in colours, the goals hidden); last, the longest that ends with FULL_END of its cells alive or more (as
 // it settles or loops: a rule whose soups fill the grid). Each: its picture, its name, its words
 const HUNT_GOALS = {
-  longest: ['goalLongest', 'Longest', 'The start that lasts longest, however it ends'],
-  dies: ['goalDies', 'Dies out', 'The start that lasts longest and dies out, to the last cell'],
+  longest: ['goalLongest', 'Longest', 'The start that lives on the most generations, however it ends'],
+  dies: ['goalDies', 'Dies out', 'The start that lives on the most generations and ends empty, to the last cell'],
   peak: ['goalPeak', 'Peak', 'The start that has the most cells alive at once, from a zone (not the whole grid)'],
   cover: [
     'goalCover',
     'Reach all',
     'Fastest to reach all cells: the start whose cells are all alive once the soonest (Heatmap shows it), from a zone (not the whole grid)',
   ],
-  battle: [
-    'goalBattle',
-    'Battle',
-    'The battle that lasts longest, its colours touching and even: in colours, the only hunt',
-  ],
+  battle: ['goalBattle', 'Battle', 'The longest fight, its colours touching and even: in colours, the only hunt'],
   full: ['goalFull', 'Ends ≥3/4', 'The start that lasts longest and ends with 3/4 of its cells alive or more'],
 };
 const FULL_END = 0.75; // (Ends ≥3/4: this share of the cells alive or more as it ends)
@@ -31679,7 +31674,7 @@ const START_PLACES = [
     "Each colour's start on its face and copied on the opposite face, through the solid's centre",
     'through the centre',
   ],
-  ['Whole part', "Each colour's start over its whole part: Wild's soup, Formula's digits"],
+  ['Whole part', "Each colour's start over all its cells: Wild's soup, Formula's digits"],
 ];
 let startPlace = 0;
 const fillsPart = (start, zone) => start === 'random' && (zone === 'full' || zone === 'numbers'); // (a start over each colour's part)
@@ -42618,9 +42613,9 @@ const START_TABS = [
     'random',
     'search',
     'Hunt',
-    'A soup to start, its cells drawn by chance, or a hunt among soups (its goal below); in a reversible rule, zones drawn by chance',
+    'A soup to start, its cells drawn by chance, or a search among soups (its goal below); in a reversible rule, zones drawn by chance',
   ],
-  ['draw', 'pencil', 'Draw', 'Cells drawn by hand, or patterns laid with the brushes, at gen 0'],
+  ['draw', 'pencil', 'Draw', 'Cells set by hand, or patterns laid with the brushes, at gen 0'],
   ['text', 'letter', 'Text', 'Words typed, laid as cells in the font picked'],
   [
     'digits',
@@ -42970,7 +42965,7 @@ const themeSwitch = tile({
   offPic: icon('moon'),
   offText: 'Dark',
   toggle: true,
-  title: 'The page light, or dark',
+  title: 'The page bright, or dark',
   click: () => {
     const theme = themeName() === 'light' ? 'dark' : 'light';
     try {
@@ -43545,7 +43540,7 @@ $('walkOn').append(
 // a creature's start, one choice: a tab group of tiles, by its rule or by the digits (as Life's starts)
 $('antStartTabs').append(
   tileGroup([
-    tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns by its rule, a card below' }),
+    tile({ id: 'antByRule', pic: icon('ant'), text: 'Rule', title: 'Its turns as a card below says' }),
     tile({
       id: 'antByDigits',
       pic: icon('barcode'),

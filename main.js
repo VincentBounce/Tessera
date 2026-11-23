@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.667';
+const VERSION = '0.5.668';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15966,9 +15966,18 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
 // square, tile 2 (i·nv + j) + o (see cairoCorners), a square's pair reaching half a square back: on the sheet, its first pair at
 // its corner; its tiles' corners in sheet units (see torusPoint) and their plane cells (see cellPlaces). Turned by 45°, its
 // sheet along the grid's diagonals, (1, 1) round the ring, (1, −1) round the tube (Cairo repeats along them: i + j's parity
-// kept), nu × nv of them, two squares each: the pentagons whose middles lie in it
+// kept), nu × nv of them, two squares each: the pentagons whose middles lie in it; sides, its units in the grid's
 function cairoSheet(nu, nv, turned = false) {
-  const sheet = ([u, v]) => (turned ? [(u + v) / 2, (u - v) / 2] : [u, v]),
+  const sides = turned
+      ? [
+          [1, 1],
+          [1, -1],
+        ]
+      : [
+          [1, 0],
+          [0, 1],
+        ],
+    sheet = (p) => inBasis(p, ...sides),
     corners = (x, y) => latticeCorners('cairo', x, y).map(([u, v]) => sheet([u + 0.5, v + 0.5])),
     inside = (x, y) => {
       const c = corners(x, y),
@@ -15982,7 +15991,7 @@ function cairoSheet(nu, nv, turned = false) {
           .flat(2)
           .filter(([x, y]) => inside(x, y))
       : Array.from({ length: 2 * nu * nv }, (_, t) => [2 * Math.floor(t / (2 * nv)) + (t % 2), Math.floor(t / 2) % nv]);
-  return { tiles: places.map(([x, y]) => corners(x, y)), places };
+  return { tiles: places.map(([x, y]) => corners(x, y)), places, sides };
 }
 // Cairo's torus (both its counts even: the tiling repeats every other square), its tube its rows over its columns (its
 // squares square); once a size
@@ -15991,7 +16000,7 @@ function torusCairoMesh(nv, nu, twist = 0, turned = false) {
   if (meshCache[key]) return meshCache[key];
   const { verts, add } = vertexStore(),
     tube = nv / nu,
-    { tiles, places } = cairoSheet(nu, nv, turned),
+    { tiles, places, sides } = cairoSheet(nu, nv, turned),
     cell = turned ? 1 : 2; // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
   const ids = tiles.map((c) =>
     c.map(([i, j]) => add(...torusPoint(i, twistedRow(i, j, nu, cell * twist), nu, nv, 1, tube))),
@@ -16000,6 +16009,7 @@ function torusCairoMesh(nv, nu, twist = 0, turned = false) {
     tube,
     cairo: true,
     seamTwist: cell * twist,
+    sheet: sides.map((v) => v.map((c) => c * CAIRO)), // (its units in the plane's, the grid's side CAIRO: see sheetUnits)
     cellPlaces: places,
   }));
 }

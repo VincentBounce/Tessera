@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.726';
+const VERSION = '0.5.727';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15571,9 +15571,9 @@ function ringLength(x, square, units, ok = () => true) {
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even); own: columns of its own (a
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
-function ringColumns(x, nv, step = 1, klein = false, ok, own) {
+function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
   const K = ringColours(ringVariant()),
-    [a, b] = klein ? [K, 1] : torusBlocks(K, { nv }),
+    [a, b] = klein ? [K, 1] : torusBlocks(K, { nv, seamTwist: seam }), // (a twisted one's those its seam glues in line, see teamBlocksFit)
     unit = a % step ? a * step : a,
     v = VARIANTS[ringVariant()],
     along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1, // (a reversible one's: its blocks' sets come round along it)
@@ -17956,7 +17956,7 @@ const SURFACES = {
         {
           mesh: (s) => torusCairoMesh(...torusDims(name, s), torusTwist(s, name), turned),
           radius: (s) => (torusDims(name, s)[0] * Math.sqrt(squares)) / (2 * Math.PI * TORUS_TUBE),
-          columns: (nv, own) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own),
+          columns: (nv, own, seam) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own, seam),
           perRow: 1,
           steps: [2 / squares, 2 / squares], // (straight: even counts both ways, the tiling repeating every other square)
           tiles: (s) => 2 * squares * torusDims(name, s).reduce((a, b) => a * b),
@@ -18269,7 +18269,7 @@ for (const [name, kind, turned, unit] of [
   SURFACES[name] = {
     mesh: (z) => tilingTorusMesh(name, ...torusDims(name, z), torusTwist(z, name)),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
-    columns: (nv, own) => ringColumns((nv * tube) / (step * torusTube()), nv, 1, false, undefined, own),
+    columns: (nv, own, seam) => ringColumns((nv * tube) / (step * torusTube()), nv, 1, false, undefined, own, seam),
     perRow: per,
     steps: [1, 1],
     least: 2,
@@ -18486,7 +18486,7 @@ const torusTwist = (size, kind) => {
   torusTwists = (kind, size) => {
     if (PINWHEEL_SHEETS[kind]) return pinwheelAcross(kind) === 4 ? [0, 1, 2] : []; // (a pinwheel's: by bricks, a quarter turn each)
     if (!SURFACES[kind]?.perRow || !kind.startsWith('torus')) return []; // (a surface's: none on the plane)
-    const cells = torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube)
+    const cells = Number(String(size).split(/[x+]/)[0]) / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube: its rows, see torusDims)
       step = torusForm().square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
     return Number.isInteger(step) ? Array.from({ length: Math.floor(cells / 2 / step) + 1 }, (_, q) => q * step) : [0];
   },
@@ -18522,6 +18522,7 @@ const sizeAsked = (kind = surfaceOf(VARIANTS[tabVariant()])) => ringSize(kind, s
 const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeAsked()); // (the size played: the size asked, kept as its walkers change, see walkersSize)
 // A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
 function torusDims(kind, size) {
+  const seam = torusTwist(size, kind) * (SURFACES[kind]?.steps?.[0] ?? 1); // (its twist in its rows, its bricks: its colours' blocks those it glues in line, see ringColumns)
   size = sizeOf(String(size).split('+')[0]); // (as the list has it, its twist apart: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
   if (MOBIUS_KINDS.includes(kind)) {
     // a Möbius strip: its rows and its length, as a count of steps along (see MOBIUS_ALONG)
@@ -18534,12 +18535,12 @@ function torusDims(kind, size) {
     const across = pinwheelAcross(kind); // (a torus's bricks along as a tiling's columns: its colours' blocks square, its corners' sides alike, see ringColumns)
     return [
       cells,
-      ringColumns(across / (F.tube() * (F.turned ? 1 : 2)), across, 1, false, undefined, along || undefined),
+      ringColumns(across / (F.tube() * (F.turned ? 1 : 2)), across, 1, false, undefined, along || undefined, seam),
     ]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
   }
-  if (typeof size === 'number') return [size, SURFACES[kind].columns(size)];
+  if (typeof size === 'number') return [size, SURFACES[kind].columns(size, undefined, seam)];
   const [rows, perRow] = size.split('x').map(Number);
-  return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
+  return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow, seam)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 // a torus's size at a height and a width (round the ring: its tiles per row; along a strip: its steps), as a size of its own
 // a surface sized as a ring is, its rows (a pinwheel ring's: its cells at its usual length) × its width (its bricks along)

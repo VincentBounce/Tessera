@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.797';
+const VERSION = '0.5.798';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12634,17 +12634,24 @@ const setTip = (...nodes) => {
   if (!$('tip').classList.contains('alert')) $('tip').replaceChildren(...nodes);
 };
 const showInTip = (text) => setTip(...tipWords(text));
+// a control's name, as on screen (a card's, a tile's words; a button with no words, a picture: its aria-label): its tooltip's
+// and its alerts' (see alertTip)
+const controlName = (el) =>
+  (
+    el.getAttribute('aria-label') ??
+    (el.querySelector('.mode-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
+  ).trim();
 // an alert told by the tooltip itself a few seconds, red, fading out (see #tip.alert), till then no tooltip over it; its fade's
-// end ends it (an RLE that does not open, a file refused, states flattened): "Name: words" as a tooltip's, never
-// the browser's alert, which stops the page
+// end ends it (an RLE that does not open, a file refused, states flattened): the control's name that told it (control: its
+// element) in bold, then its words, as a tooltip's; never the browser's alert, which stops the page
 const alertEnd = () => {
   $('tip').classList.remove('alert');
   setTip();
 };
-const alertTip = (text) => {
+const alertTip = (words, control) => {
   alertEnd();
   void $('tip').offsetWidth; // (its fade again from its start, an alert over another)
-  showInTip(text);
+  showInTip(control && controlName(control) ? `${controlName(control)}: ${words}` : words);
   $('tip').classList.add('alert');
 };
 $('tip').addEventListener('animationend', alertEnd);
@@ -12665,12 +12672,7 @@ const tipOf = (target) => {
 document.addEventListener('mouseover', (e) => {
   const { el, tip: title, greyed } = tipOf(e.target),
     named = el?.matches('button, label, [role="button"]');
-  const name = named
-    ? (
-        el.getAttribute('aria-label') ??
-        (el.querySelector('.mode-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
-      ).trim()
-    : ''; // (a button with no words, a picture: its aria-label)
+  const name = named ? controlName(el) : '';
   // its words, none when they are its name again (Play: its name alone); its name in bold, its key after it (see KEYS)
   const tip = title.trim() === name ? '' : title,
     rule = el?.dataset.ruleHtml ?? '',
@@ -24022,7 +24024,7 @@ const BRUSH_CELL = [
   'one cell, again to change its state',
   '.....,.....,..o..',
 ];
-// Paste: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
+// Paste a pattern: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
 // (see pasteBrush), its grid then its file's (squares, or hexagons for an RLE in H), any rule; none read yet, its card alone
 const BRUSH_PASTED = ['pasted', '', [], 'Paste a pattern', 'o!', 'an RLE or .cells copied, as the brush', null];
 const DRAW_PATTERNS = [
@@ -36729,7 +36731,8 @@ function saveSetup() {
   } // already one of them (its ★ yellow): out of them
   list.push(savedOf(setup, list));
   list.sort((a, b) => a.name.localeCompare(b.name));
-  if (!writeGallery(list)) alertTip('This browser does not allow saving (private window?).');
+  if (!writeGallery(list))
+    alertTip('This browser does not allow saving (private window?).', galleryTab().querySelector('.fav'));
   fillGalleryList();
   wantThumbnail()
     .then((thumbnail) => thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))))
@@ -36784,7 +36787,7 @@ async function importGallery(file) {
     writeGallery(list);
     fillGalleryList();
   } catch {
-    alertTip('This file is not a Tessera Gallery file.');
+    alertTip('This file is not a Tessera Gallery file.', $('galleryImport'));
   }
 }
 
@@ -36854,7 +36857,7 @@ async function refreshThumbnails() {
     } catch (e) {
       refreshing = false;
       syncRefreshTile();
-      alertTip(e.message);
+      alertTip(e.message, $('refreshThumbnails'));
       return;
     } // (none kept: none taken)
   const used = new Set(readGallery().map((x) => thumbnailKey(x.setup))); // (the thumbnails no card shows any more, a setup gone or its key changed: erased)
@@ -43680,38 +43683,30 @@ function brushInHand() {
   seekTo(0);
   renderPlaneRow();
 }
-// Paste: the pattern copied taken as the brush, a pattern alone (a whole world: Paste RLE's), on its grid, as large as the
-// plane shown at most; its card then its name, its size and its rule; what it cannot do told (see alertTip)
+// Paste a pattern: the pattern copied taken as the brush, a pattern alone (a whole world: Paste RLE's), on its grid, as large
+// as the plane shown at most; its card's words then its name, its size and its rule (its own name kept, as any control's);
+// what it cannot do told (see alertTip)
 async function pasteBrush() {
-  const file = rleRead(await navigator.clipboard.readText().catch(() => '')),
+  const card = $('brushCards').querySelector('[data-brush="pasted"]'),
+    file = rleRead(await navigator.clipboard.readText().catch(() => '')),
     kind = patternKind(),
     room = walk.plane && pictureCells(),
     states = parseRule(ruleBody($('lifeRule').value))?.C ?? 2;
-  if (!file) return alertTip("Paste: no pattern copied, an RLE or a .cells (Golly's, LifeWiki's).");
-  if (file.world)
-    return alertTip("Paste: a whole world (a bounded grid's, or the app's own setup): Paste RLE lays it.");
+  if (!file) return alertTip("No pattern copied, an RLE or a .cells (Golly's, LifeWiki's).", card);
+  if (file.world) return alertTip("A whole world (a bounded grid's, or the app's own setup): Paste RLE lays it.", card);
   if (baseOf(kind) !== file.grid)
-    return alertTip(`Paste: a pattern of ${file.grid === 'hex' ? 'hexagons' : 'squares'}, for a grid of them.`);
+    return alertTip(`A pattern of ${file.grid === 'hex' ? 'hexagons' : 'squares'}, for a grid of them.`, card);
   if (room && (file.w > room.w || file.h > room.h))
-    return alertTip(`Paste: ${file.w} × ${file.h}, at most ${room.w} × ${room.h} here: at a larger size.`);
+    return alertTip(`${file.w} × ${file.h}, at most ${room.w} × ${room.h} here: at a larger size.`, card);
   if (file.cells.some(([, , v]) => v >= states))
     alertTip(
-      `Paste: its dying states flattened, this rule's cells ${states === 2 ? 'alive or dead' : `of ${states} states`}.`,
+      `Its dying states flattened, this rule's cells ${states === 2 ? 'alive or dead' : `of ${states} states`}.`,
+      card,
     );
   const rle = populationRle(new Map(file.cells.map(([x, y, v]) => [planeKey(x, y), v]))).replace(/^[^:]*:/, ''),
-    p = [
-      'pasted',
-      file.grid,
-      [],
-      file.name || 'Pasted',
-      rle,
-      `${file.w} × ${file.h}${file.rule ? ` · ${file.rule.text}` : ''}`,
-      null,
-    ];
-  DRAW_BY_ID.set('pasted', p);
-  const b = $('brushCards').querySelector('[data-brush="pasted"]');
-  b.querySelector('.mode-name').innerHTML = cardNameHtml(p[3]);
-  b.querySelector('.mode-icon').innerHTML = cellsIcon(file.grid, rle);
+    what = [file.name, `${file.w} × ${file.h}`, file.rule?.text].filter(Boolean).join(' · ');
+  DRAW_BY_ID.set('pasted', ['pasted', file.grid, [], BRUSH_PASTED[3], rle, what, null]);
+  card.querySelector('.mode-icon').innerHTML = cellsIcon(file.grid, rle);
   brush.id = 'pasted';
   brushInHand();
 }
@@ -44311,9 +44306,9 @@ function plaintextRead(lines) {
 // cells at gen 0), else in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
 // the file lays (its squares or hexagons, flat: see rleLaid), in its colours, its rule playable there; reached by the
 // menu's own clicks, each in turn; its rule then, its cells once built (see layCells)
-async function openRle(text) {
+async function openRle(text, control) {
   const file = rleRead(text);
-  if (!file?.rule) return alertTip('Paste RLE: no RLE pattern here, or none with a rule the app reads.');
+  if (!file?.rule) return alertTip('No RLE pattern here, or none with a rule the app reads.', control);
   if (file.setup) {
     const { popDraw, popPicks, popText, popCells, step, ...setup } = file.setup; // (its start: the file's cells, at gen 0)
     applySetup({ ...setup, popStart: 'draw' });
@@ -44327,7 +44322,8 @@ async function openRle(text) {
         s.start === 'draw' &&
         !ruleRefusal(ruleBody(rule.text), s.w),
       [path] = fits(setupNow()) ? [[]] : pathsTo(fits);
-    if (!path) return alertTip(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
+    if (!path)
+      return alertTip(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`, control);
     for (const [key] of path) {
       document.querySelector(`[data-choice="${CSS.escape(key)}"]`).click();
       await new Promise(requestAnimationFrame);
@@ -44337,16 +44333,17 @@ async function openRle(text) {
   }
   do await whenBuilt();
   while (busy || walk.variant !== tabVariant());
-  layCells(file);
+  layCells(file, control);
 }
 // a pattern's cells laid as Draw's, in the middle: on the plane, at the smallest size it fits in (from 16 × 16, every
 // rule's); on a sheet, at its own size, a cell at each place (see pictureCells)
-function layCells({ cells, w, h }) {
+function layCells({ cells, w, h }, control) {
   const kind = VARIANTS[tabVariant()].plane,
     sides = kind && planeSides(kind),
     side = kind && (sides.find((f) => planeW(kind, f) >= Math.max(w, h)) ?? sides.at(-1)),
     room = kind ? { w: planeW(kind, side), h: planeW(kind, side) } : pictureCells();
-  if (w > room.w || h > room.h) return alertTip(`This pattern is ${w} × ${h}: at most ${room.w} × ${room.h} here.`);
+  if (w > room.w || h > room.h)
+    return alertTip(`This pattern is ${w} × ${h}: at most ${room.w} × ${room.h} here.`, control);
   const x0 = Math.floor((room.w - w) / 2),
     y0 = Math.floor((room.h - h) / 2),
     cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [room.at(t).join(), t])); // (a sheet's cell at a place)
@@ -45133,7 +45130,7 @@ $('galleryOpenTiles').replaceChildren(
     text: 'Paste RLE',
     title:
       "The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
-    click: async () => openRle(await navigator.clipboard.readText()),
+    click: async () => openRle(await navigator.clipboard.readText(), $('pasteRle')),
   }),
 );
 $('galleryShareTiles').replaceChildren(
@@ -45172,7 +45169,7 @@ async function resetApp() {
 $('rleOpenFile').addEventListener('change', async () => {
   const file = $('rleOpenFile').files[0];
   $('rleOpenFile').value = '';
-  if (file) openRle(await file.text());
+  if (file) openRle(await file.text(), $('openRle'));
 });
 $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);

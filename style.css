@@ -2126,9 +2126,14 @@ button.active .bubble.active {
 #tip:empty {
   display: none;
 }
-/* an alert told a few seconds (an RLE that does not open, its states flattened: see alertTip), over the tooltip: its box, red */
+/* an alert told a few seconds (an RLE that does not open, its states flattened: see alertTip), in the tooltip's place: its
+box, red; a click closes it */
+#alert:not([hidden]) + #tip {
+  display: none;
+}
 #alert:not([hidden]) {
-  margin-bottom: 6px;
+  pointer-events: auto;
+  cursor: pointer;
   background: var(--alert-background);
   border-color: var(--alert-background);
   color: var(--on-alert-color);

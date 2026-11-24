@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.786';
+const VERSION = '0.5.787';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12630,8 +12630,8 @@ const tipWords = (text) => {
   ];
 };
 const showInTip = (text) => $('tip').replaceChildren(...tipWords(text));
-// an alert told over the tooltip a few seconds, its box red (an RLE that does not open, a file refused, states flattened):
-// "Name: words" as a tooltip's, never the browser's alert, which stops the page
+// an alert told in the tooltip's place a few seconds, its box red, a click closes it (an RLE that does not open, a file
+// refused, states flattened): "Name: words" as a tooltip's, never the browser's alert, which stops the page
 let alertTimer = null;
 const alertTip = (text) => {
   $('alert').replaceChildren(...tipWords(text));
@@ -12639,6 +12639,7 @@ const alertTip = (text) => {
   clearTimeout(alertTimer);
   alertTimer = setTimeout(() => ($('alert').hidden = true), 5000);
 };
+$('alert').addEventListener('click', () => ($('alert').hidden = true));
 // whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
 const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each

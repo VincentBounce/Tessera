@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.753';
+const VERSION = '0.5.754';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4023,9 +4023,7 @@ const planeKind = (kind, outline = outlineOf(kind)) =>
 // one's (its cells as stored); else a rectangle (a grid that never repeats: its disc)
 const outlineOf = (kind, shape = plane.shape, torus = planeTorus(kind)) =>
   APERIODIC[kind]
-    ? kind === 'pinwheel' && shape === 'pinwheel'
-      ? 'pinwheel'
-      : 'disc' // (the pinwheel's too, in one of its triangles: see PINWHEEL)
+    ? 'disc'
     : RECTS[kind]
       ? 'square'
       : shape === 'hex' && hexagonFits(kind) && !torus
@@ -7942,13 +7940,7 @@ const ICONS = (() => {
       [14, 17.2],
       [20, 6.8],
       [8, 6.8],
-    ],
-    disc = ngon(16, 9),
-    pinwheelTri = [
-      [3, 18],
-      [21, 18],
-      [3, 9],
-    ]; // (the pinwheel's right triangle, its legs 2 and 1)
+    ];
   // a square cut in 2 × 2 cells (Grid, a torus's squares), its 3 × 3 cut's lines (along the edges), in 3 × 3 cells, those of a
   // pattern filled, a row after another, o a cell filled (on cells, a glider, the hunt's Reach all and Ends ≥3/4)
   const halvesGrid = svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),
@@ -8053,8 +8045,6 @@ const ICONS = (() => {
     hexagonWalled: walledEl(hex),
     rhombus: svgPath(pathOf(rhombus)), // a rhombus of 60°: a six-fold or slanted grid's array, uncut
     rhombusWalled: walledEl(rhombus, 2),
-    discWalled: walledEl(disc), // (a grid that never repeats, in a disc: see outlineOf)
-    pinwheelWalled: walledEl(pinwheelTri, 2), // (the pinwheel in one of its triangles)
     goalLongest: svgPath('M12 12C10 8.5 4 8.5 4 12C4 15.5 10 15.5 12 12C14 8.5 20 8.5 20 12C20 15.5 14 15.5 12 12Z'), // the hunt's goals (see HUNT_GOALS): ∞
     goalDies: svgPath('M12 3V21M6 8.5H18'), // (a cross)
     goalFull: thirdsGrid('..o,.oo,ooo'), // (a 3 × 3 grid, filled but a corner's 3)
@@ -8373,29 +8363,19 @@ const OUTLINES = [
     'R. walls',
     'The grid as it is stored, its cells a slanted block, those past its edges always dead',
   ],
-  ['disc', null, 'Disc', 'A disc round its middle, its cells past its edge always dead'],
-  [
-    'pinwheel',
-    null,
-    'Triangle',
-    'One of its right triangles round its middle, cut again and again, its cells past its sides always dead',
-  ],
-]; // (torus null: a grid that never repeats, walled always: its walls left as they are, see outlineOf)
+];
 $('planeEdges').append(
   iconTabs(
     OUTLINES.map(([shape, torus, text, title]) =>
       tile({
-        pic: icon(
-          { square: 'square', hex: 'hexagon', rhombus: 'rhombus', disc: 'disc', pinwheel: 'pinwheel' }[shape] +
-            (torus ? '' : 'Walled'),
-        ),
+        pic: icon({ square: 'square', hex: 'hexagon', rhombus: 'rhombus' }[shape] + (torus ? '' : 'Walled')),
         text,
         id: `outline-${shape}-${torus ? 'torus' : 'walled'}`,
-        byDefault: text === 'Square' || text === 'Disc' ? 'yes' : '',
+        byDefault: text === 'Square' ? 'yes' : '',
         title,
         click: () => {
           plane.shape = shape;
-          if (torus !== null) plane.torus = torus;
+          plane.torus = torus;
           if (torus) spaceTime = false;
           compute();
         },
@@ -24849,12 +24829,9 @@ const planeSymmetries = (kind, outline = outlineOf(kind)) =>
 // hexagon, each cell's middle turned (or mirrored across the line through o at its corner's way) found again within 10⁻³
 // (the tilings' corners to 6 places), among the middles in its tenth of a unit and those round it
 const turnMemo = remember('turnMemo', new Map());
-// a plane grid's identity at side W: its kind, its side, its row and its outline (a grid that never repeats: a disc's or a
-// triangle's, see outlineOf): what the plane's memories keep it by
-const planeGridKey = (kind, W, row = planeRow(kind, W)) => `${kind}|${W}|${row}|${outlineOf(kind)}`;
 function planeTurns(kind, W) {
   const row = planeRow(kind, W),
-    key = planeGridKey(kind, W, row),
+    key = `${kind}|${W}|${row}`,
     n = row * W; // (a hexagon's: shaped, see planeShape; squares' never)
   if (turnMemo.has(key)) return turnMemo.get(key);
   if (kind === 'square') {
@@ -24882,7 +24859,7 @@ function planeTurns(kind, W) {
 // a symmetry's maps, each a cell → its copy (the first, the cell itself): the turns, then the mirrored ones
 const symmetriesMemo = remember('symmetriesMemo', new Map());
 function symmetryMaps(kind, W, sym) {
-  const key = `${planeGridKey(kind, W)}|${sym}`;
+  const key = `${kind}|${W}|${sym}`;
   if (symmetriesMemo.has(key)) return symmetriesMemo.get(key);
   const { N, r, m } = sym === 'none' ? { N: 1 } : planeTurns(kind, W),
     turn = (k) => (t) => {
@@ -25789,13 +25766,10 @@ function cornersOnSides(tris) {
     }),
   );
 }
-// the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
-// incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the largest disc (DISC_TOP² tiles: one tiling
-// for every size, each disc a cut of it round the same middle), the disc of W² tiles (radius W / √π) and its walls; in a
-// triangle (its outline Triangle, see outlineOf), the W² tiles nearest its middle by the triangle's own measure (its sides'
-// distances, the furthest: its level lines triangles like the big one round its incircle's middle, see discPatch's norm),
-// one of its triangles at W² = 5ᵏ (its legs W√(2/1)… a tile of a cut before), cut again and again, never a tile repeated
-const pinwheelPatch = (W, inTriangle) => {
+const PINWHEEL = discMemo((W) => {
+  // the big triangle, its legs 2L and L, inflated n times (L = √5ⁿ: its tiles' legs 2 and 1, a square unit each), its
+  // incircle (radius L (3 − √5) / 2, its middle that far from both legs) round the largest disc (DISC_TOP² tiles: one tiling
+  // for every size, each disc a cut of it round the same middle), the disc of W² tiles (radius W / √π) and its walls
   let n = 0;
   while ((5 ** (n / 2) * (3 - Math.sqrt(5))) / 2 < DISC_TOP / Math.sqrt(Math.PI) + 5) n++;
   const L = 5 ** (n / 2),
@@ -25807,22 +25781,13 @@ const pinwheelPatch = (W, inTriangle) => {
       [0, L],
     ],
   ]; // a tile: its right angle's corner, its long leg's end, its short leg's
-  const reach = inTriangle ? 1.7 * W + 6 : W / Math.sqrt(Math.PI) + 6; // (its patch and its walls' room: a triangle's far corner 1.66 W from its middle)
-  for (let k = 0; k < n; k++) tris = trianglesNear(tris.flatMap(pinwheelSplit), [r, r], reach);
+  for (let k = 0; k < n; k++) tris = trianglesNear(tris.flatMap(pinwheelSplit), [r, r], W / Math.sqrt(Math.PI) + 6); // (round the disc of W² and its walls' room only)
   const items = cornersOnSides(tris).map((p, i) => ({
     p: p.flat(),
     m: [0, 1].map((d) => (tris[i][0][d] + tris[i][1][d] + tris[i][2][d]) / 3),
   }));
-  return discPatch(
-    items,
-    W,
-    [r, r],
-    inTriangle ? (dx, dy) => Math.max(-dx, -dy, (dx + 2 * dy) / Math.sqrt(5)) : Math.hypot,
-  ); // (round its incircle's middle: its legs' and its hypotenuse's distances, the furthest)
-};
-const pinwheelDisc = discMemo((W) => pinwheelPatch(W, false)),
-  pinwheelTriangle = discMemo((W) => pinwheelPatch(W, true)),
-  PINWHEEL = (W) => (outlineOf('pinwheel') === 'pinwheel' ? pinwheelTriangle : pinwheelDisc)(W); // (its outline's)
+  return discPatch(items, W, [r, r]); // (round its incircle's middle)
+});
 /* De Bruijn's multigrids (1981): N families of lines a unit apart, their normals 180°/N apart, all moved by ½ (no three
  * meeting, the whole 2N-fold round the middle); each crossing of two a tile, its corners the sum of the lattice steps of
  * the lines it lies between (a rhombus, its angle the two families'). Ammann–Beenker's (Ammann, 1977; Beenker, 1982): 4,
@@ -26950,17 +26915,7 @@ function buildLifePlane(seq) {
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
   // the grid first: all that is made of it reads it (Explore's colours, its walls: see planeColouring, planeCorners)
-  walk.plane = {
-    kind,
-    W,
-    row,
-    n,
-    xy,
-    at,
-    torus: planeTorus(kind),
-    outline: outlineOf(kind), // (as built: its key's, see gridKey)
-    polygons: planePolygons(kind, W, planeTorus(kind)),
-  };
+  walk.plane = { kind, W, row, n, xy, at, torus: planeTorus(kind), polygons: planePolygons(kind, W, planeTorus(kind)) };
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
   startLife(seq, rule, n, {
     nbr,
@@ -27239,7 +27194,7 @@ function startLead(number, seeded) {
 }
 function planeFromSetup(s) {
   plane.torus = Number(readSetting(s, 'gridWalls')) !== 1;
-  plane.shape = readSetting(s, 'gridOutline', (o) => OUTLINES.some(([shape]) => shape === o)); // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
+  plane.shape = readSetting(s, 'gridOutline', (o) => ['hex', 'square', 'rhombus'].includes(o)); // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
   if (s.gridSize !== undefined) cellsAsked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
   spaceTime = Number(readSetting(s, 'popStacked')) === 1 && !plane.torus; // (3D: with walls only)
   startFromSetup(s);
@@ -27414,23 +27369,19 @@ function renderPlaneRow() {
       compute();
     },
   );
+  $('planeOutline').hidden = !!APERIODIC[kind]; // (a grid that never repeats: always walls, nothing to choose)
   for (const [shape, torus] of OUTLINES) {
-    const where = {
-      hex: 'Only on a six-fold grid (triangles, hexagons, kites…).',
-      rhombus: 'Only on a slanted grid, its cells stored as a slanted block (triangles, hexagons, parallelograms…).',
-      square: 'Not on a grid that never repeats (hats, Penrose, the pinwheel…): never a rectangle, never a torus.',
-      disc: 'Only on a grid that never repeats (hats, Penrose, the pinwheel…).',
-      pinwheel: 'Only on the pinwheel.',
-    }[shape];
+    const where =
+      shape === 'hex'
+        ? 'Only on a six-fold grid (triangles, hexagons, kites…).'
+        : 'Only on a slanted grid, its cells stored as a slanted block (triangles, hexagons, parallelograms…).';
     $(`outline-${shape}-${torus ? 'torus' : 'walled'}`).dataset.choice =
       `outline:${shape}-${torus ? 'torus' : 'walled'}`; // (its choice's key, see choicesAt)
     setTile($(`outline-${shape}-${torus ? 'torus' : 'walled'}`), {
-      on: outlineOf(kind) === shape && planeTorus(kind) === !!torus, // (Explore's too: a torus's seam its colours', its walls not drawn)
+      on: outlineOf(kind) === shape && planeTorus(kind) === torus, // (Explore's too: a torus's seam its colours', its walls not drawn)
       whyNot: ({ w: v }) => {
         const k = VARIANTS[v].plane;
-        return k && VARIANTS[v].life && outlineOf(k, shape, !!torus) === shape && (!torus || !APERIODIC[k])
-          ? ''
-          : where;
+        return k && VARIANTS[v].life && !APERIODIC[k] && outlineOf(k, shape, torus) === shape ? '' : where;
       },
     });
   }
@@ -27675,7 +27626,7 @@ const rectCells = (R, W, row) => {
 };
 function planeGrid(kind, W, row = planeRow(kind, W)) {
   // (row: a torus's blocks' own, see planeBlocks)
-  const key = planeGridKey(kind, W, row),
+  const key = `${kind}|${W}|${row}|${shaped(kind)}`,
     inside = (x, y) => x >= 0 && y >= 0 && x < row && y < W;
   if (gridMemo.has(key)) return gridMemo.get(key);
   const of = (shaped(kind) && planeShape(kind, W)?.cells) || (RECTS[kind] && rectCells(RECTS[kind], W, row));
@@ -27712,7 +27663,7 @@ const cellMids = (kind, W) => {
 };
 let wallsMemo = null;
 function planeWalls(kind, W) {
-  if (wallsMemo?.key === planeGridKey(kind, W)) return wallsMemo.cells;
+  if (wallsMemo?.key === `${kind}|${W}|${planeRow(kind, W)}`) return wallsMemo.cells;
   const row = planeRow(kind, W),
     per = gridCells(kind),
     k = (p) => pointKey(...p),
@@ -27727,7 +27678,7 @@ function planeWalls(kind, W) {
       if (y >= 0 && y < W && x >= 0 && x < row) continue;
       if (planeCorners(kind, x, y).some((p) => rim.has(k(p)))) cells.push([x, y]);
     }
-  return (wallsMemo = { key: planeGridKey(kind, W), cells }).cells;
+  return (wallsMemo = { key: `${kind}|${W}|${planeRow(kind, W)}`, cells }).cells;
 }
 // Behind the grid (grid layer, at each view): the sky or the page outside it (the grid itself, its page, its walls and its
 // outlines, see gpuPlane)
@@ -32135,7 +32086,7 @@ const textSet = () => ({
 let gridCount = 0;
 const gridKey = () =>
   walk.plane
-    ? `${walk.plane.kind}|${walk.plane.W}|${walk.plane.row}|${walk.plane.torus}|${walk.plane.outline}`
+    ? `${walk.plane.kind}|${walk.plane.W}|${walk.plane.row}|${walk.plane.torus}|${shaped(walk.plane.kind)}`
     : `#${(walk.surface.gridId ??= ++gridCount)}`;
 const isIcon = (zone) => /^(?:icon|punk|emoji)/.test(zone); // (a picture: an icon, a punk, an emoji)
 // A picture laid two ways (each colour's: see iconLay, its part's cells sampled): on squares, an icon's or a punk's
@@ -35263,7 +35214,7 @@ const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their
 // from the middle (its cells' middles summed); corners(t), a cell's
 const discCellsMemo = remember('discCellsMemo', new Map());
 function discCells(kind, W = cellsPlane().W) {
-  const id = planeGridKey(kind, W);
+  const id = `${kind}|${W}`;
   if (discCellsMemo.has(id)) return discCellsMemo.get(id);
   const F = APERIODIC[kind](W),
     o = (W - 1) / 2,

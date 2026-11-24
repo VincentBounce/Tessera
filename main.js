@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.739';
+const VERSION = '0.5.740';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15610,8 +15610,13 @@ function ringLength(x, square, units, ok = () => true) {
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
 function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
   const K = ringColours(ringVariant()),
-    [a, b] = klein ? [K, 1] : torusBlocks(K, { nv, seamTwist: seam }), // (a twisted one's those its seam glues in line, see teamBlocksFit)
-    unit = a * step, // (each block a whole count of step: Cairo's 2 squares a period, its blocks copies; a % step only till v0.5.730)
+    runs = !klein && faceRunsOn(K, { nv, seamTwist: seam }), // (its shape's zones of its own: runs along its one face, see faceRuns)
+    [a, b] = klein
+      ? [K, 1]
+      : runs
+        ? [ringCorners(surfaceOf(VARIANTS[ringVariant()])) / 2, 4] // (a run two sides long, a face wide: as many a ring, faces a tube)
+        : torusBlocks(K, { nv, seamTwist: seam }), // (a twisted one's those its seam glues in line, see teamBlocksFit)
+    unit = runs ? step : a * step, // (each block a whole count of step: Cairo's 2 squares a period, its blocks copies; a % step only till v0.5.730; runs: their ends at its corners, see whole)
     v = VARIANTS[ringVariant()],
     along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1, // (a reversible one's: its blocks' sets come round along it)
     whole = lcm(lcm(unit, along), ringCorners(surfaceOf(v))); // (a Triangle's: as many on each side, see ringCorners)
@@ -33135,10 +33140,8 @@ const FIGURE_PARTS = {
 // once), where its shape's teams ask it for K (see TORUS_SHAPES); a cell's run by its place along that face: its face (a
 // quarter of its rows, a corner at its middle row, see torusPoint) in the order its seam leads them, then along
 const faceRunsOn = (K, g) =>
-  !!g?.nu &&
-  !g.klein &&
-  torusForm().teams?.[K] === 'faceRuns' &&
-  Math.abs(Math.round((4 * g.seamTwist) / g.nv)) % 2 === 1;
+  // (g: a torus's frame, its rows and twist enough: a ring's columns asked before it is made, see ringColumns)
+  !g.klein && torusForm().teams?.[K] === 'faceRuns' && Math.abs(Math.round((4 * g.seamTwist) / g.nv)) % 2 === 1;
 const faceRuns = (K, g) => {
   const q = Math.round((4 * g.seamTwist) / g.nv), // (a face round the ring: the next q faces on, see teamBlocksFit's twist)
     run = (2 * g.nu) / torusForm().corners,

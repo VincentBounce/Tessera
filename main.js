@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.810';
+const VERSION = '0.5.811';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23351,9 +23351,10 @@ const civColours = (K, C) => [
 
 // the base the number is written in for Life: K + 1, a digit a cell, 0 dead, k alive in colour k (a start has live cells only)
 
-// a cell drawn (its state c in the population) as a state of K colours and C states: its own, else alive in its colour (a
-// colour of another count of colours as one of these; one colour: alive), as the plane's and a surface's starts take it
-const drawnState = (c, K, C) => (c <= K * (C - 1) ? c : K > 1 ? ((c - 1) % K) + 1 : 1);
+// a cell drawn (its state c in the population: colour k + K × stage s) as a state of K colours and C states: its own, else
+// its colour's last stage the rule has (a stage past it its last, as a brush's, see brushCells; Life's two states: alive; a
+// colour of another count of colours as one of these), as the plane's and a surface's starts take it
+const drawnState = (c, K, C) => ((c - 1) % K) + 1 + K * Math.min(Math.floor((c - 1) / K), C - 2);
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
 function surfaceSeed(seq, n, K, C) {

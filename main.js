@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.734';
+const VERSION = '0.5.735';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15487,6 +15487,7 @@ const TORUS_SHAPES = [
       notch: 0, // (its usual the width's 1st notch: never thinner, see widthShares)
       square: true,
       corners: 3,
+      standing: true, // (its line's plane upright: its arms raised up as it bends, see lineFlat)
     },
   ],
 ]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
@@ -15611,15 +15612,25 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
 // them (its sides alike: see ringColumns, torusDims; its teams' blocks, see teamBlocksFit)
 const ringCorners = (kind) => (kind?.startsWith('torus') ? (torusForm().corners ?? 1) : 1);
 
-// A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies: its middle at 0,
-// its tangent east, its side north (−y), its up up; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
+// The straight tube's frame, its line's middle's laid on it (see shapeLine): its tangent east, its side north (−y), its up
+// up, its line bent level (a ring's, a knot's); standing (the Triangle's), its side up and its up south: bent upright
+const lineFlat = (knot) =>
+  knot.standing
+    ? [
+        [1, 0, 0],
+        [0, 0, 1],
+        [0, -1, 0],
+      ]
+    : [
+        [1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1],
+      ];
+// A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies (see lineFlat):
+// its middle at 0; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
 function shapeLine(knot, x) {
   const [O, ...F0] = (knot.middle ??= knotFrame(knot, 0)),
-    flat = [
-      [1, 0, 0],
-      [0, -1, 0],
-      [0, 0, 1],
-    ],
+    flat = lineFlat(knot),
     place = (v) => [0, 1, 2].map((d) => F0.reduce((sum, f, k) => sum + dot3(v, f) * flat[k][d], 0)); // (the middle's frame onto the flat one)
   const [P, ...F] = knotFrame(knot, x);
   return [place(sub(P, O)), ...F.map(place)];
@@ -15651,16 +15662,7 @@ function bentLine(knot, mu) {
     lines =
       mu >= 1
         ? Array.from({ length: last + 1 }, (_, k) => shapeLine(knot, X(k)))
-        : Array.from({ length: last + 1 }, (_, k) =>
-            k === middle
-              ? [
-                  [0, 0, 0],
-                  [1, 0, 0],
-                  [0, -1, 0],
-                  [0, 0, 1],
-                ]
-              : null,
-          );
+        : Array.from({ length: last + 1 }, (_, k) => (k === middle ? [[0, 0, 0], ...lineFlat(knot)] : null));
   const step = (from, to, k) => {
     const [P, ...F] = lines[from],
       [a, angle] = knot.turns[(k - e + n) % n],
@@ -15747,8 +15749,9 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0, 
     f = u - k,
     [P0, , S0, U0] = lines[k],
     [P1, , S1, U1] = lines[k + 1],
-    at = (A, B, d) => A[d] + (B[d] - A[d]) * f; // (between its two steps)
-  return [0, 1, 2].map((d) => at(P0, P1, d) + w * at(S0, S1, d) + h * at(U0, U1, d));
+    at = (A, B, d) => A[d] + (B[d] - A[d]) * f, // (between its two steps)
+    [, S, U] = lineFlat(knot).map((F) => -w * F[1] + h * F[2]); // (its offset, the flat sheet's −w y + h z, in its side and up)
+  return [0, 1, 2].map((d) => at(P0, P1, d) + S * at(S0, S1, d) + U * at(U0, U1, d));
 }
 
 /* ---- 7.4a Klein bottle -------------------------------------------------------------------- */

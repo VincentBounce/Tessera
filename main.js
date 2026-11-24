@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.796';
+const VERSION = '0.5.797';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24024,15 +24024,7 @@ const BRUSH_CELL = [
 ];
 // Paste: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
 // (see pasteBrush), its grid then its file's (squares, or hexagons for an RLE in H), any rule; none read yet, its card alone
-const BRUSH_PASTED = [
-  'pasted',
-  '',
-  [],
-  'Paste a pattern',
-  'o!',
-  "the pattern copied (an RLE or a .cells, Golly's, LifeWiki's) as the brush",
-  null,
-];
+const BRUSH_PASTED = ['pasted', '', [], 'Paste a pattern', 'o!', 'an RLE or .cells copied, as the brush', null];
 const DRAW_PATTERNS = [
   [
     'glider',

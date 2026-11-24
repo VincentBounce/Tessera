@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.780';
+const VERSION = '0.5.781';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6216,6 +6216,7 @@ const LINK_DEFAULTS = {
   popMixed: 0,
   duelCut: 0,
   teamsApart: 0,
+  torusCut: 0,
   startPlace: 0,
   popSymmetry: 'none',
   popNewcomer: 0,
@@ -11114,6 +11115,7 @@ const setupNow = () => ({
   outline: `${plane.shape}|${plane.torus ? 1 : 0}`,
   duelCut,
   teamsApart,
+  torusCut,
   startPlace,
 });
 const SETUP_FIELDS = [
@@ -11134,6 +11136,7 @@ const SETUP_FIELDS = [
   'outline',
   'duelCut',
   'teamsApart',
+  'torusCut',
   'startPlace',
 ];
 // a plane grid's outline at kind k (as stored: its variant's plane) from a setup's (its outline tiles' shape and torus, 'hex|0'),
@@ -28715,6 +28718,7 @@ let lifeTeams = LINK_DEFAULTS.teams,
   teamsMix = LINK_DEFAULTS.popMixed === 1,
   duelCut = LINK_DEFAULTS.duelCut,
   teamsApart = LINK_DEFAULTS.teamsApart,
+  torusCut = LINK_DEFAULTS.torusCut,
   newcomer = LINK_DEFAULTS.popNewcomer === 1; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Seed, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Wild's Face), Mixed greyed there, kept for later
@@ -28737,7 +28741,7 @@ const duelAcross = () => lifeTeams === 2 && duelCut === 1 && duelCutsOf(tabVaria
 // Face): one key for every memo of them (partSymmetries, planeSlices, patternChoices, middleCells, iconChoices), never one by
 // hand each (iconChoices' had none of them till v0.5.428); the choices themselves, never what they make (Symmetry's allowed
 // asks for these very parts)
-const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${placeNow()}`;
+const placementKey = () => `${plane.sym}|${duelCut}|${teamsApart}|${torusCutNow()}|${placeNow()}`;
 // a colour's pieces, one choice of two (PIECES, the link's teamsApart: its place): in one piece, or in several as far apart
 // as can be (a solid's faces, see colouring's apart; a flat torus's blocks, see torusLattice), where its figure has both (see
 // piecesOf); a colour's pieces through the centre are Symmetry's Opposite
@@ -28746,6 +28750,29 @@ const PIECES = [
   ['Apart', "Each colour's part in pieces as far from one another as can be: a solid's faces, a torus's blocks"],
 ];
 const piecesApart = () => teamsApart === 1 && piecesOf(tabVariant());
+// a torus of the plane's teams, one choice of three (TORUS_CUTS, the link's torusCut: its place), shown among Teams' zones
+// (see ZONE_SHAPES): its blocks a lattice's, the farthest apart (see torusLattice); its sides' rows by columns; or bands
+const TORUS_CUTS = [
+  [
+    'lattice',
+    'Lattice',
+    "Each team a block of a lattice on the plane's torus, its blocks copies of each other, as far apart as can be",
+  ],
+  [
+    'quarters',
+    'Quarters',
+    "Each team a block, the grid cut along its sides in rows and columns: a walled rectangle's (a Duel its halves, a Quartet its quarters), or a torus's",
+  ],
+  [
+    'stack',
+    'Stack',
+    "Each team a band, the bands stacked: round a torus's tube along its ring, or along the plane's torus, by its rows",
+  ],
+];
+// the cut in use: the one picked where allowed, else the lattice; none (−1) off a torus of the plane in a battle
+const torusCutIn = (s) =>
+    PART_CHOICES.torusCut.whyNot(s, 0) ? -1 : PART_CHOICES.torusCut.whyNot(s, torusCut) ? 0 : torusCut,
+  torusCutNow = () => torusCutIn(setupNow());
 // whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
 // apart has more pieces than together
 const piecesOf = (w, K = lifeTeams, sym = startOpposite()) => {
@@ -29012,25 +29039,23 @@ const colourMissing = (K, rule = $('lifeRule').value) => {
 // a choice among a few (Start's DUEL_CUTS, PIECES and START_PLACES: [words, title] each, see PART_CHOICES), its tabs: the
 // one picked (now) on, its first the default, each its choice's key (field:k, see choicesAt), all greyed where whyNot(setup)
 // says why; a click on another picks it (pick), then plays the game again (then)
-const choiceTabs = (field, list, now, pick, whyNot, then = compute) =>
-  textTabs(
-    list.map(([text, title], k) =>
-      tile({
-        text,
-        title,
-        on: now === k,
-        byDefault: k ? '' : 'yes',
-        choice: `${field}:${k}`,
-        whyNot: whyNot && ((s) => whyNot(s, k)), // (each tab its own: a start's place's three, see PART_CHOICES)
-        click: () => {
-          if (now !== k) {
-            pick(k);
-            then();
-          }
-        },
-      }),
-    ),
-  );
+const choiceTile = (field, [text, title], k, now, pick, whyNot, then = compute) =>
+  tile({
+    text,
+    title,
+    on: now === k,
+    byDefault: k ? '' : 'yes',
+    choice: `${field}:${k}`,
+    whyNot: whyNot && ((s) => whyNot(s, k)), // (each tab its own: a start's place's three, see PART_CHOICES)
+    click: () => {
+      if (now !== k) {
+        pick(k);
+        then();
+      }
+    },
+  });
+const choiceTabs = (field, list, now, pick, whyNot, then) =>
+  textTabs(list.map((item, k) => choiceTile(field, item, k, now, pick, whyNot, then)));
 // Teams, Life's and a walk's alike (its own: see walkTeamTiles)
 function renderTeams() {
   const w = tabVariant();
@@ -29039,20 +29064,25 @@ function renderTeams() {
     $('colourBlocks').replaceChildren(...walkTeamTiles());
     return;
   }
-  const zones = lifeTeams > 1 && walk.life && walk.variant === w ? zoneShapeOf(lifeTeams) : null; // (the walk shown's, built)
+  const zones = lifeTeams > 1 && walk.life && walk.variant === w ? zoneShapeOf(lifeTeams) : null, // (the walk shown's, built)
+    cut = PART_CHOICES.torusCut,
+    cutNow = cut.now(),
+    cuts = TORUS_CUTS.map(([key]) => key);
   $('teamsZones').replaceChildren(
     textTabs(
       ZONE_SHAPES.map(([key, text, title]) =>
-        tile({
-          text,
-          title,
-          on: key === zones,
-          can: key === zones,
-          greyed: zones ? 'Not how this figure lays its teams.' : 'Solo: one team, no zones.',
-        }),
+        cutNow >= 0 && cuts.includes(key)
+          ? choiceTile('torusCut', [text, title], cuts.indexOf(key), cutNow, cut.pick, cut.whyNot) // (a torus of the plane's: its cut picked)
+          : tile({
+              text,
+              title,
+              on: key === zones,
+              can: key === zones,
+              greyed: zones ? 'Not how this figure lays its teams.' : 'Solo: one team, no zones.',
+            }),
       ),
     ),
-  ); // (shown only: no choice, out of the menu's graph)
+  ); // (shown only, out of the menu's graph: a torus of the plane's cut a choice, see TORUS_CUTS)
   $('colourBlocks').replaceChildren(
     ...TEAM_COUNTS.map((k) =>
       tile({
@@ -32395,6 +32425,21 @@ const PART_CHOICES = {
     whyNot: ({ w, lifeTeams: K }) =>
       piecesOf(w, K) ? '' : 'Only in a battle, on a flat torus or a solid whose colours can lie in pieces apart.',
   },
+  torusCut: {
+    list: TORUS_CUTS.map(([, text, title]) => [text, title]),
+    pick: (k) => (torusCut = k),
+    now: () => torusCutNow(),
+    whyNot: (s, k) => {
+      const m = VARIANTS[s.w],
+        blocks = s.lifeTeams * (s.teamsApart === 1 ? 2 : 1), // (Apart: two a team)
+        [c, r] = TEAM_GRID[blocks] ?? [1, 1];
+      if (!m.life || !m.plane || APERIODIC[m.plane] || !s.outline.endsWith('|1') || s.lifeTeams < 2)
+        return 'Only in a battle on a torus of the plane (Square or Rhombus).';
+      if (k === 1 && (c === 1 || r === 1))
+        return "Only where the teams' blocks make rows and columns both: not 2, 3, 5 nor 7 blocks.";
+      return '';
+    },
+  },
   startPlace: {
     list: START_PLACES,
     pick: (k) => (startPlace = k),
@@ -32430,8 +32475,10 @@ const PART_CHOICES = {
 };
 // out of the menu's graph (see OFF_GRAPH): each tab asks every solid's colourings its search crosses, measured on their
 // meshes, 0.4 to 2.6 s a first hover (2026-11-21); their words say what they wait for
-for (const [field, { list }] of Object.entries(PART_CHOICES))
-  list.forEach((_, k) => (OFF_GRAPH[`${field}:${k}`] = "each solid's colourings measured: 0.4 to 2.6 s a first hover"));
+for (const field of ['duelCut', 'teamsApart', 'startPlace'])
+  PART_CHOICES[field].list.forEach(
+    (_, k) => (OFF_GRAPH[`${field}:${k}`] = "each solid's colourings measured: 0.4 to 2.6 s a first hover"),
+  );
 const partChoiceTabs = (field) => {
   const c = PART_CHOICES[field];
   return choiceTabs(field, c.list, c.now(), c.pick, c.whyNot, c.then);
@@ -32896,7 +32943,13 @@ function planeFrame() {
   return (frameMemo = {
     key,
     block,
-    lattice: (K) => (middles[`lattice${K}${piecesApart()}`] ??= torusLattice(walk.plane, K, piecesApart())),
+    lattice: (K) =>
+      (middles[`lattice${K}${piecesApart()}${torusCutNow()}`] ??= torusLattice(
+        walk.plane,
+        K,
+        piecesApart(),
+        torusCutNow(),
+      )),
     middle: (i, cols, rows) =>
       (middles[`${cols}x${rows}`] ??= (() => {
         // (a block's very middle, its cells' middles': an even block's, between them)
@@ -32938,10 +32991,10 @@ function planeFrame() {
 // its shifts (a, b)/K and (0, d)/K of the torus round each way), the motifs a row and the rows multiples of K (see
 // widthForColours); its shifts those that lay the grid on itself. { part: each cell's colour, middles: each colour's }; spread
 // (Teams' Apart): 2K blocks, each colour's two a shift of order 2 apart, the farthest
-function torusLattice(plane, K, spread = false) {
+function torusLattice(plane, K, spread = false, cut = 0) {
   if (spread) {
     // (apart: 2K blocks, each colour two of them, a shift h of order 2 between them, the farthest: alike, shifted)
-    const L = torusLattice(plane, 2 * K),
+    const L = torusLattice(plane, 2 * K, false, cut),
       { kind, W, row } = plane,
       sum = ([a, b], [c, d]) => [(a + c) % row, (b + d) % W], // (its shifts in cells along a row and rows, see below)
       same = (p, q) => p[0] === q[0] && p[1] === q[1],
@@ -32991,10 +33044,14 @@ function torusLattice(plane, K, spread = false) {
       return Math.hypot(...apart(w, v)) < 1e-6; // (the same move round the torus: half a turn either way alike)
     });
   const far = ([c, j]) => Math.hypot(...apart(at(0, 0), at(c / per, j))); // (a shift by c cells along a row and j rows: how far it goes)
+  // (the cut asked, see TORUS_CUTS: any, the farthest; its blocks its grid's rows by its columns, b = 0 and a its rows of
+  // blocks; bands, a its blocks)
+  const asked = (a, b) => cut === 0 || (b === 0 && a === (cut === 1 ? TEAM_GRID[K]?.[1] : K));
   let best = null;
   for (let a = 1; a <= K; a++)
     if (K % a === 0)
       for (let b = 0; b < K / a; b++) {
+        if (!asked(a, b)) continue;
         // (its generators in cells along a row and rows, whole: a grid not made for K has none; their shifts closed in whole
         // numbers, exactly, never a third added up as 0.999…)
         const gens = [
@@ -33012,9 +33069,17 @@ function torusLattice(plane, K, spread = false) {
         if (!best || near > best.near + 1e-9) best = { near, shifts };
       }
   if (!best) return null; // (no lattice of K blocks: as Apart's none)
-  // (each block's middle the first one's moved by its shift, as it moves the cells; a motif's place its first cell's middle:
-  // all by construction, so each block's motifs the first's moved, every colour as many)
-  const first = at(0.01, 0.003),
+  // (Quarters and Stack, see TORUS_CUTS: each cell its block by its motif's column and its row, bc × br blocks along the
+  // sides, by construction; the lattice: its motif's nearest place)
+  const [bc, br] = cut === 1 ? TEAM_GRID[K] : [1, K],
+    shiftAt = new Map(best.shifts.map(([c, j], i) => [c * W + j, i])),
+    blockOf = (x, y) =>
+      shiftAt.get(Math.floor((Math.floor(x / per) * bc) / cols) * (row / bc) * W + Math.floor((y * br) / W) * (W / br));
+  // (each block's middle the first one's moved by its shift, as it moves the cells: the lattice's a motif's place, its first
+  // cell's middle; a block's along the sides its cells' middle. All by construction, so each block's motifs the first's
+  // moved, every colour as many)
+  const own = cut ? [...Array(n).keys()].filter((t) => blockOf(...xy(t)) === 0).map((t) => m(...xy(t))) : [],
+    first = cut ? [0, 1].map((d) => own.reduce((sum, p) => sum + p[d], 0) / own.length) : at(0.01, 0.003),
     places = best.shifts.map(([c, j]) => {
       const move = apart(o, m(c, j));
       return [first[0] + move[0], first[1] + move[1]];
@@ -33025,13 +33090,15 @@ function torusLattice(plane, K, spread = false) {
       q = m(per * Math.floor(x / per), y); // (its motif's place: a motif's cells one colour)
     let k = 0,
       least = Infinity;
-    places.forEach((p, i) => {
-      const d = Math.hypot(...apart(p, q));
-      if (d < least) {
-        least = d;
-        k = i;
-      }
-    });
+    if (cut) k = blockOf(x, y);
+    else
+      places.forEach((p, i) => {
+        const d = Math.hypot(...apart(p, q));
+        if (d < least) {
+          least = d;
+          k = i;
+        }
+      });
     part[t] = k;
   }
   return {
@@ -33246,13 +33313,7 @@ const faceRuns = (K, g) => {
 // (see faceRuns); each [its key, its tab's words, its tooltip], as Teams shows them (see renderTeams: shown only, none a click)
 const ZONE_SHAPES = [
   ['angles', 'Angles', 'Each team a slice round the middle, as many cells each: a walled disc, a hexagon, a flower'],
-  [
-    'quarters',
-    'Quarters',
-    'Each team a block of a walled rectangle, its columns by its rows: a Duel its halves, a Quartet its quarters',
-  ],
-  ['lattice', 'Lattice', "Each team a block of a lattice on the plane's torus, its blocks copies of each other"],
-  ['stack', 'Stack', 'Each team a band round the tube, the bands stacked along the ring'],
+  ...TORUS_CUTS, // (Lattice, Quarters, Stack: a choice on a torus of the plane)
   ['square', '~1:1', 'Each team a block as square as it can be: so many round the ring, so many round the tube'],
   ['runs', 'Runs', "Each team a run along the strip, or along a twisted Triangle's one face, one after the other"],
   ['lunes', 'Lunes', 'Each team a lune from pole to pole, its poles no one’s'],
@@ -33267,7 +33328,6 @@ const ZONE_SHAPES = [
 const ZONE_OF_ROW = {
   slices: 'angles',
   blocks: 'quarters',
-  lattice: 'lattice',
   strip: 'runs',
   projective: 'faces',
   hull: 'faces',
@@ -33279,6 +33339,7 @@ const zoneShapeOf = (K, f = shownFigure()) => {
   const row = figureOf(K, f);
   if (row === 'globe') return K === 2 && !duelAcross() ? 'poles' : 'lunes'; // (see FIGURE_PARTS.globe)
   if (row === 'rosette') return rosetteHalved(f.g, K) ? 'poles' : 'lunes'; // (see rosetteParts)
+  if (row === 'lattice') return TORUS_CUTS[torusCutNow()][0]; // (the cut picked, see TORUS_CUTS)
   if (row !== 'sheet') return ZONE_OF_ROW[row];
   return faceRunsOn(K, f.g) ? 'runs' : torusBlocks(K, f.g)[1] === 1 ? 'stack' : 'square';
 };
@@ -36153,6 +36214,7 @@ function applySetup(s) {
     teamsMix = Number(readSetting(s, 'popMixed')) === 1;
     duelCut = Number(readSetting(s, 'duelCut')) === 1 ? 1 : 0;
     teamsApart = Number(readSetting(s, 'teamsApart')) === 1 ? 1 : 0;
+    torusCut = Number(readSetting(s, 'torusCut', (c) => TORUS_CUTS[Number(c)]));
     startPlace = Number(readSetting(s, 'startPlace', (p) => START_PLACES[Number(p)]));
     newcomer = Number(readSetting(s, 'popNewcomer')) === 1;
     if (s.playRule) {

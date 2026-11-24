@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.771';
+const VERSION = '0.5.772';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25179,13 +25179,16 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
   const edge = far(items[live - 1]) + 3,
     out = []; // (the items just beyond: the next ones by distance)
   for (let k = live; k < items.length && far(items[k]) < edge; k++) out.push(items[k]);
-  return { ...tilePatch(rows, out, W, mid, each), norm };
+  const inner = far(items[live - 1]) - 3; // (a cell further out than its walls' band less 3: one a wall may touch)
+  return { ...tilePatch(rows, out, W, mid, each, (h) => h.far > inner), norm };
 }
 // A grid of tiles laid flat (rows, its cells; out, the tiles round them, its walls those touching a cell; each(item, f): f(x, y)
 // for each of its corners), placed as the squares' grid of side W, mid at its middle: its polygons, cells then walls (see
 // packedPolygons), its core (the items marked core: its middle's), its tiles' kinds and width; a disc's (see discPatch), one
 // tile cut again and again (the pinwheel's triangle: every tile a cell, no wall, see PINWHEEL_TRIANGLE)
-function tilePatch(rows, out, W, mid, each = flatEach) {
+function tilePatch(rows, out, W, mid, each = flatEach, nearOut = () => true) {
+  // (nearOut(item): whether a cell may touch the tiles round it, its walls; a disc's, its last ring only, see discPatch: not
+  // each corner of its million cells looked for among its walls', 2.4 s of a hats' disc till v0.5.772)
   const ids = (h) => {
     const r = [];
     each(h, (x, y) => r.push(pointKey(x, y)));
@@ -25203,8 +25206,9 @@ function tilePatch(rows, out, W, mid, each = flatEach) {
   for (const h of [...rows, ...out]) each(h, () => size++);
   const xy = new Float64Array(2 * size),
     put = (h, live) => {
+      const near = live && theirs.size && nearOut(h);
       each(h, (x, y) => {
-        if (live) {
+        if (near) {
           const id = pointKey(x, y);
           if (theirs.has(id)) touched.add(id);
         }
@@ -25217,7 +25221,14 @@ function tilePatch(rows, out, W, mid, each = flatEach) {
   for (const h of out) if (ids(h).some((id) => touched.has(id))) put(h, false);
   const F = packedPolygons(k, start.subarray(0, k + 1), xy.subarray(0, at));
   let area = 0;
-  for (let t = 0; t < rows.length; t++) area += polyArea(F.poly(t));
+  for (let t = 0; t < rows.length; t++) {
+    let a = 0; // (its shoelace on the corners as written, no polygon made a cell; each its own size, a mirrored hat's too)
+    for (let i = start[t], e = start[t + 1]; i < e; i++) {
+      const j = i + 1 < e ? i + 1 : start[t];
+      a += xy[2 * i] * xy[2 * j + 1] - xy[2 * j] * xy[2 * i + 1];
+    }
+    area += Math.abs(a) / 2;
+  }
   const coreIds = rows.flatMap((h, t) => (h.core ? [t] : [])); // (its middle's cells: a rosette sphere's motif, see motifOf)
   return {
     ...F,

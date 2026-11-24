@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.782';
+const VERSION = '0.5.783';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28769,10 +28769,9 @@ const TORUS_CUTS = [
     "Each team a band, the bands stacked: round a torus's tube along its ring, or along the plane's torus, by its rows",
   ],
 ];
-// the cut in use: the one picked where allowed, else the lattice; none (−1) off a torus of the plane in a battle
-const torusCutIn = (s) =>
-    PART_CHOICES.torusCut.whyNot(s, 0) ? -1 : PART_CHOICES.torusCut.whyNot(s, torusCut) ? 0 : torusCut,
-  torusCutNow = () => torusCutIn(setupNow());
+// the cut in use: the one picked where allowed, else the lattice (off a torus of the plane in a battle too: no choice there,
+// see PART_CHOICES' now, −1)
+const torusCutNow = () => (PART_CHOICES.torusCut.whyNot(setupNow(), torusCut) ? 0 : torusCut);
 // whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
 // apart has more pieces than together
 const piecesOf = (w, K = lifeTeams, sym = startOpposite()) => {
@@ -32428,7 +32427,7 @@ const PART_CHOICES = {
   torusCut: {
     list: TORUS_CUTS.map(([, text, title]) => [text, title]),
     pick: (k) => (torusCut = k),
-    now: () => torusCutNow(),
+    now: () => (PART_CHOICES.torusCut.whyNot(setupNow(), 0) ? -1 : torusCutNow()), // (none off a torus of the plane in a battle)
     whyNot: (s, k) => {
       const m = VARIANTS[s.w],
         blocks = s.lifeTeams * (s.teamsApart === 1 ? 2 : 1), // (Apart: two a team)

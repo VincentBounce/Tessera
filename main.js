@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.745';
+const VERSION = '0.5.746';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28075,7 +28075,9 @@ function brushTilesAt(t) {
 let brushHeading = null;
 const brushHeadingAt = (t, place) =>
   (brushHeading?.g === walk.surface && (brushHeading.t === t ? brushHeading : headingAcross(brushHeading, t))) ||
-  (place ? headingOn(walk.surface, patternFrame(0, 1, place), t) : tileHeading(walk.surface, t));
+  headingHere(place && patternFrame(0, 1, place), t);
+// tile t's heading: by its face's frame F (see headingOn), else, a surface with no frame, its own (see tileHeading)
+const headingHere = (F, t) => (F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t));
 // a tile's own heading, where its surface has no frame (a globe, Boy's surface: see frameless): a plane cell as many sides,
 // its first edge that cell's edge 0; a pattern laid from it as a cell is, turned as the tile lies (see patternFrom)
 const tileHeading = (g, t) => {
@@ -33277,7 +33279,7 @@ function huntFits() {
   hunt.fits = Object.fromEntries(
     Object.keys(HUNT_ZONES).map((zone) => {
       const r = zoneRadius(zone);
-      if (frameless(walk.surface) && (isIcon(zone) || famousZone(zone))) return [zone, false]; // (a globe, Boy's surface: no frame to lay a picture or a pattern on by its face, see patternPlace; its patches round its parts' middles, see partMiddle)
+      if (frameless(walk.surface) && isIcon(zone)) return [zone, false]; // (a globe, Boy's surface: no frame to lay a picture on, see patternPlace; its patterns from a tile's own heading, see headingHere; its patches round its parts' middles, see partMiddle)
       if (famousZone(zone))
         return [
           zone,
@@ -33668,6 +33670,7 @@ const patternsOn = () => {
     K = lifeParts(); // (the Life shown's own variant: another tab picked meanwhile, as Elementary, not built yet)
   return (
     !!cellsPlane() ||
+    frameless(walk.surface) || // (a globe, Boy's surface: laid from a tile's own heading, see headingHere)
     (!!walk.surface?.torus && !APERIODIC[cellKind(walk.surface)]) || // (a sheet of a grid that repeats: the pinwheel's never does, its patterns a disc's, see CENTRED)
     (['cube', 'pits', 'bumps'].includes(m.surface.replace(/Tetrakis$/, '')) && CUBE_FACES.includes(K)) ||
     (HULL_GRIDS.includes(m.surface) && (K === 1 || ['square', 'tri'].includes(hullColours(m.surface, K)?.kind))) || // (its grid, a cut's too; a pinwheel's faces its solid's, its cells no grid)
@@ -34095,7 +34098,7 @@ const byHeading = (kind) => !APERIODIC[kind] && !cellsPlane();
 // the plane's own cells (the plane, a disc, a rosette sphere's), or a tiling that never repeats; Anywhere's
 function patternOnCell(F, cells, t) {
   const kind = patternKind();
-  if (byHeading(kind)) return patternFrom(headingOn(walk.surface, F, t), cells);
+  if (byHeading(kind)) return patternFrom(headingHere(F, t), cells); // (F none: a surface with no frame, its tile's own)
   const ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     p = F.from(F.place(t)),
     d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]);
@@ -34239,6 +34242,10 @@ const latticeNear = (kind, e) => {
 // a brush's: those there only; else all, or none)
 function patternAt(i, K, cells, partial = false, to = null, round = !partial) {
   // round: round a torus (else cut off at its edges: an icon)
+  if (cells.length && frameless(walk.surface)) {
+    const at = patternOnCell(null, cells, partMiddle(i, K)); // (no frame: from its part's middle cell's own heading, see headingHere)
+    return at.every((t) => t >= 0) && keepsShape(cells, at) ? cells.map((c, k) => [at[k], c[2]]) : [];
+  }
   if (!cells.length || !patternFrame(i, K)) return []; // (an icon with no cell at that size; no place, see patternPlace)
   const kind = patternKind(),
     F = patternFrame(i, K),
@@ -35376,7 +35383,9 @@ function laidChoices(centred, any = false) {
         ? [g.nu / torusBlocks(K)[0], g.nv / torusBlocks(K)[1]]
         : g.squareFaces || g.triFaces || g.hexagons || g.kite || (g.sides === 3 && !g.uncut)
           ? Array(2).fill(g.sides === 3 || g.kite ? g.size / 2 : g.size)
-          : Array(2).fill(cubeRoom(g)); // (the others the cube's frame's, see cellPlace: none, 0)
+          : frameless(g)
+            ? [Infinity, Infinity] // (no face to fit: every shape tried, kept where laid whole in its part, see lay, keepsShape)
+            : Array(2).fill(cubeRoom(g)); // (the others the cube's frame's, see cellPlace: none, 0)
   const [short, long] = sides.sort((x, y) => x - y),
     fits = ([a, b]) => (centred ? b <= short - 2 : a <= short && b <= long);
   const shapes = [],
@@ -35412,7 +35421,7 @@ function laidChoices(centred, any = false) {
       };
       const lay = ([cells, name], t) => {
         const F = frameOf(t),
-          at = F && patternOnCell(F, cells, t);
+          at = (F || frameless(g)) && patternOnCell(F, cells, t); // (a globe's, Boy's: from the tile's own heading)
         if (!at || at[0] !== t || (byHeading(kind) && !keepsShape(cells, at))) return null; // (its shape kept: see keepsShape)
         const cs = [];
         for (let k = 0; k < cells.length; k++) {

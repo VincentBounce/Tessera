@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.730';
+const VERSION = '0.5.731';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11874,6 +11874,8 @@ const playsLife = (w) => !!VARIANTS[w].life && !VARIANTS[w].explore;
 // Life's teams a variant plays, as its link holds them (see getSetup): Life's picked, 1 where none are played (a walk, Explore,
 // a reversible rule: lifeTeams kept for the next, see teamsOn); what its grid is made for (see widthForColours, ringColours)
 const teamsPlayed = (w = tabVariant()) => (playsLife(w) && !VARIANTS[w].margolus ? lifeTeams : 1);
+// the colours' parts laid at the start (a grid's blocks are made for): its teams, Newcomer's one fewer (see setupParts)
+const partsPlayed = (w = tabVariant()) => (teamsPlayed(w) > 1 ? setupParts({ w }) : 1);
 // The menu's parts a variant uses, each by its id, said once: those it does not use hidden, and not drawn (see renderRuleSection)
 const sectionsOf = (w) => {
   const m = VARIANTS[w],
@@ -23217,7 +23219,7 @@ const lifeParts = () =>
       : 1
     : !playsLife(walk.variant) || walk.life.loops
       ? 1 // (Explore: its colours its tiles' looks; a loop rule: its colours its states, drawn; no teams, see teamsPlayed)
-      : walk.life.colours - (newcomerOn() ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's)
+      : walk.life.colours - (walk.life.newcomer ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's, as the walk was built)
 // colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
 // start's teams fewer with Newcomer, its states the same
 const colourState = (i, v) => (walk.life.colours > 1 ? i + 1 + walk.life.colours * (v - 1) : v);
@@ -23693,6 +23695,7 @@ function startLife(seq, rule, n, grid) {
     loopRing: rule.loopRing,
     loopTurns: rule.loopTurns,
     lineages: !!rule.lineages,
+    newcomer: newcomerOn(), // (its last colour none at first, its parts one fewer: the walk's, as built, see lifeParts)
     ...grid,
     alive: new Uint8Array(n),
   };
@@ -25085,7 +25088,7 @@ const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineO
       : widthForColours(kind, sideW(kind, side));
 // colours in blocks (on a torus, or 2 and 4 with walls along the edges: see huntParts), cols × rows of them: the nearest side
 // they divide (12, 4 × 3: a multiple of 12), every colour as many cells
-const widthForColours = (kind, x, K = teamsPlayed()) => {
+const widthForColours = (kind, x, K = partsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
     l = lcm(c, r);
@@ -25113,7 +25116,7 @@ function blockWrapW(kind, W) {
     );
   return blockWraps.get(key);
 }
-const planeColumns = (kind, W, K = teamsPlayed()) => widthForColours(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
+const planeColumns = (kind, W, K = partsPlayed()) => widthForColours(kind, W * (RECT_ASPECT[kind] ?? 1), K); // its motifs a row: as many as make it square (its motif's height over its width)
 const planeRow = (kind, W) =>
   tilingOf(kind)
     ? tilingOf(kind).polys.length * planeColumns(kind, W)
@@ -27251,7 +27254,7 @@ function startLead(number, seeded) {
     return `${number} the ${formatNumber(lifeStart.cells)} cells within radius ${lifeStart.radius} of the middle of ${where}, the others dead`;
   if (found) return `${found} on ${where}`;
   const how = {
-    random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${newcomerOn() ? `, ${teamName(lifeParts())} none: born only (Newcomer)` : ''}` : ''},`,
+    random: `A random soup, ${soup}${lifeParts() > 1 ? `, each colour in its part (${COLOUR_PARTS[lifeParts()]})${walk.life.newcomer ? `, ${teamName(lifeParts())} none: born only (Newcomer)` : ''}` : ''},`,
     draw: `${formatNumber(walk.life.seedAlive)} cells drawn`,
     digits: `${number} ${seeded}`,
     text: `“${plane.text}” drawn`,
@@ -27305,7 +27308,7 @@ const symmetryAllowed = (
   const m = VARIANTS[v],
     outline = m.plane && outlineIn(outlineSet, m.plane),
     k = m.plane && planeKind(m.plane, outline),
-    by = { start, zone, K: parts === lifeTeams - (newcomerOn() ? 1 : 0) ? undefined : parts, outline }; // (the game's where they are its)
+    by = { start, zone, K: walk.life && parts === lifeParts() ? undefined : parts, outline }; // (the game's where they are its)
   if (v === walk.variant && walk.plane && outline === outlineOf(m.plane))
     return symmetriesHere(walk.plane.kind, walk.plane.W, undefined, by).includes(y);
   if (!m.plane || m.elementary || m.margolus || !m.life) return y === 'none';
@@ -28747,6 +28750,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
   // f: the figure, its variant and its surface (a torus's sizes)
   const { variant, g } = f;
   if (k === 1) return true;
+  if (!TEAM_COUNTS.includes(k)) return false; // (a count of teams one of the menu's: Newcomer's teams below 12, 11, none)
   if (!teamsFair(k, f)) return false; // (its parts not alike: greyed, see teamsFair)
   if (!teamsStatesFit(k, rule)) return false;
   if (variant.plane) {

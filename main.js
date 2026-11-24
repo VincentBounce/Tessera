@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.764';
+const VERSION = '0.5.765';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6554,9 +6554,8 @@ const DISPLAY_DEFAULTS = {
   cellsFinish: [
     'cellsFinish',
     ['open', 'tab', 'theme'],
-    (variant, w) =>
-      NAV[w][0] === 'Life' && NAV[w][1] === '3D solids' && themeName() === 'dark' ? CELLS_FINISH.LED : 0,
-  ], // (Life in 3D on a dark page: LED; else Off)
+    (variant, w) => (NAV[w][0] === 'Life' && themeName() === 'dark' ? CELLS_FINISH.LED : 0),
+  ], // (Life on a dark page, in 2D as in 3D: LED; else Off)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],

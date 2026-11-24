@@ -2192,15 +2192,21 @@ fades out, slowly then fast */
 } /* a size's words in the colours drawn (see sizeTips) */
 
 @media (max-width: 720px) {
+  :root {
+    --view-left: 0px;
+  } /* (the view under the settings, not right of them: its boxes from its own left edge, the player's too) */
   main {
     flex-direction: column;
   }
   .panel {
+    position: static;
+    flex: none;
     width: auto;
     max-height: 45%;
     border-right: 0;
     border-bottom: 1px solid var(--border-color);
-  } /* (45% of what is under the header at most, the view the rest: never the window's heights, the header over them) */
+  } /* (in its place over the view, not over it: the view below, its top boxes (Light) in sight; 45% of what is under the header
+  at most, the view the rest: never the window's heights, the header over them) */
   .hint {
     display: none;
   }

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.805';
+const VERSION = '0.5.806';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28356,7 +28356,7 @@ function surfaceGhost(put) {
   if (!here) return;
   const [ink, share] = ghostInk(),
     [r, g, b] = rgbOf(faded(ink, share, blankTile()));
-  for (const [u] of tiles) put(u, (r | (g << 8) | (b << 16) | (255 << 24)) >>> 0); // (its colour, painted: see tileColour)
+  for (const [u] of tiles ?? []) put(u, (r | (g << 8) | (b << 16) | (255 << 24)) >>> 0); // (its colour, painted: see tileColour; refused: none)
 }
 // the brush under the pointer, half seen, where a click draws (see drawsHere: drawn again as it changes, see renderDrawTools)
 function drawGhost() {

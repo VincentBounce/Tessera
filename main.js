@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.791';
+const VERSION = '0.5.792';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27277,16 +27277,21 @@ function planeBounds(turn = planeTurn()) {
 }
 // the same grid, another start (a density, a seed, a symmetry, a pattern, a cell drawn): no new digits
 function planeReseed() {
+  seedShown();
+  describe(walk.base);
+  renderPlaneRow();
+  showStacks();
+  syncLink();
+}
+// its start's cells again and shown, nothing else (0.5 ms: a stroke's at each move, its menu and link once at its end, see
+// strokeTo; the menu's and the link's 10 ms a move lagged it)
+function seedShown() {
   const L = walk.life;
   lifeStart = null; // the plane's own start again, not the hunt's
   L.seed.set(planeSeed(walk.plane.kind, walk.digits, L.C, lifeParts()));
   startColours(L.seed);
   countSeed(L);
-  describe(walk.base);
-  renderPlaneRow();
   restart();
-  showStacks();
-  syncLink();
 }
 const PLANE_CELLS = {
   square: 'squares',
@@ -43423,6 +43428,7 @@ stage.addEventListener('pointermove', (e) => {
 });
 const endDrag = () => {
   drag = null;
+  if (stroke?.done.size) planeReseed(); // (a stroke's menu and link, once)
   stroke = null;
   stage.classList.remove('dragging');
 };
@@ -43478,7 +43484,7 @@ function strokeTo(x, y) {
     brushOn(k, 1);
   }
   stroke.at = [x, y];
-  planeReseed();
+  seedShown();
 }
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [

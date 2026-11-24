@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.813';
+const VERSION = '0.5.814';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12685,7 +12685,7 @@ document.addEventListener('mouseover', (e) => {
     bold = (text) =>
       Object.assign(document.createElement('b'), {
         className: 'tip-name',
-        innerHTML: withIcons(htmlText(key ? `${text} (${key})` : text)), // (a number's symbol its icon, as on its card)
+        innerHTML: withIcons(htmlText(key && !text.endsWith(`(${key})`) ? `${text} (${key})` : text)), // (a number's symbol its icon, as on its card; its key once, its words' own: View (Escape))
       }),
     ok = (tip || rule) && (el.hasAttribute('aria-label') || !!el.querySelector('.mode-name') || /\p{L}/u.test(name)); // (a symbol, + or −: no name; a name given, an aria-label or a card's, one: 11/604 too)
   // its default: a tile's (see setTile), a box's (its checkbox as the page starts)

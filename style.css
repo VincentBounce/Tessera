@@ -2210,9 +2210,15 @@ fades out, slowly then fast */
   .hint {
     display: none;
   }
-  /* folded, the player's buttons alone (a tap opens it all), the grid in sight */
-  .stage-bar:not(:focus-within) > :not(.player-controls) {
+  /* folded, the player's buttons alone (a tap opens it all), the grid in sight; no opening on hover there (its parts hidden,
+  its width grown for nothing) */
+  .stage-bar:not(:focus-within) > :not(.player-controls),
+  .stage-bar:not(:focus-within) .play-row > :nth-last-child(1 of :not([hidden])),
+  .stage-bar:not(:focus-within) .player-side {
     display: none;
+  }
+  .stage-bar:not(:focus-within):hover {
+    width: min-content;
   }
 }
 

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.728';
+const VERSION = '0.5.729';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27259,10 +27259,10 @@ function startLead(number, seeded) {
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {
-  plane.torus = Number(s.gridWalls) !== 1;
-  plane.shape = ['square', 'rhombus'].includes(s.gridOutline) ? s.gridOutline : 'hex'; // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
+  plane.torus = Number(readSetting(s, 'gridWalls')) !== 1;
+  plane.shape = readSetting(s, 'gridOutline', (o) => ['hex', 'square', 'rhombus'].includes(o)); // (ol: its outline, not its own: a six-fold grid's a hexagon walled, the others' a rectangle)
   if (s.gridSize !== undefined) cellsAsked = planeCells(Number(s.gridSize)); // (the grid at the nearest it offers, see plane.side; as its edges are: walls, a hexagon's cells)
-  spaceTime = Number(s.popStacked) === 1 && !plane.torus; // (3D: with walls only)
+  spaceTime = Number(readSetting(s, 'popStacked')) === 1 && !plane.torus; // (3D: with walls only)
   startFromSetup(s);
 }
 // a link's start (pop=), the plane's or a surface's: a soup or a zone's, from its seed; Draw (p=, the plane's), the digits, a text
@@ -27283,7 +27283,7 @@ function startFromSetup(s) {
     plane.picks = famousZone(hunt.zone) ? String(popOf(s)).split('.').slice(1) : null; // (pop=famous.Glider.R-pentomino:2: each colour's)
   } else plane.start = ['draw', 'text', ...ELEMENTARY_STARTS].includes(kind) ? kind : 'random';
   if (kind === 'text') plane.text = String(popOf(s)).slice(5) || APP_TITLE;
-  plane.font = TEXT_FONTS[s.popFont] ? s.popFont : 'sans'; // (Text's font, tf=)
+  plane.font = readSetting(s, 'popFont', (f) => TEXT_FONTS[f]); // (Text's font, tf=)
   population = plane.start === 'draw' ? populationOf(s.popCells) : population;
   forgetDrawing(); // (another start)
 }
@@ -35855,10 +35855,13 @@ const LINK_DEFAULTS = {
   explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
   playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
 };
+const linkDefault = (s, k) => (typeof LINK_DEFAULTS[k] === 'function' ? LINK_DEFAULTS[k](s) : LINK_DEFAULTS[k]);
 const linkSetting = (s, k) =>
   k === 'gridSize' && s.gridSize !== undefined
     ? withTwist(s.gridSize, twistOf(surfaceOf(VARIANTS[setupVariant(s)]), s.gridSize)) // (a ring's size its twist written, its default where left out)
-    : (s[k] ?? (typeof LINK_DEFAULTS[k] === 'function' ? LINK_DEFAULTS[k](s) : LINK_DEFAULTS[k]));
+    : (s[k] ?? linkDefault(s, k));
+// a link's setting as read: its own where ok says it is one, else its default (one source: LINK_DEFAULTS)
+const readSetting = (s, k, ok = () => true) => (ok(linkSetting(s, k)) ? linkSetting(s, k) : linkDefault(s, k));
 const sameSetup = (a, b, apart = ['version']) =>
   [...new Set([...Object.keys(a), ...Object.keys(b)])].every(
     (k) => apart.includes(k) || String(linkSetting(a, k) ?? '') === String(linkSetting(b, k) ?? ''),
@@ -35947,27 +35950,25 @@ function applySetup(s) {
     pickNumber(formulaInUse, w);
   }
   if (s.maxSteps !== undefined) lengthPicked = Number(s.maxSteps);
-  walkTeams = !VARIANTS[w].life && TEAM_COUNTS.includes(Number(s.teams)) ? Number(s.teams) : 1; // (a walk's battle, if its surface allows it at its size: see battleOn)
-  const ruled = BATTLE_RULES.findIndex(([, name]) => linkWord(name) === s.battleRule);
+  walkTeams = VARIANTS[w].life ? 1 : Number(readSetting(s, 'teams', (t) => TEAM_COUNTS.includes(Number(t)))); // (a walk's battle, if its surface allows it at its size: see battleOn)
+  const ruled = BATTLE_RULES.findIndex(([, name]) => linkWord(name) === readSetting(s, 'battleRule'));
   battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land edges 1)
-  battleStartsWay = STARTS_WAYS.some(([way]) => way === s.battleStarts) ? s.battleStarts : 'symmetric';
+  battleStartsWay = readSetting(s, 'battleStarts', (way) => STARTS_WAYS.some(([w]) => w === way));
   battleSeed = Number(s.battleDraw) || 1;
-  exploreLook.rule = EXPLORE_RULES.some(([key]) => key === s.exploreRule) ? s.exploreRule : EXPLORE_RULES[0][0];
+  exploreLook.rule = readSetting(s, 'exploreRule', (r) => EXPLORE_RULES.some(([key]) => key === r));
   exploreLook.palette = Math.max(
     0,
-    EXPLORE_PALETTES.findIndex(([name]) => linkWord(name) === s.explorePalette),
+    EXPLORE_PALETTES.findIndex(([name]) => linkWord(name) === readSetting(s, 'explorePalette')),
   ); // (none: the first)
   battleOrder = s.battleOrder ? [...String(s.battleOrder)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
   RIVALS.forEach((id, j) => {
     $(id).value = s[`walkNumber${id.slice(-1)}`] ?? RIVAL_FIRSTS[j];
   }); // (one the link gives not: its number at first)
   set('variant', w);
-  $('startNo').value = s.walkStart ?? 1;
-  torusTurned = Number(s.gridTurned) === 1;
-  for (const f of Object.keys(RING_SHAPES)) {
-    const k = Number(s[`${f}Shape`]);
-    ringShape[f] = Number.isInteger(k) && RING_SHAPES[f][k] ? k : 0;
-  }
+  $('startNo').value = readSetting(s, 'walkStart');
+  torusTurned = Number(readSetting(s, 'gridTurned')) === 1;
+  for (const f of Object.keys(RING_SHAPES))
+    ringShape[f] = Number(readSetting(s, `${f}Shape`, (k) => Number.isInteger(Number(k)) && RING_SHAPES[f][Number(k)]));
   if (s.playRule && VARIANTS[w].worm) {
     worm.byDigits = s.playRule === 'digits';
     if (!worm.byDigits && wormRuleOf(s.playRule)) worm.rule = wormRuleOf(s.playRule).join(' ');
@@ -35987,13 +35988,13 @@ function applySetup(s) {
     // (Life: its size and start without a rule too, the grid's first then)
     if (VARIANTS[w].plane) planeFromSetup(s);
     else startFromSetup(s); // (a surface's)
-    plane.sym = SYMMETRIES[s.popSymmetry] ? s.popSymmetry : 'none'; // (the plane's)
-    lifeTeams = Number(s.teams) || 1;
-    teamsMix = Number(s.popMixed) === 1;
-    duelCut = Number(s.duelCut) === 1 ? 1 : 0;
-    teamsApart = Number(s.teamsApart) === 1 ? 1 : 0;
-    startPlace = START_PLACES[Number(s.startPlace)] ? Number(s.startPlace) : 0;
-    newcomer = Number(s.popNewcomer) === 1;
+    plane.sym = readSetting(s, 'popSymmetry', (y) => SYMMETRIES[y]); // (the plane's)
+    lifeTeams = Number(readSetting(s, 'teams', (t) => Number(t) >= 1));
+    teamsMix = Number(readSetting(s, 'popMixed')) === 1;
+    duelCut = Number(readSetting(s, 'duelCut')) === 1 ? 1 : 0;
+    teamsApart = Number(readSetting(s, 'teamsApart')) === 1 ? 1 : 0;
+    startPlace = Number(readSetting(s, 'startPlace', (p) => START_PLACES[Number(p)]));
+    newcomer = Number(readSetting(s, 'popNewcomer')) === 1;
     if (s.playRule) {
       ruleFittedTo = w;
       $('lifeRule').value = ruleBody(s.playRule);

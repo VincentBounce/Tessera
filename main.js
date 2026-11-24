@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.717';
+const VERSION = '0.5.718';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -19673,7 +19673,7 @@ function torusLoops() {
         const cols = e / S.perRow,
           mu = (2 * cols) / gcd(2 * cols, Math.abs(U)),
           mv = (2 * rows) / gcd(2 * rows, Math.abs(V));
-        const m = (mu / gcd(mu, mv)) * mv,
+        const m = lcm(mu, mv),
           laps = [Math.round((m * Math.abs(T[0])) / cols), Math.round((m * Math.abs(T[1])) / rows)];
         const steps = m * L + s0 + L,
           off = Math.abs(Math.log(rows / e / usual));
@@ -25079,7 +25079,7 @@ const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineO
 const widthForColours = (kind, x, K = teamsPlayed()) => {
   // (x, its rows or its motifs a row: the nearest its colours' blocks' columns and rows divide; K: its colours)
   const [c, r] = TEAM_GRID[K] ?? [1, 1],
-    l = (c * r) / gcd(c, r);
+    l = lcm(c, r);
   const u = planeTorus(kind) ? K * (piecesApart() ? 2 : 1) : l, // (a torus's: its lattice's, see torusLattice, twice its colours apart; with walls, its blocks')
     m =
       K < 2 || APERIODIC[kind] || !(planeTorus(kind) || K === 2 || K === 4)
@@ -35847,36 +35847,35 @@ function getSetup() {
           twistOf(surfaceOf(variant), gridSizePlayed()),
         )
       : sizeAsked(surfaceOf(variant)); // (a pinwheel ring's width and twist written too)
-  if (variantStarts() && startsWayNow() === 'symmetric' && startNo() > 1) s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
-  if (torusTurned && TURNED[variant.surface]) s.gridTurned = 1;
-  for (const f of Object.keys(RING_SHAPES)) if (shapeOn(f, w)) s[`${f}Shape`] = shapeOn(f, w); // (its place in its family's shapes: the first, 0, in no link)
+  if (variantStarts() && startsWayNow() === 'symmetric') s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
+  if (TURNED[variant.surface]) s.gridTurned = torusTurned ? 1 : 0;
+  if (ringFamily(w)) s[`${ringFamily(w)}Shape`] = shapeOn(ringFamily(w), w); // (its place in its family's shapes, the first 0)
   if (life) s.playRule = ruleBody($('lifeRule').value);
-  if (teamsPlayed(w) > 1) s.teams = teamsPlayed(w);
+  if (life) s.teams = teamsPlayed(w); // (Solo's 1 too)
   if (battleOn()) {
     // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
     s.teams = walkTeams;
     RIVALS.slice(0, walkTeams - 1).forEach((id) => {
       s[`walkNumber${id.slice(-1)}`] = formulaOf($(id).value).text ?? $(id).value;
     }); // (xb, xc…)
-    if (battleRuleInUse(tabVariant())) s.battleRule = linkWord(BATTLE_RULES[battleRuleInUse(tabVariant())][1]); // (the one played, by its name: landNoCollision; none: the first, Land edges 1)
-    if (startsWayNow() !== 'symmetric') s.battleStarts = startsWayNow(); // (its starts: centred, random, see STARTS_WAYS)
+    s.battleRule = linkWord(BATTLE_RULES[battleRuleInUse(tabVariant())][1]); // (the one played, by its name: landNoCollision, the first landEdges1)
+    s.battleStarts = startsWayNow(); // (its starts: symmetric, centred, random, see STARTS_WAYS)
     if (startsWayNow() === 'random') s.battleDraw = battleSeed;
     if (startsOrder(walkTeams))
       s.battleOrder = startsOrder(walkTeams)
         .map((i) => String.fromCharCode(97 + i))
         .join(''); // (its starts' order: so=acb)
   }
-  if (life && teamsMix && lifeTeams > 1) s.popMixed = 1;
-  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now() > 0) s[field] = c.now(); // (none, -1: no place, off a solid) // (its place in its tabs: the first, 0, in no link)
-  if (walk.life && walk.plane && startSymmetry() !== 'none') s.popSymmetry = startSymmetry(); // (the plane's; a solid's copy through its centre: startPlace)
-  if (life && newcomerOn()) s.popNewcomer = 1; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
+  if (life && lifeTeams > 1) s.popMixed = teamsMix ? 1 : 0;
+  if (life) for (const [field, c] of Object.entries(PART_CHOICES)) if (c.now() >= 0) s[field] = c.now(); // (its place in its tabs, the first 0; none, -1: no place, off a solid)
+  if (walk.life && walk.plane) s.popSymmetry = startSymmetry(); // (the plane's, none too; a solid's copy through its centre: startPlace)
+  if (life && lifeTeams > 1) s.popNewcomer = newcomerOn() ? 1 : 0; // (Newcomer)  // (Mixed, kept where its zone greys it: the other zones' fits by it, see huntFits)
   if (variant.plane) {
     // the grid's side, dead edges (e=1), its start ("random.30.7", "draw" with p=, "digits"), its symmetry (y=)
     if (!variant.elementary) s.gridSize = plane.side; // (Elementary's: none, see elementaryRows)
-    if (!plane.torus) s.gridWalls = 1;
-    const ol = outlineOf(VARIANTS[w].plane);
-    if (ol !== outlineOf(VARIANTS[w].plane, 'hex')) s.gridOutline = ol;
-    if (spaceTimeOn()) s.popStacked = 1; // (Space-time)
+    s.gridWalls = plane.torus ? 0 : 1;
+    s.gridOutline = plane.shape; // (the outline asked: hex, square, rhombus; each grid's as it can have it, see outlineOf)
+    s.popStacked = spaceTimeOn() ? 1 : 0; // (Space-time)
   }
   if (life && plane.start === 'draw' && population.size) s.popCells = populationRle(population); // (a surface's: its tiles, see populationKey)
   if (life && !variant.loops)
@@ -35884,12 +35883,12 @@ function getSetup() {
       s,
       popWords(plane.start === 'random' ? zonePop() : plane.start === 'text' ? `text.${plane.text}` : plane.start),
     ); // its start (a surface's no Draw)
-  if (life && !variant.loops && plane.start === 'text' && plane.font !== 'sans') s.popFont = plane.font; // (its font)
-  if (variant.net && walkRuleOf(variant) !== firstWalkRule(variant)) s.playRule = walkRuleOf(variant); // (a walk's rule: none, its own)
+  if (life && !variant.loops && plane.start === 'text') s.popFont = plane.font; // (its font)
+  if (variant.net) s.playRule = walkRuleOf(variant); // (a walk's rule, its first too)
   if (variant.antOf) s.playRule = `${antByDigits ? 'digits ' : ''}${antRuleOf(w)}`; // ("digits 1R0 0L0": by the digits)
   if (variant.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
-  if (variant.explore && exploreLook.rule !== EXPLORE_RULES[0][0]) s.exploreRule = exploreLook.rule;
-  if (variant.explore && exploreLook.palette) s.explorePalette = linkWord(EXPLORE_PALETTES[exploreLook.palette][0]); // (by its name: abyss)
+  if (variant.explore) s.exploreRule = exploreLook.rule;
+  if (variant.explore) s.explorePalette = linkWord(EXPLORE_PALETTES[exploreLook.palette][0]); // (by its name: abyss)
   if (championCode) s.popFound = championCode;
   if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
   s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)

@@ -1574,8 +1574,8 @@
   //  - the colours offered the same whatever is picked (a bottle's length its count's: before v0.3.80, Prismatic's 3 in Trio, 8 in
   //    Nonet), each offered count as many cells a colour once taken
   async function checkSheets(fail) {
-    const keepPicked = picked;
-    picked = null; // (each surface at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits, the surface before measured)
+    const keepAsked = cellsAsked;
+    cellsAsked = null; // (each surface at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits, the surface before measured)
     let checked = 0;
     const sizeOne = (S) => S.sizes?.[1] ?? S.sizes?.[0];
     for (const name of foldedIn('torus')) {
@@ -1666,7 +1666,7 @@
       }
       checked += 2;
     }
-    picked = keepPicked; // (the size picked by hand, back)
+    cellsAsked = keepAsked; // (the size picked by hand, back)
     return checked;
   }
 
@@ -1674,8 +1674,8 @@
   // apart at most: a slice's cells whole), each solid (none apart), at its first size (before v0.3.90: the rosettes' halves and
   // Penrose's mirror halves, 2 to 9 cells apart; the bicupola's 5 and 10, the rhombicuboctahedron's 9, up to 97)
   async function partsEqual(fail) {
-    const keepPicked = picked;
-    picked = null; // (each grid at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits)
+    const keepAsked = cellsAsked;
+    cellsAsked = null; // (each grid at its own first size, whatever was picked by hand: a picked one of 350,000 cells, a build longer than the waits)
     let checked = 0;
     const lifeVariants = Object.keys(VARIANTS).filter(
       (w) =>
@@ -1711,7 +1711,7 @@
         checked++;
       }
     }
-    picked = keepPicked; // (the size picked by hand, back)
+    cellsAsked = keepAsked; // (the size picked by hand, back)
     return checked;
   }
 

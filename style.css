@@ -1358,6 +1358,9 @@ button.active .bubble.active {
 .stage.drawing {
   cursor: crosshair;
 } /* Draw cells: a click colours a cell */
+.stage.drawing.refused {
+  cursor: not-allowed;
+} /* (the brush cannot go there, see surfaceGhost) */
 .draw-row {
   display: flex;
   align-items: center;

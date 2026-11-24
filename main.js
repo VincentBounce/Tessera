@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.784';
+const VERSION = '0.5.785';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28751,17 +28751,18 @@ const PIECES = [
 ];
 const piecesApart = () => teamsApart === 1 && piecesOf(tabVariant());
 // a torus of the plane's teams, one choice of three (TORUS_CUTS, the link's torusCut: its place), shown among Teams' zones
-// (see ZONE_SHAPES): its blocks a lattice's, the farthest apart (see torusLattice); its sides' rows by columns; or bands
+// (see ZONE_SHAPES): the grid cut along its sides in rows by columns, where its blocks take both (the first, the default);
+// its blocks a lattice's, the farthest apart (see torusLattice); or bands
 const TORUS_CUTS = [
-  [
-    'lattice',
-    'Lattice',
-    "Each team a block of a lattice on the plane's torus, its blocks copies of each other, as far apart as can be",
-  ],
   [
     'quarters',
     'Quarters',
     "Each team a block, the grid cut along its sides in rows and columns: a walled rectangle's (a Duel its halves, a Quartet its quarters), or a torus's",
+  ],
+  [
+    'lattice',
+    'Lattice',
+    "Each team a block of a lattice on the plane's torus, its blocks copies of each other, as far apart as can be",
   ],
   [
     'stack',
@@ -28769,9 +28770,9 @@ const TORUS_CUTS = [
     "Each team a band, the bands stacked: round a torus's tube along its ring, or along the plane's torus, by its rows",
   ],
 ];
-// the cut in use: the one picked where allowed, else the lattice (off a torus of the plane in a battle too: no choice there,
-// see PART_CHOICES' now, −1)
-const torusCutNow = () => (PART_CHOICES.torusCut.whyNot(setupNow(), torusCut) ? 0 : torusCut);
+// the cut in use: the one picked where allowed, else the first allowed (the lattice where the blocks make one row); off a
+// torus of the plane in a battle, the lattice (no choice there: PART_CHOICES' now, −1)
+const torusCutNow = () => [torusCut, 0, 1, 2].find((k) => !PART_CHOICES.torusCut.whyNot(setupNow(), k)) ?? 1;
 // whether a figure takes its K colours apart (a variant's, as its button opens it): a flat torus; a solid whose colouring
 // apart has more pieces than together
 const piecesOf = (w, K = lifeTeams, sym = startOpposite()) => {
@@ -32431,14 +32432,14 @@ const PART_CHOICES = {
   torusCut: {
     list: TORUS_CUTS.map(([, text, title]) => [text, title]),
     pick: (k) => (torusCut = k),
-    now: () => (PART_CHOICES.torusCut.whyNot(setupNow(), 0) ? -1 : torusCutNow()), // (none off a torus of the plane in a battle)
+    now: () => (PART_CHOICES.torusCut.whyNot(setupNow(), 1) ? -1 : torusCutNow()), // (none off a torus of the plane in a battle: the lattice, there on any)
     whyNot: (s, k) => {
       const m = VARIANTS[s.w],
         blocks = s.lifeTeams * (s.teamsApart === 1 ? 2 : 1), // (Apart: two a team)
         [c, r] = TEAM_GRID[blocks] ?? [1, 1];
       if (!m.life || !m.plane || APERIODIC[m.plane] || !s.outline.endsWith('|1') || s.lifeTeams < 2)
         return 'Only in a battle on a torus of the plane (Square or Rhombus).';
-      if (k === 1 && (c === 1 || r === 1))
+      if (k === 0 && (c === 1 || r === 1))
         return "Only where the teams' blocks make rows and columns both: not 2, 3, 5 nor 7 blocks.";
       return '';
     },
@@ -32951,7 +32952,7 @@ function planeFrame() {
         walk.plane,
         K,
         piecesApart(),
-        torusCutNow(),
+        TORUS_CUTS[torusCutNow()][0],
       )),
     middle: (i, cols, rows) =>
       (middles[`${cols}x${rows}`] ??= (() => {
@@ -32994,7 +32995,7 @@ function planeFrame() {
 // its shifts (a, b)/K and (0, d)/K of the torus round each way), the motifs a row and the rows multiples of K (see
 // widthForColours); its shifts those that lay the grid on itself. { part: each cell's colour, middles: each colour's }; spread
 // (Teams' Apart): 2K blocks, each colour's two a shift of order 2 apart, the farthest
-function torusLattice(plane, K, spread = false, cut = 0) {
+function torusLattice(plane, K, spread = false, cut = 'lattice') {
   if (spread) {
     // (apart: 2K blocks, each colour two of them, a shift h of order 2 between them, the farthest: alike, shifted)
     const L = torusLattice(plane, 2 * K, false, cut),
@@ -33038,51 +33039,54 @@ function torusLattice(plane, K, spread = false, cut = 0) {
     return best;
   };
   // (a shift by i motifs and j rows lays the grid on itself: every cell's middle moved as the first one's)
-  const fits = ([i, j]) =>
-    [...Array(n).keys()].every((t) => {
+  const fits = ([i, j]) => {
+    const w = apart(o, m(wrap(i * per, row), wrap(j, W))); // (the first cell's move)
+    return [...Array(n).keys()].every((t) => {
       const [x, y] = xy(t),
-        q = m(wrap(x + i * per, row), wrap(y + j, W)),
-        v = apart(m(x, y), q),
-        w = apart(o, m(wrap(i * per, row), wrap(j, W)));
+        v = apart(m(x, y), m(wrap(x + i * per, row), wrap(y + j, W)));
       return Math.hypot(...apart(w, v)) < 1e-6; // (the same move round the torus: half a turn either way alike)
     });
+  };
   const far = ([c, j]) => Math.hypot(...apart(at(0, 0), at(c / per, j))); // (a shift by c cells along a row and j rows: how far it goes)
   // (the cut asked, see TORUS_CUTS: any, the farthest; its blocks its grid's rows by its columns, b = 0 and a its rows of
   // blocks; bands, a its blocks)
-  const asked = (a, b) => cut === 0 || (b === 0 && a === (cut === 1 ? TEAM_GRID[K]?.[1] : K));
-  let best = null;
+  const asked = (a, b) => cut === 'lattice' || (b === 0 && a === (cut === 'quarters' ? TEAM_GRID[K]?.[1] : K));
+  const candidates = [];
   for (let a = 1; a <= K; a++)
     if (K % a === 0)
       for (let b = 0; b < K / a; b++) {
-        if (!asked(a, b)) continue;
         // (its generators in cells along a row and rows, whole: a grid not made for K has none; their shifts closed in whole
         // numbers, exactly, never a third added up as 0.999…)
         const gens = [
           [(a * row) / K, (b * W) / K],
           [0, W / a],
         ];
-        if (!gens.flat().every(Number.isInteger) || !gens.every(([c, j]) => fits([c / per, j]))) continue;
+        if (!asked(a, b) || !gens.flat().every(Number.isInteger)) continue;
         const shifts = [[0, 0]];
         for (let s = 0; s < shifts.length; s++)
           for (const [c, j] of gens) {
             const q = [wrap(shifts[s][0] + c, row), wrap(shifts[s][1] + j, W)];
             if (!shifts.some(([x, y]) => x === q[0] && y === q[1])) shifts.push(q);
           }
-        const near = Math.min(...shifts.slice(1).map((q) => far(q)));
-        if (!best || near > best.near + 1e-9) best = { near, shifts };
+        candidates.push({ gens, shifts, near: Math.min(...shifts.slice(1).map((q) => far(q))) });
       }
+  // (the farthest that lays the grid on itself, the first of those as far: each checked on every cell, so the farthest first)
+  const best = candidates
+    .sort((p, q) => (q.near - p.near > 1e-9 ? 1 : p.near - q.near > 1e-9 ? -1 : 0))
+    .find(({ gens }) => gens.every(([c, j]) => fits([c / per, j])));
   if (!best) return null; // (no lattice of K blocks: as Apart's none)
   // (Quarters and Stack, see TORUS_CUTS: each cell its block by its motif's column and its row, bc × br blocks along the
   // sides, by construction; the lattice: its motif's nearest place)
-  const [bc, br] = cut === 1 ? TEAM_GRID[K] : [1, K],
+  const [bc, br] = cut === 'quarters' ? TEAM_GRID[K] : [1, K],
     shiftAt = new Map(best.shifts.map(([c, j], i) => [c * W + j, i])),
     blockOf = (x, y) =>
       shiftAt.get(Math.floor((Math.floor(x / per) * bc) / cols) * (row / bc) * W + Math.floor((y * br) / W) * (W / br));
   // (each block's middle the first one's moved by its shift, as it moves the cells: the lattice's a motif's place, its first
   // cell's middle; a block's along the sides its cells' middle. All by construction, so each block's motifs the first's
   // moved, every colour as many)
-  const own = cut ? [...Array(n).keys()].filter((t) => blockOf(...xy(t)) === 0).map((t) => m(...xy(t))) : [],
-    first = cut ? [0, 1].map((d) => own.reduce((sum, p) => sum + p[d], 0) / own.length) : at(0.01, 0.003),
+  const along = cut !== 'lattice',
+    own = along ? [...Array(n).keys()].filter((t) => blockOf(...xy(t)) === 0).map((t) => m(...xy(t))) : [],
+    first = along ? [0, 1].map((d) => own.reduce((sum, p) => sum + p[d], 0) / own.length) : at(0.01, 0.003),
     places = best.shifts.map(([c, j]) => {
       const move = apart(o, m(c, j));
       return [first[0] + move[0], first[1] + move[1]];
@@ -33093,7 +33097,7 @@ function torusLattice(plane, K, spread = false, cut = 0) {
       q = m(per * Math.floor(x / per), y); // (its motif's place: a motif's cells one colour)
     let k = 0,
       least = Infinity;
-    if (cut) k = blockOf(x, y);
+    if (along) k = blockOf(x, y);
     else
       places.forEach((p, i) => {
         const d = Math.hypot(...apart(p, q));

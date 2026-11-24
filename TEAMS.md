@@ -210,6 +210,13 @@ group**, its point picked so they are gathered, and a ring's length made so its 
 whole). It would replace `solidCounts` and its colourings, `teamsFairOwn`'s cases, `rosetteParts`' lunes and the Klein
 bottle's slices along only.
 
+**Done (v0.5.732): one judge.** Each figure's row of `FIGURE_PARTS` holds `fits(K, figure)` beside its `parts(K)`; `figureOf(K,
+figure)` the only dispatch, for the figure picked (a setup's, `pickedFigure`: the plane's grid and edges, a surface's
+frame) as for the one shown (`shownFigure`), by the same flags; `teamsFit` is the count in `TEAM_COUNTS`, the rule's
+states (`teamsStatesFit`) and its row's `fits`. `teamsFair` and `teamsFit`'s second chain gone. Every variant × size ×
+twist × plane edges gives the same counts as before (1,829 cases). Left: the parts built from a point's orbit (above),
+`fits` then proved by the figure's symmetries rather than told by each row.
+
 <p align="center"><br>* * *</p>
 
 ## The plan (the user's spec, 2026-11-19)

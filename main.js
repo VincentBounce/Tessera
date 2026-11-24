@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.731';
+const VERSION = '0.5.732';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16525,7 +16525,7 @@ const kleinCount = (kindK, size) => {
   const { kind, strip, nv, n } = kleinLength(kindK, size);
   return stripCount(kind, strip, `${nv}x${n}`, true);
 };
-// (K: the colours it is made for, the count asked when judging one, see teamsFair; kept: the sizes' ladders of every bottle
+// (K: the colours it is made for, the count asked when judging one, see FIGURE_PARTS' fits; kept: the sizes' ladders of every bottle
 // ask for it at each count of colours a search judges, 2,400 a hover of Octet till v0.5.637)
 const kleinLengths = remember('kleinLengths', {});
 function kleinLength(kindK, size, K = ringColours(ringVariant())) {
@@ -28748,18 +28748,9 @@ const teamsStatesFit = (k, rule = $('lifeRule').value) => k * ((parseRule(ruleBo
 const TEAMS_STATES_WHERE = "So many teams, each with this rule's dying states, pass a cell's 255 states.";
 function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value) {
   // f: the figure, its variant and its surface (a torus's sizes)
-  const { variant, g } = f;
   if (k === 1) return true;
   if (!TEAM_COUNTS.includes(k)) return false; // (a count of teams one of the menu's: Newcomer's teams below 12, 11, none)
-  if (!teamsFair(k, f)) return false; // (its parts not alike: greyed, see teamsFair)
-  if (!teamsStatesFit(k, rule)) return false;
-  if (variant.plane) {
-    return true; // its blocks (rounded down when they do not divide it, as on a torus); with dead edges, its halves, quarters, or slices round the middle (see planeSlices)
-  }
-  if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
-  if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
-  if (g?.nu) return true; // a torus: its blocks (twisted: those its seam glues in line, see teamBlocksFit) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
-  return false;
+  return teamsStatesFit(k, rule) && FIGURE_PARTS[figureOf(k, f)].fits(k, f); // (its parts alike: its figure's row, see FIGURE_PARTS)
 }
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
 // it places (colours still, never Solo; fewer on a tie; none: Solo, Klein Dual 16 at 4 and 24); Solo, Solo; blocks and
@@ -28797,10 +28788,9 @@ const TEAM_NAMES = {
   10: 'Decet',
   12: 'Dozen',
 }; // one colour, then battles
-// the counts of colours fair on the figure, every colour's part a copy of the others' (see teamsFair)
 // a disc's first mirror's way, by its construction: de Bruijn's multigrids' (Ammann's, Rhombs 12 and 14: a family's
 // normal's half, π over its turns, see DEBRUIJN), Penrose's wheel's spokes' (see PENROSE_SPOKE); its slices start there
-// (see planeSlices), its mirrors lay it on itself (see teamsFair); none else (the rosettes turn as a spiral, the hats and
+// (see planeSlices), its mirrors lay it on itself (see wallFits); none else (the rosettes turn as a spiral, the hats and
 // spectres are chiral). Before v0.5.453 Penrose's was taken as π / 5, between two mirrors: its Duel 918 and 927 cells
 const DISC_FAMILIES = { deBruijn: ['ammann', 'rhombs12', 'rhombs14'], penrose: ['penrose', 'kitesDarts'] };
 const discMirrorWay = (kind) =>
@@ -28826,14 +28816,24 @@ const figureTurns = (kind) =>
   ] ??
   gridTurns(baseOf(kind));
 // The figure picked, its colours judged on: the tab's variant and its surface's frame at the size picked (see surfaceFrame;
-// none on the plane), known by construction, never the walk shown's (another while this one is made, none at first)
-// (another variant's, w: as its button would open it, at size or the one it opens at, see figureSize)
+// the plane's, its grid as built and its edges, walk.plane's flags), known by construction, never the walk shown's (another
+// while this one is made, none at first) (another variant's, w: as its button would open it, at size or the one it opens
+// at, see figureSize)
 const pickedFigure = (w, size = null) => {
   const variant = VARIANTS[w],
     kind = !variant.plane && surfaceOf(variant);
-  return { variant, g: kind && SURFACES[kind] ? surfaceFrame(kind, size ?? figureSize(w)) : null };
+  return {
+    variant,
+    g: variant.plane
+      ? { kind: planeKind(variant.plane), torus: planeTorus(variant.plane) }
+      : kind && SURFACES[kind]
+        ? surfaceFrame(kind, size ?? figureSize(w))
+        : null,
+  };
 };
-// A surface's frame at a size, all its teams are judged on (teamsFit, teamsFair, torusBlocks): what it is and a torus's
+// the figure shown, its colours laid on (see partPlaces): its grid or its mesh as built
+const shownFigure = () => ({ variant: VARIANTS[walk.variant], g: walk.plane ?? walk.surface });
+// A surface's frame at a size, all its teams are judged on (teamsFit, FIGURE_PARTS' fits, torusBlocks): what it is and a torus's
 // rows, without its tiles (a mesh of a million cells built in 1.5 s for each variant next to it, by a greyed tile's search, see
 // choicesAt); the flags its mesh carries the same (see finishTorus, kleinTilingMesh, mobiusMesh, globeMesh, rosetteSphereMesh,
 // boyMesh)
@@ -28877,27 +28877,6 @@ const menuSizeOf = (w) =>
   w === tabVariant() && $('gridSizeField').dataset.kind?.split(' ')[0] === surfaceOf(VARIANTS[w])
     ? gridSizePlayed()
     : null;
-const teamsFair = (K, { variant, g } = pickedFigure(tabVariant())) => {
-  const kind = variant?.plane;
-  if (K === 1) return true;
-  if (kind && (planeTorus(kind) || figureTurns(kind) === 1)) return true; // (a torus: blocks of its side, see widthForColours, all alike; no turns, a hat's, a spectre's or a pinwheel's circle, as many cells each, see planeSlices)
-  if (kind) {
-    // (a walled figure's turns round its middle, C_n, and its mirrors, D_n: K a d dividing n, or 2d where it mirrors (a
-    // slice between two mirrors, its cells on them no one's: see planeSlices); hexagons 1, 2, 3, 4, 6, 12, squares 1, 2, 4,
-    // 8, Penrose 5; never 9, nor 12 on Florets, 8 on Pythagoras (no mirror), nor 3 on a rectangle (see wallTurns))
-    const n = wallTurns(kind),
-      mirror = APERIODIC[kind] ? discMirrorWay(kind) !== null : canMirror(kind);
-    return [...Array(n).keys()].some((i) => n % (i + 1) === 0 && (K === i + 1 || (mirror && K === 2 * (i + 1))));
-  }
-  if (solidCounts(variant?.surface)) return solidCounts(variant.surface).includes(K); // (a solid: its groups', see colouring)
-  if (BOY_BASES[variant?.surface]) return oppositeAllowed(BOY_BASES[variant.surface], K); // (Boy's surface: its solid's Opposite colours, see FIGURE_PARTS)
-  if (g?.globe) return true; // (a globe: each count its own, its bands all multiples of it, see globeMesh)
-  if (g?.rosette) return rosetteTurns(g) % K === 0 || rosetteHalves(g, K); // (a rosette surface: its turns' lunes, or its two discs' each, see rosetteParts)
-  if (g?.mobius) return true;
-  if (g?.copyLength) return kleinLength(g.kindK, g.size, K).fits; // (a tiling's bottle: its blocks alike, see kleinBlocksSlid)
-  if (g?.nu) return teamBlocksFit(K, g, torusBlocks(K, g)[1]); // (a torus: its blocks fitting it; its columns made for its colours, see ringColumns)
-  return false;
-};
 // a count of colours whose battles can bring a colour back: the rule's birth with c live neighbours that K − 1 colours can share
 // with a tie for the most (the one missing born, see lifeStep): each at least one, the e = c − (K − 1) left over not 1 (2 of 3
 // colours: e even); with letters, any of theirs with c (rule: a setup's, the field's by default)
@@ -32989,17 +32968,19 @@ const rosetteParts = (g, K) =>
     }
     return out;
   })());
-// Each figure's colours, one row a figure (see figureOf), as TEAMS.md's placements tables: parts(K, opposite), each cell's
-// colour (-1: no one's); centre(i, K, opposite), colour i's patch's middle cells (Seed's, a hunt's zones), else its middle
+// Each figure's colours, one row a figure (see figureOf), as TEAMS.md's placements tables: fits(K, figure), whether K colours'
+// parts are alike there (TEAMS.md's rule: the figure's symmetries carry each onto another; a figure picked or shown, see
+// pickedFigure), the only judge of a count (see teamsFit); parts(K, opposite), each cell's colour (-1: no one's); centre(i, K, opposite), colour i's patch's middle cells (Seed's, a hunt's zones), else its middle
 // (see middleCells); solo: its parts asked in one colour too (a globe's caps, a rosette sphere's poles: no one's). One way to
 // place a start on every figure (see partPlaces), its figure's row read, never a branch by figure in the starts
 const FIGURE_PARTS = {
   // a flat torus: its lattice's blocks (see torusLattice)
-  lattice: { parts: (K) => planeFrame().lattice(K).part },
+  lattice: { fits: () => true, parts: (K) => planeFrame().lattice(K).part }, // (its blocks of its side, see widthForColours)
   // a walled grid in a hexagon or a disc, or of 3, 6, 8 or 12 colours: its slices round the middle (see planeSlices)
-  slices: { parts: (K) => planeSlices(K).part },
+  slices: { fits: (K, { variant }) => wallFits(K, variant.plane), parts: (K) => planeSlices(K).part },
   // a walled rectangle: its blocks, cols × rows (see teamGrid)
   blocks: {
+    fits: (K, { variant }) => wallFits(K, variant.plane),
     parts: (K) => {
       const [cols, rows] = teamGrid(K),
         F = planeFrame();
@@ -33010,6 +32991,7 @@ const FIGURE_PARTS = {
   // one place, its two sides), each its stretch, 2L / K long, from the start of the face in view (red first), so that a face
   // holds whole stretches when it can; a tile where its colour unit is, one on a stretch's end in the stretch it starts
   strip: {
+    fits: () => true,
     parts: (K) => {
       const g = walk.surface,
         s0 = mobiusMiddle(g) - g.L / 2,
@@ -33021,6 +33003,8 @@ const FIGURE_PARTS = {
   // a torus, a Klein bottle: its blocks on the sheet (see torusBlocks), each tile in the one its colour unit's middle is in (a
   // Klein bottle's by its own middle: its slices whole copies along, a glide's half a lattice cell, see kleinLength)
   sheet: {
+    fits: (K, { g }) =>
+      g.copyLength ? kleinLength(g.kindK, g.size, K).fits : teamBlocksFit(K, g, torusBlocks(K, g)[1]), // (a tiling's bottle: its blocks alike, see kleinBlocksSlid; a torus: its blocks fitting it, its columns made for its colours, see ringColumns)
     parts: (K) => {
       const g = walk.surface,
         blocks = torusBlocks(K);
@@ -33033,6 +33017,7 @@ const FIGURE_PARTS = {
   // a globe: K lunes between meridians, whole columns of every band (each a multiple of K), its two caps no one's; a Duel up
   // and down, its hemispheres, its caps theirs; no patch (no frame to lay one on: its zones greyed, see huntFits)
   globe: {
+    fits: () => true, // (each count its own, its bands all multiples of it, see globeMesh)
     parts: (K) => {
       const g = walk.surface,
         up = K === 2 && !duelAcross();
@@ -33041,10 +33026,15 @@ const FIGURE_PARTS = {
     solo: true,
   },
   // a rosette sphere: its lunes, or its halves' (see rosetteParts)
-  rosette: { parts: (K) => rosetteParts(walk.surface, K), solo: true },
+  rosette: {
+    fits: (K, { g }) => rosetteTurns(g) % K === 0 || rosetteHalves(g, K), // (its turns' lunes, or its two discs' each)
+    parts: (K) => rosetteParts(walk.surface, K),
+    solo: true,
+  },
   // Boy's surface: its solid's colours that its centre keeps (Opposite's: a colour's two opposite pieces, one tile here), each
   // tile its own on the solid; no patch (no frame)
   projective: {
+    fits: (K, { variant }) => oppositeAllowed(BOY_BASES[variant.surface], K),
     parts: (K) => {
       const g = walk.surface,
         base = BOY_BASES[VARIANTS[walk.variant].surface],
@@ -33055,6 +33045,7 @@ const FIGURE_PARTS = {
   // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: both, its part two pieces, as
   // TEAMS.md's rule has it), the others' cells each to the nearest colour's face's middle, as near two none's
   hull: {
+    fits: (K, f) => solidFits(K, f),
     parts: (K, opposite) => {
       const g = walk.surface,
         hull = hullColours(VARIANTS[walk.variant].surface, K, opposite),
@@ -33074,6 +33065,7 @@ const FIGURE_PARTS = {
   // a solid: its colouring by its groups, a cell by its middle's nearest spot (see colouring, spotColours); a patch round the
   // open cells nearest each colour's spot
   solid: {
+    fits: (K, f) => solidFits(K, f),
     parts: (K, opposite) => spotColours(colouring(VARIANTS[walk.variant].surface, K, opposite), walk.surface),
     centre: (i, K, opposite) => {
       const col = colouring(VARIANTS[walk.variant].surface, K, opposite);
@@ -33083,25 +33075,40 @@ const FIGURE_PARTS = {
 };
 // a surface with no frame yet to lay a patch or a pattern on (see patternPlace): a globe, Boy's surface
 const frameless = (g) => !!(g?.globe || g?.projective);
-// the figure built, its row of FIGURE_PARTS (K colours: the plane's walled grid's slices or blocks by them)
-const figureOf = (K) =>
-  walk.plane
-    ? walk.plane.torus // (the grid shown's, never the setup's next: plane.torus)
+// a walled figure's counts by its turns round its middle, C_n, and its mirrors, D_n: K a d dividing n, or 2d where it mirrors
+// (a slice between two mirrors, its cells on them no one's: see planeSlices); hexagons 1, 2, 3, 4, 6, 12, squares 1, 2, 4, 8,
+// Penrose 5; never 9, nor 12 on Florets, 8 on Pythagoras (no mirror), nor 3 on a rectangle (see wallTurns); no turns (a
+// hat's, a spectre's or a pinwheel's circle): any, as many cells each (see planeSlices)
+const wallFits = (K, kind) => {
+  const n = wallTurns(kind),
+    mirror = APERIODIC[kind] ? discMirrorWay(kind) !== null : canMirror(kind);
+  return (
+    figureTurns(kind) === 1 ||
+    [...Array(n).keys()].some((i) => n % (i + 1) === 0 && (K === i + 1 || (mirror && K === 2 * (i + 1))))
+  );
+};
+// a solid's counts: its groups' (see colouring)
+const solidFits = (K, { variant }) => !!solidCounts(variant.surface)?.includes(K);
+// a figure's row of FIGURE_PARTS (K colours: the plane's walled grid's slices or blocks by them, a hull solid's by its
+// colourings), the figure picked's or the one shown (see pickedFigure, shownFigure), by the same flags
+const figureOf = (K, { variant, g } = shownFigure()) =>
+  variant.plane
+    ? g.torus
       ? 'lattice'
-      : wallSlices(K)
+      : wallSlices(K, g.kind)
         ? 'slices'
         : 'blocks'
-    : walk.surface.mobius
+    : g.mobius
       ? 'strip'
-      : walk.surface.torus
+      : g.torus
         ? 'sheet'
-        : walk.surface.globe
+        : g.globe
           ? 'globe'
-          : walk.surface.rosette
+          : g.rosette
             ? 'rosette'
-            : walk.surface.projective
+            : g.projective
               ? 'projective'
-              : hullColours(VARIANTS[walk.variant].surface, K)
+              : hullColours(variant.surface, K)
                 ? 'hull'
                 : 'solid';
 // each colour's part (r = 0: its cells, by its figure's row, see FIGURE_PARTS; else a patch of radius r round its centre; one

@@ -2126,11 +2126,9 @@ button.active .bubble.active {
   display: none;
 }
 /* the tooltip telling an alert (see alertTip): its box red, the view's hint gone meanwhile (no box under it to move it); it
-fades out, slowly then fast, or a click ends it */
+fades out, slowly then fast */
 #tip.alert {
   animation: alert-fade 5s cubic-bezier(0.95, 0, 1, 0.5) forwards; /* (held, then gone at its end, fast) */
-  pointer-events: auto;
-  cursor: pointer;
   background: var(--alert-background);
   border-color: var(--alert-background);
   color: var(--on-alert-color);

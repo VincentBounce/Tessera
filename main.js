@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.789';
+const VERSION = '0.5.790';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12635,7 +12635,7 @@ const setTip = (...nodes) => {
 };
 const showInTip = (text) => setTip(...tipWords(text));
 // an alert told by the tooltip itself a few seconds, red, fading out (see #tip.alert), till then no tooltip over it; its fade's
-// end or a click ends it (an RLE that does not open, a file refused, states flattened): "Name: words" as a tooltip's, never
+// end ends it (an RLE that does not open, a file refused, states flattened): "Name: words" as a tooltip's, never
 // the browser's alert, which stops the page
 const alertEnd = () => {
   $('tip').classList.remove('alert');
@@ -12647,7 +12647,6 @@ const alertTip = (text) => {
   showInTip(text);
   $('tip').classList.add('alert');
 };
-$('tip').addEventListener('click', alertEnd);
 $('tip').addEventListener('animationend', alertEnd);
 // whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
 const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));

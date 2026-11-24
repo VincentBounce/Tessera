@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.778';
+const VERSION = '0.5.779';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38542,34 +38542,48 @@ function outwardFolds(tri, P, Q, N) {
     return dot3(n, sub(P[d], P[a])) * Math.sign(dot3(n, N)) > 1e-12 * dot3(n, n);
   };
   const turn = (a, b, c) => (Q[b][0] - Q[a][0]) * (Q[c][1] - Q[a][1]) - (Q[b][1] - Q[a][1]) * (Q[c][0] - Q[a][0]);
+  // (each triangle's side p → q, its slot in tri: its triangle's first plus its place in it; −1 none)
+  const m = P.length,
+    side = new Int32Array(m * m).fill(-1),
+    lay = (x) => {
+      for (let s = 0; s < 3; s++) side[tri[x + s] * m + tri[x + ((s + 1) % 3)]] = x + s;
+    };
+  for (let x = 0; x < tri.length; x += 3) lay(x);
   for (let flips = 0, again = true; again && flips < tri.length;) {
     again = false;
-    for (let x = 0; x < tri.length && !again; x += 3)
-      for (let y = x + 3; y < tri.length && !again; y += 3) {
-        for (let s = 0; s < 3 && !again; s++) {
-          const p = tri[x + s],
-            q = tri[x + ((s + 1) % 3)],
-            c = tri[x + ((s + 2) % 3)]; // (x: p → q → c; y holds q → p)
-          const o = [0, 1, 2].find((r) => tri[y + r] === q && tri[y + ((r + 1) % 3)] === p);
-          if (o === undefined) continue;
-          const d = tri[y + ((o + 2) % 3)],
-            sense = Math.sign(turn(p, q, c)); // (the quad c, p, d, q round the tile, as its triangles)
-          if (
-            !inward(p, q, c, d) ||
-            [
-              [c, p, d],
-              [p, d, q],
-              [d, q, c],
-              [q, c, p],
-            ].some(([a, b, e]) => Math.sign(turn(a, b, e)) !== sense)
-          )
-            continue;
-          tri.splice(x, 3, c, p, d);
-          tri.splice(y, 3, d, q, c);
-          again = true;
-          flips++;
-        }
+    for (let x = 0; x < tri.length && !again; x += 3) {
+      // (its sides shared with a later triangle, as met: that triangle's first, then its side's place)
+      const order = [0, 1, 2]
+        .map((s) => [s, side[tri[x + ((s + 1) % 3)] * m + tri[x + s]]])
+        .filter(([, ys]) => ys >= x + 3)
+        .sort(([s, ys], [t, yt]) => ys - (ys % 3) - (yt - (yt % 3)) || s - t);
+      for (const [s, ys] of order) {
+        const p = tri[x + s],
+          q = tri[x + ((s + 1) % 3)],
+          y = ys - (ys % 3),
+          c = tri[x + ((s + 2) % 3)], // (x: p → q → c; y holds q → p)
+          d = tri[y + ((ys - y + 2) % 3)],
+          sense = Math.sign(turn(p, q, c)); // (the quad c, p, d, q round the tile, as its triangles)
+        if (
+          !inward(p, q, c, d) ||
+          [
+            [c, p, d],
+            [p, d, q],
+            [d, q, c],
+            [q, c, p],
+          ].some(([a, b, e]) => Math.sign(turn(a, b, e)) !== sense)
+        )
+          continue;
+        side[p * m + q] = side[q * m + p] = -1;
+        tri.splice(x, 3, c, p, d);
+        tri.splice(y, 3, d, q, c);
+        lay(x);
+        lay(y);
+        again = true;
+        flips++;
+        break;
       }
+    }
   }
   return tri;
 }

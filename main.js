@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.758';
+const VERSION = '0.5.759';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -25847,6 +25847,7 @@ const PINWHEEL_TRIANGLE = Object.assign(
   }),
   {
     outline: 'triangle',
+    pieces: 5, // (its first cut's triangles: its colours' parts, see FIGURE_PARTS' pieces)
     side: (side) => Math.ceil(Math.sqrt(5 ** Math.max(3, Math.round(Math.log(side * side) / Math.log(5))))), // (its W: one a k)
     cells: (W) => 5 ** pinwheelLevel(W),
     // (its middle as laid, its incircle's: placed with its box's middle at the grid's, see tilePatch)
@@ -33006,6 +33007,15 @@ const rosetteParts = (g, K) =>
 const FIGURE_PARTS = {
   // a flat torus: its lattice's blocks (see torusLattice)
   lattice: { fits: () => true, parts: (K) => planeFrame().lattice(K).part }, // (its blocks of its side, see widthForColours)
+  // a grid made of its pieces (the pinwheel's triangle: its first cut's 5, see PINWHEEL_TRIANGLE), a colour each: its cells
+  // laid piece after piece (each piece's tiles together, the cut's order kept, see tilePatch), so many each
+  pieces: {
+    fits: (K, { variant }) => K === APERIODIC[variant.plane].pieces,
+    parts: (K) => {
+      const n = walk.plane.n;
+      return Int32Array.from({ length: n }, (_, t) => Math.floor((t * K) / n));
+    },
+  },
   // a walled grid in a hexagon or a disc, or of 3, 6, 8 or 12 colours: its slices round the middle (see planeSlices)
   slices: { fits: (K, { variant }) => wallFits(K, variant.plane), parts: (K) => planeSlices(K).part },
   // a walled rectangle: its blocks, cols × rows (see teamGrid)
@@ -33148,9 +33158,11 @@ const figureOf = (K, { variant, g } = shownFigure()) =>
   variant.plane
     ? g.torus
       ? 'lattice'
-      : wallSlices(K, g.kind)
-        ? 'slices'
-        : 'blocks'
+      : APERIODIC[variant.plane]?.pieces
+        ? 'pieces'
+        : wallSlices(K, g.kind)
+          ? 'slices'
+          : 'blocks'
     : g?.mobius
       ? 'strip'
       : g?.torus
@@ -34031,24 +34043,26 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
       };
     // (its centre: a slice's spot; one colour's, the grid's very middle: a grid that never repeats, its circle's, a rosette
     // sphere's pole; in a hexagon, its centre of turns; else its frame's middle)
-    const lune = () => {
-      const L = rosetteParts(g, K),
-        own = [...Array(n).keys()].filter((t) => L[t] === i);
+    const partMean = (L) => {
+      const own = [...Array(n).keys()].filter((t) => L[t] === i);
       return [0, 1].map((d) => own.reduce((sum, t) => sum + mid(t)[d], 0) / own.length);
-    }; // (a rosette sphere's colour: its lune's north cells' middle)
+    }; // (its part's cells' middle: a rosette sphere's lune's north cells', a grid's piece's)
+    const lune = () => partMean(rosetteParts(g, K));
     const one = K === 1 || poleColours(g, K); // (each pole's colour: its disc as one colour's)
     const centre = () =>
       !one && !walk.plane
         ? lune()
-        : !one && wallSlices(K)
-          ? mid(planeSlices(K).spots[i])
-          : !one
-            ? planeTorus(kind)
-              ? planeFrame().lattice(K).middles[i]
-              : planeFrame().middle(i, cols, rows)
-            : APERIODIC[kind]
-              ? patchMiddle(kind, W)
-              : (planeShape(kind, W)?.o ?? box());
+        : !one && figureOf(K) === 'pieces'
+          ? partMean(FIGURE_PARTS.pieces.parts(K)) // (its piece's middle: the pinwheel's triangle's)
+          : !one && wallSlices(K)
+            ? mid(planeSlices(K).spots[i])
+            : !one
+              ? planeTorus(kind)
+                ? planeFrame().lattice(K).middles[i]
+                : planeFrame().middle(i, cols, rows)
+              : APERIODIC[kind]
+                ? patchMiddle(kind, W)
+                : (planeShape(kind, W)?.o ?? box());
     return {
       at: (p) => p,
       from: (q) => q,

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.736';
+const VERSION = '0.5.737';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15461,8 +15461,8 @@ const formAt = (form, tube) => {
   return byTube.get(tube) ?? byTube.set(tube, { ...form, curve: form.line(tube) }).get(tube);
 };
 // a torus knot's line: p times round the axis, q times round a tube of radius a about the circle of radius 2; its middle
-// (the straight tube's, see knotFrame) at a crest of its weave, its tangent level there (q t = π / 2 past a turn): laid
-// by it, its axis falls true (at t = π, its middle before v0.5.736, it dived 45° through the tube: the knot tilted so)
+// (the straight tube's, see knotFrame) at one of its sharpest elbows, a lobe's tip (q t a whole turn past t = π: its
+// first colour's middle there, see bentLine for its axis)
 const torusKnot = (p, q, a) =>
   Object.assign(
     (t) => [
@@ -15470,19 +15470,19 @@ const torusKnot = (p, q, a) =>
       (2 + a * Math.cos(q * t)) * Math.sin(p * t),
       a * Math.sin(q * t),
     ],
-    { middle: Math.PI + Math.PI / (2 * q) },
+    { middle: Math.PI + Math.PI / q },
   );
 const TORUS_SHAPES = [
   ['Ring', 'The torus: a ring, its tube round it', { tube: TORUS_TUBE }],
   [
     'Trefoil',
     'A tube round a trefoil knot: twice round the axis, three times round the tube',
-    { curve: torusKnot(2, 3, 0.8), tube: 0.16, standing: true },
+    { curve: torusKnot(2, 3, 0.8), tube: 0.16, arms: 'down' },
   ],
   [
     'Cinquefoil',
     'A tube round a cinquefoil knot: twice round the axis, five times round the tube',
-    { curve: torusKnot(2, 5, 0.6), tube: 0.1, standing: true },
+    { curve: torusKnot(2, 5, 0.6), tube: 0.1, arms: 'down' },
   ],
   [
     'Triangle',
@@ -15493,7 +15493,7 @@ const TORUS_SHAPES = [
       notch: 0, // (its usual the width's 1st notch: never thinner, see widthShares)
       square: true,
       corners: 3,
-      standing: true, // (its line's plane upright: its arms raised up as it bends, see lineFlat)
+      arms: 'up', // (its line's plane upright: its arms raised up as it bends, see lineFlat)
     },
   ],
 ]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
@@ -15621,19 +15621,26 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
 const ringCorners = (kind) => (kind?.startsWith('torus') ? (torusForm().corners ?? 1) : 1);
 
 // The straight tube's frame, its line's middle's laid on it (see shapeLine): its tangent east, its side north (−y), its up
-// up, its line bent level (a ring's, a knot's); standing (the Triangle's), its side up and its up south: bent upright
-const lineFlat = (knot) =>
-  knot.standing
-    ? [
-        [1, 0, 0],
-        [0, 0, 1],
-        [0, -1, 0],
-      ]
-    : [
-        [1, 0, 0],
-        [0, -1, 0],
-        [0, 0, 1],
-      ];
+// up, its line bent level; arms up (the Triangle's), its side up: bent upright, its arms raised; arms down (the knots'),
+// its side down: its middle an elbow on top, its arms falling (its side the way its line turns, its middle's curvature)
+const LINE_FLATS = {
+  level: [
+    [1, 0, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+  ],
+  up: [
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, -1, 0],
+  ],
+  down: [
+    [1, 0, 0],
+    [0, 0, -1],
+    [0, 1, 0],
+  ],
+};
+const lineFlat = (knot) => LINE_FLATS[knot.arms ?? 'level'];
 // A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies (see lineFlat):
 // its middle at 0; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
 function shapeLine(knot, x) {
@@ -15684,6 +15691,15 @@ function bentLine(knot, mu) {
       step(k, k + 1, k);
       step(last - k, last - k - 1, last - k - 1);
     }
+  if (knot.curve) {
+    // (its axis turned true as it bends: its middle's tangent climbing through its tube (an elbow's), its line laid by it
+    // tilted so; turned about its side by mu of that tilt, its axis at the end its up's, facing the camera)
+    const flat = lineFlat(knot),
+      F0 = knotFrame(knot, 0).slice(1),
+      axis = [0, 1, 2].map((d) => F0.reduce((sum, F, k) => sum + F[2] * flat[k][d], 0)), // (its curve's z, laid)
+      tilt = Math.atan2(dot3(axis, flat[0]), dot3(axis, flat[2]));
+    for (const L of lines) for (let k = 0; k < 4; k++) L[k] = turnAbout(flat[1], -mu * tilt, L[k]);
+  }
   const centre = [0, 1, 2].map((d) => lines.slice(e, last - e + 1).reduce((sum, [P]) => sum + P[d], 0) / (n + 1)); // (its own n steps')
   return (knot.bent = { mu, lines: lines.map(([P, ...F]) => [sub(P, centre), ...F]) });
 }

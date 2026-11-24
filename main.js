@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.737';
+const VERSION = '0.5.738';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15697,7 +15697,7 @@ function bentLine(knot, mu) {
     const flat = lineFlat(knot),
       F0 = knotFrame(knot, 0).slice(1),
       axis = [0, 1, 2].map((d) => F0.reduce((sum, F, k) => sum + F[2] * flat[k][d], 0)), // (its curve's z, laid)
-      tilt = Math.atan2(dot3(axis, flat[0]), dot3(axis, flat[2]));
+      tilt = Math.atan(dot3(axis, flat[0]) / dot3(axis, flat[2])); // (to the nearer of its up's two ways: no half turn)
     for (const L of lines) for (let k = 0; k < 4; k++) L[k] = turnAbout(flat[1], -mu * tilt, L[k]);
   }
   const centre = [0, 1, 2].map((d) => lines.slice(e, last - e + 1).reduce((sum, [P]) => sum + P[d], 0) / (n + 1)); // (its own n steps')

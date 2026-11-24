@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.767';
+const VERSION = '0.5.768';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26883,7 +26883,11 @@ function planeSeed(kind, seq, C, K = 1) {
 }
 // the plane's corners (see meshCorners), wrapping round on a torus (row: its cells a row, the grid's or its blocks', see
 // planeBlocks)
+// (the last one made kept, by all it is made of: its neighbours', its tiles' kinds' and its loops' the same, not three)
+let planeMeshMemo = null;
 function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
+  const key = `${kind}|${W}|${torus}|${row}|${withWalls}|${outlineOf(kind)}`;
+  if (planeMeshMemo?.key === key) return planeMeshMemo.mesh;
   const { n, xy } = planeGrid(kind, W, row),
     F = APERIODIC[kind]?.(W),
     walls = withWalls && !F ? planeWallPlaces(kind, W, torus) : [],
@@ -26922,7 +26926,7 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
     else for (const [u, v] of latticeCorners(kind, ...(t < n ? xy(t) : walls[t - n]))) add(u, v);
     cStart[t + 1] = at;
   }
-  return { start: cStart, list: Int32Array.from(cList), nv };
+  return (planeMeshMemo = { key, mesh: { start: cStart, list: Int32Array.from(cList), nv } }).mesh;
 }
 // the plane's Life neighbours, by its corners (wrapping round, or not past the edges), as the surfaces'; on hexagons,
 // also the 6 around in turn (ring: Callahan's letters); hensel: squares' 8 neighbours in order too

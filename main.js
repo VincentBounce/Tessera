@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.794';
+const VERSION = '0.5.795';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35587,7 +35587,7 @@ for (const [table, off] of [
       ]),
     );
   }
-const DRAW_BY_ID = new Map([BRUSH_CELL, BRUSH_PASTED, ...DRAW_PATTERNS].map((p) => [p[0], p]));
+const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS, BRUSH_PASTED].map((p) => [p[0], p]));
 const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their numbers, see DRAW_PATTERNS)
 // whether pattern p lays on a grid of kind: one of its tiles' (see baseOf), a disc's (its cells by their numbers) on a disc
 // only (the pinwheel's triangle none, see inDisc)
@@ -43663,7 +43663,7 @@ stage.addEventListener('pointerleave', () => {
   }
 });
 $('brushCards').replaceChildren(
-  ...[BRUSH_CELL, BRUSH_PASTED, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
+  ...[BRUSH_CELL, ...DRAW_PATTERNS, BRUSH_PASTED].map(([id, kind, , name, rle, what, art]) => {
     const b = card({
       pic: id === 'pasted' ? icon('copy') : art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
       name,

@@ -1,7 +1,8 @@
 // The benchmarks (BENCHMARKS.md): each case's link opened cold in the hidden browser (tools/browser.js: a new page, its
 // cache key the version), timed till its walk is the link's and nothing computes; a dated row added to its Runs table,
 // each case's seconds (a dash past the cap). Its cases read from BENCHMARKS.md's own table (C1, C2…: its links), the one
-// list. Run every two days among the away jobs; a case 20 % slower than the row before it is printed as such.
+// list. Run every two days among the away jobs; a case 20 % slower than the row before it is printed as such. A small case
+// (S1, S2…: a size used every day, opened in a second) opened 5 times, its median, to a hundredth: one alone its noise.
 // SITE: the server timed (another version served frozen by tools/at.sh on 8322, the code worked on meanwhile left alone).
 //   BROWSER_PORT=9447 [SITE=http://localhost:8322/] node tools/bench.js [cap seconds = 120] [C3,C7 …: those only, no row]
 const { execFileSync } = require('child_process'),
@@ -15,14 +16,16 @@ const ROOT = path.join(__dirname, '..'),
   browser = (...args) =>
     execFileSync('node', [path.join(ROOT, 'tools', 'browser.js'), ...args], { encoding: 'utf8' }).trim();
 const text = fs.readFileSync(FILE, 'utf8'),
-  cases = [...text.matchAll(/^\| (C\d+) \| [^|]* \| \[open\]\((http:\/\/localhost:8321\/#[^)]*)\) \|$/gm)].map((m) => [
-    m[1],
-    m[2].replace(/&version=[^&]*$/, '').replace('http://localhost:8321/', SITE), // (opened by the code served, as it is)
-  ]);
+  cases = [...text.matchAll(/^\| ([CS]\d+) \| [^|]* \| \[open\]\((http:\/\/localhost:8321\/#[^)]*)\) \|$/gm)].map(
+    (m) => [
+      m[1],
+      m[2].replace(/&version=[^&]*$/, '').replace('http://localhost:8321/', SITE), // (opened by the code served, as it is)
+    ],
+  );
 const times = {};
 let version = '';
-for (const [id, link] of cases) {
-  if (ONLY && !ONLY.includes(id)) continue;
+// one cold opening of a link: its seconds, null past the cap or its page lost
+function openCold(link) {
   // (a browser of its own each: cold, its memory its own, a tab that dies the case's only)
   browser('start');
   const tab = browser('open', 'about:blank').split('\n').pop().trim();
@@ -40,12 +43,18 @@ for (const [id, link] of cases) {
     } catch {
       execFileSync('sleep', ['1']); // (the page still loading, its context new: asked again)
     }
-  times[id] = t === null || t === 'null' ? null : Number(t) / 1000;
   try {
     version ||= browser('eval', tab, 'VERSION').replace(/"/g, '');
   } catch {}
   browser('stop');
   execFileSync('sleep', ['1']); // (closed before the next one starts)
+  return t === null || t === 'null' ? null : Number(t) / 1000;
+}
+for (const [id, link] of cases) {
+  if (ONLY && !ONLY.includes(id)) continue;
+  const small = id.startsWith('S'),
+    all = Array.from({ length: small ? 5 : 1 }, () => openCold(link)).sort((a, b) => (a ?? Infinity) - (b ?? Infinity));
+  times[id] = all[all.length >> 1];
   console.log(`${id} ${times[id] === null ? `past ${CAP} s, or its page lost` : `${times[id].toFixed(1)} s`}`);
 }
 if (ONLY) process.exit(0);
@@ -57,7 +66,7 @@ const rows = text.split('\n').filter((l) => /^\| \d{4}-\d\d-\d\d \|/.test(l)),
     .slice(3, -1)
     .map((x) => Number(x.trim())),
   row = `| ${new Date().toISOString().slice(0, 10)} | ${version} | ${cases
-    .map(([id]) => (times[id] === null ? '—' : times[id].toFixed(1)))
+    .map(([id]) => (times[id] === null ? '—' : times[id].toFixed(id.startsWith('S') ? 2 : 1)))
     .join(' | ')} |`;
 fs.writeFileSync(FILE, `${text.replace(/\n*$/, '')}\n${row}\n`);
 cases.forEach(([id], i) => {

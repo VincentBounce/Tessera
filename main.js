@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.746';
+const VERSION = '0.5.747';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34096,9 +34096,9 @@ const byHeading = (kind) => !APERIODIC[kind] && !cellsPlane();
 // a pattern laid from cell t as t's face's frame F places it (see cellPlace, patternFrame): on a surface by t's heading (see
 // headingOn), else its cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none):
 // the plane's own cells (the plane, a disc, a rosette sphere's), or a tiling that never repeats; Anywhere's
-function patternOnCell(F, cells, t) {
+function patternOnCell(F, cells, t, anchor = null) {
   const kind = patternKind();
-  if (byHeading(kind)) return patternFrom(headingHere(F, t), cells); // (F none: a surface with no frame, its tile's own)
+  if (byHeading(kind)) return patternFrom(headingHere(F, t), cells, anchor); // (F none: a surface with no frame, its tile's own; anchor: see patternFrom)
   const ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     p = F.from(F.place(t)),
     d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]);
@@ -34147,16 +34147,16 @@ function headingAcross(h, v) {
     turned = g.poly[k * v + a] === g.poly[k * t + edges[e]] ? -hand : hand;
   return { g, t: v, cell: across[0], e0: back[mod(back.indexOf(a) - turned * across[1], back.length)], hand: turned };
 }
-// a pattern laid from heading h (see headingOn): moved by whole steps (see translations) to lie its first cell by h's cell,
+// a pattern laid from heading h (see headingOn): moved by whole steps (see translations) to lie its anchor (its first cell's
+// middle, else a plane point: its box's middle, centred) by h's cell,
 // each of its cells walked to from h's tile as on the plane (see planePaths), a walk on cells's own steps (see surfaceStep:
 // over a solid's edges and a sheet's seams); a step off the cells of its kind or onto a tile already taken (past a solid's
 // corner) no place, −1
-function patternFrom(h, cells) {
+function patternFrom(h, cells, anchor = null) {
   if (!h) return cells.map(() => -1);
   const kind = patternKind(),
     { g, t, cell, e0, hand } = h,
-    m0 = cellMiddle(kind, ...cells[0]),
-    d = latticeNear(kind, sub(cellMiddle(kind, ...cell), m0)),
+    d = latticeNear(kind, sub(cellMiddle(kind, ...cell), anchor ?? cellMiddle(kind, ...cells[0]))),
     paths = planePaths(
       kind,
       cell,
@@ -34242,15 +34242,16 @@ const latticeNear = (kind, e) => {
 // a brush's: those there only; else all, or none)
 function patternAt(i, K, cells, partial = false, to = null, round = !partial) {
   // round: round a torus (else cut off at its edges: an icon)
-  if (cells.length && frameless(walk.surface)) {
-    const at = patternOnCell(null, cells, partMiddle(i, K)); // (no frame: from its part's middle cell's own heading, see headingHere)
-    return at.every((t) => t >= 0) && keepsShape(cells, at) ? cells.map((c, k) => [at[k], c[2]]) : [];
-  }
-  if (!cells.length || !patternFrame(i, K)) return []; // (an icon with no cell at that size; no place, see patternPlace)
+  if (!cells.length) return []; // (an icon with no cell at that size)
   const kind = patternKind(),
-    F = patternFrame(i, K),
     ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     mid = [0, 1].map((d) => (Math.min(...ms.map((m) => m[d])) + Math.max(...ms.map((m) => m[d]))) / 2); // (its cells' box's)
+  if (frameless(walk.surface)) {
+    const at = patternOnCell(null, cells, partMiddle(i, K), mid); // (no frame: its box's middle on its part's middle cell, by that cell's own heading, see headingHere)
+    return at.every((t) => t >= 0) && keepsShape(cells, at) ? cells.map((c, k) => [at[k], c[2]]) : [];
+  }
+  if (!patternFrame(i, K)) return []; // (no place, see patternPlace)
+  const F = patternFrame(i, K);
   const p = F.from(to ?? F.centre),
     d = latticeNear(kind, [p[0] - mid[0], p[1] - mid[1]]);
   const out = [];

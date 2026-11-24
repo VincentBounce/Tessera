@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.733';
+const VERSION = '0.5.734';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6177,6 +6177,31 @@ const digitsCache = remember('digitsCache', {}); // key → { intPart: "10", dig
 const digitsKey = (F, base) => `${F.text}|${base}`; // (a number's digits in a base: pi|2, π's binary digits)
 let digitsComputed = null; // the number's digits computed: { head: integer-part digits, digits, base, variant they are for, … }
 let numberWorker = null; // (the page's number's digits being computed, see compute)
+// Each setting's default, the only place it is written: the page's state as it opens (lifeTeams, plane…), and a link's
+// settings as an older link left them out (links write them all since v0.5.718, see getSetup): an older link, a Gallery's
+// entry, the same setup as one written whole (see sameSetup, readSetting)
+const LINK_DEFAULTS = {
+  teams: 1,
+  walkStart: 1,
+  gridTurned: 0,
+  torusShape: 0,
+  kleinShape: 0,
+  battleRule: () => linkWord(BATTLE_RULES[0][1]),
+  battleStarts: 'symmetric',
+  popMixed: 0,
+  duelCut: 0,
+  teamsApart: 0,
+  startPlace: 0,
+  popSymmetry: 'none',
+  popNewcomer: 0,
+  gridWalls: 0,
+  gridOutline: 'hex',
+  popStacked: 0,
+  popFont: 'sans',
+  exploreRule: () => EXPLORE_RULES[0][0],
+  explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
+  playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
+};
 
 // A walk's every field, as it starts: each build begins from these (see buildWalkOf), then sets its own.
 // This is the foundation of clean transitions: no field of the walk before can survive into the next one
@@ -7295,7 +7320,7 @@ function renderBlocksButton() {
 }
 // Space-time (Life on squares, the Stacks tile beside Walls): its generations stacked up, time going up, a cube a live cell (see
 // stackUp; STACK_MOST cubes at most); with walls only (through a torus's edges no tree grows: Stacks, Walls on with it)
-let spaceTime = false;
+let spaceTime = LINK_DEFAULTS.popStacked === 1;
 const spaceTimeApplies = (w) => {
   const m = VARIANTS[w];
   return !!m.plane && !!m.life && !m.margolus && !m.elementary && planeKind(m.plane) === 'square';
@@ -19070,7 +19095,7 @@ function tilesTurn(surface) {
 }
 for (const s of [...Object.keys(FOLDED), ...Object.keys(PINWHEEL_SHEETS)])
   if (FOLDED[`${s}Turned`] ?? PINWHEEL_SHEETS[`${s}Turned`]) TURNED[s] = `${s}Turned`; // (see FOLDED, PINWHEEL_SHEETS)
-let torusTurned = false;
+let torusTurned = LINK_DEFAULTS.gridTurned === 1;
 // the hexagons' tori, strips and bottles at 0° pointy as the plane's (their Turned ones), turned their flat ones
 const POINTY = new Set(BASE_SURFACES.filter((B) => B.kind === 'hex').map((B) => B.base)); // (pointy straight: named …Turned, see BASE_GRIDS)
 const shownSurface = (surface, turned) =>
@@ -20340,7 +20365,7 @@ const STARTS_WAYS = [
     'Each walker anywhere, drawn by chance (kept in the link): not fair, each walker in a place of its own · Clicked again: another draw',
   ],
 ]; // (its tabs in this order, a link's gr= its place: 0 the first, the default)
-let battleStartsWay = 'symmetric',
+let battleStartsWay = LINK_DEFAULTS.battleStarts,
   battleSeed = 1,
   battleOrder = null;
 // The starts' order: which of the battle's starts each walker takes (walker s the order[s]-th: A's, the one picked; the
@@ -23819,16 +23844,16 @@ const plane = {
   get side() {
     return planeSideOf(planeKind(VARIANTS[tabVariant()].plane));
   }, // (the variant in use's)
-  torus: true,
-  shape: 'hex',
+  torus: LINK_DEFAULTS.gridWalls !== 1,
+  shape: LINK_DEFAULTS.gridOutline,
   text: APP_TITLE,
-  font: 'sans',
+  font: LINK_DEFAULTS.popFont,
   icons: [0],
   picks: null,
   start: 'random',
   density: 30,
   seed: 1 + Math.floor(Math.random() * 999999999),
-  sym: 'none',
+  sym: LINK_DEFAULTS.popSymmetry,
   number: '1/7',
   seedRadius: 2,
 }; // (seedRadius: Seed's patches' radius, see SEED_RADII; number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
@@ -28595,11 +28620,11 @@ const lifeMark = (variant) =>
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail
 // ("/Immigration", "/Colours4", see lifeRuleNow)
-let lifeTeams = 1,
-  teamsMix = false,
-  duelCut = 0,
-  teamsApart = 0,
-  newcomer = false; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
+let lifeTeams = LINK_DEFAULTS.teams,
+  teamsMix = LINK_DEFAULTS.popMixed === 1,
+  duelCut = LINK_DEFAULTS.duelCut,
+  teamsApart = LINK_DEFAULTS.teamsApart,
+  newcomer = LINK_DEFAULTS.popNewcomer === 1; // the teams: a new figure's the nearest to those before (see teamsOn); teamsMix: Mixed, the colours mixed in one place (see huntParts)
 // Mixed as it counts in a zone: on, colours to mix, and a zone of cells at random (Seed, Wild, Formula): the others lay
 // each colour's own picture or part (Icon, Punk, Emoji, Famous, Anywhere, Wild's Face), Mixed greyed there, kept for later
 const mixable = (zone, variant = VARIANTS[tabVariant()], start = plane.start) =>
@@ -32201,7 +32226,7 @@ const START_PLACES = [
   ],
   ['Whole part', "Each colour's start over all its cells: Wild's soup, Formula's digits"],
 ];
-let startPlace = 0;
+let startPlace = LINK_DEFAULTS.startPlace;
 const fillsPart = (start, zone) => start === 'random' && (zone === 'full' || zone === 'numbers'); // (a start over each colour's part)
 const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startPlace.whyNot(s, k)) ?? -1,
   placeNow = () => placeIn(setupNow()),
@@ -35844,30 +35869,6 @@ const zoneOfWord = (w) =>
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links
 // handled), nor part of what tells setups apart (see isInUse)
 let setupFrom = null; // { setup, v }
-// a link's settings as an older link left them out, at their default (links write them all since v0.5.718, see getSetup):
-// an older link, a Gallery's entry, the same setup as one written whole (see sameSetup)
-const LINK_DEFAULTS = {
-  teams: 1,
-  walkStart: 1,
-  gridTurned: 0,
-  torusShape: 0,
-  kleinShape: 0,
-  battleRule: () => linkWord(BATTLE_RULES[0][1]),
-  battleStarts: 'symmetric',
-  popMixed: 0,
-  duelCut: 0,
-  teamsApart: 0,
-  startPlace: 0,
-  popSymmetry: 'none',
-  popNewcomer: 0,
-  gridWalls: 0,
-  gridOutline: 'hex',
-  popStacked: 0,
-  popFont: 'sans',
-  exploreRule: () => EXPLORE_RULES[0][0],
-  explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
-  playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
-};
 const linkDefault = (s, k) => (typeof LINK_DEFAULTS[k] === 'function' ? LINK_DEFAULTS[k](s) : LINK_DEFAULTS[k]);
 const linkSetting = (s, k) =>
   k === 'gridSize' && s.gridSize !== undefined

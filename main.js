@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.766';
+const VERSION = '0.5.767';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -871,6 +871,24 @@ const remember = (name, store) => {
 };
 const memoryKeys = (store) =>
   store instanceof Map ? [...store.keys()] : Object.keys(store).filter((k) => store[k] !== undefined); // (a weakCache's: those still kept)
+// Ids for whole-number keys (below 2⁵³), each new one the next, as a Map's would give them, in typed arrays hashed open
+// (most: the keys at most): a map of millions of keys 4 to 5 times as fast (a disc of a million hats' 14 million corners)
+const keyIds = (most) => {
+  const size = 2 ** Math.ceil(Math.log2(2 * most + 2)),
+    keys = new Float64Array(size),
+    used = new Uint8Array(size), // (a key any number, below 0 too: its slot's use apart)
+    ids = new Int32Array(size);
+  let count = 0;
+  return {
+    id: (k) => {
+      let h = (Math.imul((k % 4294967296) | 0, 0x9e3779b1) ^ Math.imul((k / 4294967296) | 0, 0x85ebca77)) & (size - 1);
+      while (used[h] && keys[h] !== k) h = (h + 1) & (size - 1);
+      if (!used[h]) [used[h], keys[h], ids[h]] = [1, k, count++];
+      return ids[h];
+    },
+    count: () => count,
+  };
+};
 // a typed array of Type, filled by a loop: from n, f(i) each; from a list (an array, a typed array, a string), f(its value,
 // its place) each. Never Type.from(list, f): its iterator calls f a value at a time, 50 times slower (5 M values: 419 ms
 // against 8, a torus's sheet, v0.5.761)
@@ -26883,7 +26901,7 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
     return torus ? ((k % P[d]) + P[d]) % P[d] : k + 2 * q;
   };
   const byGrid = q < 1000 ? new Int32Array(S * S).fill(-1) : null,
-    byMap = new Map(),
+    byMap = !byGrid && keyIds(F ? F.start[m] : m * 12), // (its corners at most: each cell's)
     cStart = new Int32Array(m + 1),
     cList = [];
   let nv = 0,
@@ -26894,9 +26912,8 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
       const k = r(u, 0) * S + r(v, 1);
       id = byGrid[k] < 0 ? (byGrid[k] = nv++) : byGrid[k];
     } else {
-      const k = r(u, 0) * 8388608 + r(v, 1);
-      id = byMap.get(k);
-      if (id === undefined) byMap.set(k, (id = nv++));
+      id = byMap.id(r(u, 0) * 8388608 + r(v, 1));
+      nv = byMap.count();
     }
     cList[at++] = id;
   };
@@ -27607,16 +27624,21 @@ function discCard(b, p) {
 // cellNeighbours: a torus's one each side of its seam), never their places again (the plane's, unwrapped, took a side across
 // its seam for a corner only till v0.4.952; a surface's had its own copy, meshSide)
 function sideOf(nbr) {
+  // (t's corners counted once into an array, each neighbour's read there: not each corner against each, 13 × 13 a pair of
+  // hats, 5 s at a million of them till v0.5.767)
   const { start, list: ids } = nbr.corners,
-    side = new Uint8Array(nbr.list.length);
-  for (let t = 0; t < start.length - 1; t++)
+    side = new Uint8Array(nbr.list.length),
+    times = new Int32Array(ids.reduce((most, c) => Math.max(most, c), 0) + 1);
+  for (let t = 0; t < start.length - 1; t++) {
+    for (let j = start[t]; j < start[t + 1]; j++) times[ids[j]]++;
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) {
       const u = nbr.list[q];
       let shared = 0;
-      for (let i = start[u]; i < start[u + 1]; i++)
-        for (let j = start[t]; j < start[t + 1]; j++) shared += ids[i] === ids[j];
+      for (let i = start[u]; i < start[u + 1]; i++) shared += times[ids[i]];
       side[q] = shared >= 2 ? 1 : 0;
     }
+    for (let j = start[t]; j < start[t + 1]; j++) times[ids[j]] = 0;
+  }
   return side;
 }
 // A six-fold grid with walls in a hexagon (its natural outline: rings of cells round its middle), not a torus: its cells

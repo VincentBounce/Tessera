@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.775';
+const VERSION = '0.5.776';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33252,7 +33252,12 @@ const ZONE_SHAPES = [
   ['stack', 'Stack', 'Each team a band round the tube, the bands stacked along the ring'],
   ['square', '~1:1', 'Each team a block as square as it can be: so many round the ring, so many round the tube'],
   ['runs', 'Runs', "Each team a run along the strip, or along a twisted Triangle's one face, one after the other"],
-  ['lunes', 'Lunes', 'Each team a lune from pole to pole, its poles no one’s (a Duel: a hemisphere each)'],
+  ['lunes', 'Lunes', 'Each team a lune from pole to pole, its poles no one’s'],
+  [
+    'poles',
+    'Poles',
+    "Each team round a pole: a Duel's north and south hemispheres, or slices of a rosette sphere's two discs",
+  ],
   ['faces', 'Faces', "Each team faces of the solid, alike by its turns (Boy's surface: its solid's)"],
   ['custom', 'Custom', "Each team a part of the shape's own: the pinwheel triangle's 5 pieces"],
 ];
@@ -33261,8 +33266,6 @@ const ZONE_OF_ROW = {
   blocks: 'quarters',
   lattice: 'lattice',
   strip: 'runs',
-  globe: 'lunes',
-  rosette: 'lunes',
   projective: 'faces',
   hull: 'faces',
   solid: 'faces',
@@ -33271,6 +33274,8 @@ const ZONE_OF_ROW = {
 // the shape the zones of K teams take on the figure shown (see ZONE_SHAPES)
 const zoneShapeOf = (K, f = shownFigure()) => {
   const row = figureOf(K, f);
+  if (row === 'globe') return K === 2 && !duelAcross() ? 'poles' : 'lunes'; // (see FIGURE_PARTS.globe)
+  if (row === 'rosette') return rosetteHalved(f.g, K) ? 'poles' : 'lunes'; // (see rosetteParts)
   if (row !== 'sheet') return ZONE_OF_ROW[row];
   return faceRunsOn(K, f.g) ? 'runs' : torusBlocks(K, f.g)[1] === 1 ? 'stack' : 'square';
 };

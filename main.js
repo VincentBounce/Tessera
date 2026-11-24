@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.801';
+const VERSION = '0.5.802';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14533,7 +14533,7 @@ const hullColours = (surface, K, opposite = false) => {
   const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null,
     unlike = all?.find((c) => c.unlike),
     alike = all?.filter((c) => !c.unlike) ?? [];
-  if (unlike && !opposite && (!alike.length || !duelAcross())) return unlike; // (a Duel's Up / Down, or the only one)
+  if (unlike && !opposite && (!alike.length || duelCut !== 1)) return unlike; // (a Duel's Up / Down, its cut the choice itself: both there, see duelCutsOf; or the only one)
   return (alike.length && (alike.find((c) => (opposite ? c.whole : !c.crossed)) ?? alike[0])) || null;
 };
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)

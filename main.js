@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.718';
+const VERSION = '0.5.719';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18337,7 +18337,7 @@ function syncSizeStepper() {
     widths.list.findIndex(([w]) => w === width),
     (k) => label(walkersSize(kind, ringSize(kind, rowsNow, widthShare(k)))),
     (k) => {
-      ringWidth = widthShare(k);
+      ringWidthShare = widthShare(k);
       sizeChanged();
     },
     widths.usual,
@@ -18350,9 +18350,9 @@ function syncSizeStepper() {
     $('twistGauge'),
     twists.length || 1,
     twists.findLastIndex((t) => t <= torusTwist(asked, kind)),
-    (k) => label(walkersSize(kind, ringSize(kind, rowsNow, ringWidth, twistShare(k)))),
+    (k) => label(walkersSize(kind, ringSize(kind, rowsNow, ringWidthShare, twistShare(k)))),
     (k) => {
-      ringTwist = twistShare(k);
+      ringTwistShare = twistShare(k);
       sizeChanged();
     },
     twists.indexOf(twistByDefault(kind, asked)),
@@ -18446,7 +18446,7 @@ function sizeRows() {
     options = [...sel.options].filter((o) => !o.dataset.own);
   return { options, at: options.findLastIndex((o) => parseInt(o.value) <= now) };
 }
-// a size of the menu picked (its rows: a ring's width and twist kept as shares, see ringWidth), the surface built again
+// a size of the menu picked (its rows: a ring's width and twist kept as shares, see ringWidthShare), the surface built again
 function pickSize(option) {
   $('gridSizeField').value = option.value;
   sizeChanged();
@@ -18495,11 +18495,11 @@ const torusTwist = (size, kind) => {
 // A ring's width and twist as asked, kept from height to height as shares: its width a share of its usual one (null: the usual,
 // see widthsOf), its twist a share of its largest, half a turn (null: its default, see twistByDefault); the size menu holds the
 // rows only, a size its rows and these (see ringSize)
-let ringWidth = null,
-  ringTwist = null;
-// a ring's size at its rows, a width share and a twist share (see ringWidth): its width the nearest its tiling allows, its twist
+let ringWidthShare = null,
+  ringTwistShare = null;
+// a ring's size at its rows, a width share and a twist share (see ringWidthShare): its width the nearest its tiling allows, its twist
 // the nearest notch (a quarter turn a quarter turn at any rows); a size of rows only elsewhere
-function ringSize(kind, rows, width = ringWidth, twist = ringTwist) {
+function ringSize(kind, rows, width = ringWidthShare, twist = ringTwistShare) {
   if (!ringSized(kind)) return rows;
   const usual = torusDims(kind, rows)[1],
     across = width === null ? usual : Math.round(width * usual),
@@ -18818,14 +18818,14 @@ const sizeCells = (kind, f, marked = false) => {
 const shortCells = (text) => text.replace(/agons\b/g, 'as');
 const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${sizeCells(kind, f)}` : sizeCells(kind, f));
 // A size asked (a link's, a loop found's): its rows in the menu (rows of its own: an extra entry among the usual ones, by rows
-// or tiles across), a ring's width and twist as shares (see ringWidth: none written, its default)
+// or tiles across), a ring's width and twist as shares (see ringWidthShare: none written, its default)
 function selectSize(kind, size) {
   const [rows, width] = ringSized(kind) ? torusDims(kind, size) : [untwisted(size)];
   if (ringSized(kind)) {
     const usual = torusDims(kind, rows)[1],
       twists = torusTwists(kind, size);
-    ringWidth = width === usual ? null : width / usual;
-    ringTwist = String(size).includes('+') && twists.length > 1 ? torusTwist(size, kind) / twists.at(-1) : null;
+    ringWidthShare = width === usual ? null : width / usual;
+    ringTwistShare = String(size).includes('+') && twists.length > 1 ? torusTwist(size, kind) / twists.at(-1) : null;
   }
   selectRows(kind, rows);
 }

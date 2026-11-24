@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.762';
+const VERSION = '0.5.763';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17644,9 +17644,14 @@ function tileCornerPlaces(g) {
   const { uv } = g,
     index = new Map(),
     places = [],
-    at = new Uint32Array(uv.length / 2);
+    at = new Uint32Array(uv.length / 2),
+    Q = 4096; // (a place to 1/4096 of a side: its corners a tenth of a side apart at least)
+  let lo = Infinity,
+    hi = -Infinity;
+  for (const x of uv) [lo, hi] = [Math.min(lo, x), Math.max(hi, x)];
+  const span = Math.round((hi - lo) * Q) + 1; // (a place a number, its two coordinates in one: a text key, 3 times longer)
   for (let q = 0; q < at.length; q++) {
-    const key = `${uv[2 * q]},${uv[2 * q + 1]}`;
+    const key = Math.round((uv[2 * q] - lo) * Q) * span + Math.round((uv[2 * q + 1] - lo) * Q);
     let i = index.get(key);
     if (i === undefined) {
       index.set(key, (i = places.length / 2));
@@ -17658,9 +17663,8 @@ function tileCornerPlaces(g) {
 }
 // the points of a sheet's places in its form m (see sheetPoint), three numbers each
 function sheetPointsAt(g, places, m) {
-  const P = new Float64Array((3 * places.length) / 2),
-    form = torusForm(); // (a torus's shape, once: see torusPoint)
-  for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m, form), 3 * i);
+  const P = new Float64Array((3 * places.length) / 2);
+  for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m), 3 * i); // (in its own form, see sheetPoint)
   return P;
 }
 function shapeAt(g, m) {
@@ -38350,8 +38354,9 @@ const surfaceTriangles = (g) =>
       round = sheet && sheetPointsAt(g, sheet.places, 1),
       cornerPoint = (slot) =>
         sheet
-          ? [...round.subarray(3 * sheet.at[slot], 3 * sheet.at[slot] + 3)]
-          : [...g.verts.subarray(3 * g.poly[slot], 3 * g.poly[slot] + 3)];
+          ? round.subarray(3 * sheet.at[slot], 3 * sheet.at[slot] + 3)
+          : g.verts.subarray(3 * g.poly[slot], 3 * g.poly[slot] + 3), // (a view, not a copy)
+      C = new Float64Array(3 * k); // (a tile's corners in a row, for its normal: one array for all)
     for (let t = 0; t < g.n; t++) {
       if (g.mobius && t >= g.front) {
         const f = t - g.front,
@@ -38369,7 +38374,8 @@ const surfaceTriangles = (g) =>
         slots.push(k * t + q);
         P.push(cornerPoint(k * t + q));
       }
-      const N = newellNormal(P.flat(), 0, P.length, [0, 0, 0]);
+      P.forEach((p, i) => C.set(p, 3 * i));
+      const N = newellNormal(C, 0, P.length, [0, 0, 0]);
       const u = cross(N, Math.abs(N[0]) < 0.9 * Math.hypot(...N) ? [1, 0, 0] : [0, 1, 0]),
         w = cross(N, u);
       const Q = P.map((p) => [dot3(p, u), dot3(p, w)]);

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.809';
+const VERSION = '0.5.810';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28309,7 +28309,7 @@ function discBrush(p, m) {
 }
 // a surface's: the brush's tiles at tile t and their states (a cell: t; a pattern laid from t's heading, see patternFrom;
 // a rosette sphere's disc pattern, at its half's middle, see discBrush);
-// null where none goes (a cell folded over an edge, see cellPlace)
+// null where none goes (no heading: a tile of other sides than its cells'; a grid that never repeats with no frame there)
 function brushTilesAt(t) {
   if (brush.id === 'cell') return [[t, 1]];
   const g = walk.surface,
@@ -28318,14 +28318,16 @@ function brushTilesAt(t) {
     const half = t >= g.south ? g.south : 0; // (its half's disc, the north's or the south's)
     return discBrush(p, cellMiddle(patternKind(), ...g.disc.xy(t))).map(([u, v]) => [u + half, v]);
   }
-  const place = cellPlace(t);
-  if (!place && !frameless(g)) return null; // (a cell folded over an edge: none goes; frameless, its tile's own heading)
-  if (hullFaced() && place.on !== p[1]) return null; // (a solid of squares and triangles: a pattern on a face of its kind only)
-  const cells = brushCells(),
-    at = APERIODIC[patternKind()]
-      ? patternOnCell(patternFrame(0, 1, place), cells, t)
-      : patternFrom((brushHeading = brushHeadingAt(t, place)), cells);
-  return cells.flatMap(([, , v], k) => (at[k] >= 0 ? [[at[k], v]] : []));
+  const place = cellPlace(t); // (none, no frame there: a carved cube's wall, a cell folded over an edge, a globe; its tile's own heading then, see headingHere)
+  if (hullFaced() && place?.on !== p[1]) return null; // (a solid of squares and triangles: a pattern on a face of its kind only)
+  if (APERIODIC[patternKind()])
+    return place ? brushLaid(patternOnCell(patternFrame(0, 1, place), brushCells(), t)) : null;
+  brushHeading = brushHeadingAt(t, place);
+  return brushHeading ? brushLaid(patternFrom(brushHeading, brushCells())) : null;
+}
+// the brush's cells laid at their tiles (-1: none there), with their states
+function brushLaid(at) {
+  return brushCells().flatMap(([, , v], k) => (at[k] >= 0 ? [[at[k], v]] : []));
 }
 // the brush's heading on tile t (see headingOn): carried from the tile it was on to t, a neighbour, as the pointer moves (its
 // pattern turned on as it goes over a solid's edge or a seam, not as each face's frame has it); else, a jump, t's face's

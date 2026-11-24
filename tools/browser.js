@@ -7,6 +7,7 @@
 //   node tools/browser.js eval <tab> <js>    js run in that tab (await allowed): its value, as JSON (10 minutes at most,
 //                                            else BROWSER_TIMEOUT's)
 //   node tools/browser.js go <tab> <url>     that tab to url
+//   node tools/browser.js click <tab> <x> <y> a click there, as a hand's (its events trusted)
 //   node tools/browser.js shot <tab> <file>  that tab's picture, a PNG
 //   node tools/browser.js stop               closed
 const { spawn } = require('node:child_process');
@@ -96,6 +97,11 @@ const commands = {
     await call(tab, 'Page.reload', { ignoreCache: true }); // (its scripts as they are now: their cache key, the version, changes only when shipped)
     return url;
   },
+  click: async (tab, x, y) => {
+    for (const type of ['mousePressed', 'mouseReleased'])
+      await call(tab, 'Input.dispatchMouseEvent', { type, x: Number(x), y: Number(y), button: 'left', clickCount: 1 });
+    return `clicked ${x},${y}`;
+  }, // (a click as a hand's: its events trusted, see the page's handChanged)
   shot: async (tab, file) => {
     const { data } = await call(tab, 'Page.captureScreenshot', { format: 'png' });
     fs.writeFileSync(file, Buffer.from(data, 'base64'));
@@ -109,7 +115,7 @@ const commands = {
 
 const [name, ...args] = process.argv.slice(2);
 if (!commands[name]) {
-  console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 9).join('\n'));
+  console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 10).join('\n'));
   process.exit(1);
 }
 commands[name](...args).then(

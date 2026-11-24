@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.732';
+const VERSION = '0.5.733';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18850,11 +18850,13 @@ function selectRows(kind, rows) {
   sel.value = rows;
 }
 // A size from a link: any number of rows or tiles across, from the surface's smallest that builds
-// (least: below it a tiny torus breaks; else 1) to its largest usual one
+// (least: below it a tiny torus breaks; else 1) to its largest usual one; a surface whose sizes are its own (ownSizes: a
+// globe's its colours', Penrose's spheres', the pinwheel solids'), the nearest of them (no other builds alike)
 function linkSize(kind, s) {
-  const { sizes, least = 1 } = SURFACES[kind],
+  const { sizes, least = 1, ownSizes } = SURFACES[kind],
     [rows, along] = String(s).split('+')[0].split('x'),
     step = blockSizeStep(kind);
+  if (ownSizes) return String(sizes.reduce((a, b) => (Math.abs(b - rows) < Math.abs(a - rows) ? b : a)));
   const n =
     step *
       Math.round(Math.min(sizes[sizes.length - 1], Math.max(least, Math.round(Number(rows)) || sizes[0])) / step) ||

@@ -134,11 +134,12 @@
       checked++;
       if (!alike(c, torus)) fail(`${kind}: ${show(c)}, its torus ${show(torus)}`);
     }
-    // the grids that never repeat: their walls closed round them (a point just past each side of a cell, a hundredth of the
-    // side out, in a cell or a wall; each tile in every square of 3 its box covers), sizes 16 to 64
+    // the grids that never repeat in a disc: their walls closed round them (a point just past each side of a cell, a hundredth
+    // of the side out, in a cell or a wall; each tile in every square of 3 its box covers), sizes 16 to 64 (the pinwheel's
+    // triangle none: its sides its edge, no wall)
     const sarea = (P) =>
       P.reduce((t, p, i) => t + p[0] * P[(i + 1) % P.length][1] - P[(i + 1) % P.length][0] * p[1], 0);
-    for (const kind of Object.keys(APERIODIC))
+    for (const kind of Object.keys(APERIODIC).filter(inDisc))
       for (const W of [16, 24, 32, 48, 64]) {
         const h = APERIODIC[kind](W),
           all = Array.from({ length: h.m }, (_, k) => h.poly(k)),
@@ -1087,7 +1088,7 @@
   // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
   // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
   // variants made in any order)
-  const VARIANTS_PRINT = 2051800293; // (v0.5.728: a getter by its kind, not its words: the ants' rule changed with the rule played; v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
+  const VARIANTS_PRINT = -1882618078; // (v0.5.755: the pinwheel's triangle; v0.5.728: a getter by its kind, not its words: the ants' rule changed with the rule played; v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
   const variantsPrint = () => {
     const text = JSON.stringify([
       Object.keys(NAV)
@@ -1323,7 +1324,8 @@
   // disc of its patch, never cut by the patch's edge: the pinwheel's big triangle's, v0.1.1386's), its sizes up to 128
   function checkDiscs(fail) {
     let checked = 0;
-    for (const kind of Object.keys(APERIODIC))
+    for (const kind of Object.keys(APERIODIC).filter(inDisc))
+      // (a disc's: the pinwheel's triangle its own shape, its sides straight)
       for (const side of planeSides(kind).filter((f) => f <= 128)) {
         const W = planeW(kind, side),
           o = (W - 1) / 2,

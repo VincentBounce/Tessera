@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.760';
+const VERSION = '0.5.761';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -871,6 +871,16 @@ const remember = (name, store) => {
 };
 const memoryKeys = (store) =>
   store instanceof Map ? [...store.keys()] : Object.keys(store).filter((k) => store[k] !== undefined); // (a weakCache's: those still kept)
+// a typed array of Type, filled by a loop: from n, f(i) each; from a list (an array, a typed array, a string), f(its value,
+// its place) each. Never Type.from(list, f): its iterator calls f a value at a time, 50 times slower (5 M values: 419 ms
+// against 8, a torus's sheet, v0.5.761)
+const typedOf = (Type, source, f) => {
+  const list = typeof source === 'number' ? null : source.length === undefined ? [...source] : source,
+    out = new Type(list ? list.length : source);
+  if (list) for (let i = 0; i < list.length; i++) out[i] = f(list[i], i);
+  else for (let i = 0; i < out.length; i++) out[i] = f(i);
+  return out;
+};
 const formatNumber = (v) => v.toLocaleString('en'); // (its thousands by commas: 39,193)
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
 // tabular-nums): a count that changes keeps its place (sign: written next to its digits, after them; decimals: so many
@@ -14055,7 +14065,7 @@ function walkCubeSquaresTurtleCells(n) {
     return { corners: [pt(-1, -1), pt(1, -1), pt(1, 1), pt(-1, 1)], normal: N, lines };
   });
   mesh.perFace = n * n;
-  mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor(t / mesh.perFace)); // (CUBE_FRAMES' order: AXES')
+  mesh.cellFaces = typedOf(Int32Array, mesh.n, (t) => Math.floor(t / mesh.perFace)); // (CUBE_FRAMES' order: AXES')
   return (meshCache[key] = mesh);
 }
 
@@ -14063,7 +14073,7 @@ function walkCubeSquaresTurtleCells(n) {
 // a mesh of quadrilaterals' cells, each cut in 2 triangles across its shorter diagonal (see HULL_CUTS)
 // a mesh's cells cut again, per cells each in turn (see HULL_CUTS): each its cell's face
 const cutFaces = (g, per) =>
-  g.cellFaces ? { cellFaces: Int32Array.from({ length: g.n * per }, (_, t) => g.cellFaces[Math.floor(t / per)]) } : {};
+  g.cellFaces ? { cellFaces: typedOf(Int32Array, g.n * per, (t) => g.cellFaces[Math.floor(t / per)]) } : {};
 function halvesOf(key, g) {
   if (meshCache[key]) return meshCache[key];
   const far = (a, b) => Math.hypot(...[0, 1, 2].map((d) => g.verts[3 * a + d] - g.verts[3 * b + d])),
@@ -14158,7 +14168,7 @@ function cubePits(n, up = false) {
   mesh.floors = Int32Array.from(floors); // face f's floor tile (r, c): floors[f a² + r a + c]
   mesh.onFloor = new Set(floors); // (a tile on a floor: Patterns there only, see cellPlace)
   mesh.floorSize = a;
-  mesh.cellFaces = Int32Array.from({ length: mesh.n }, (_, t) => Math.floor((6 * t) / mesh.n)); // (a face's squares, its pit's or bump's with them, as many a face in turn: AXES' order)
+  mesh.cellFaces = typedOf(Int32Array, mesh.n, (t) => Math.floor((6 * t) / mesh.n)); // (a face's squares, its pit's or bump's with them, as many a face in turn: AXES' order)
   mesh.solid = cubeSolid();
   return (meshCache[key] = mesh);
 }
@@ -14174,7 +14184,7 @@ function mengerMesh(L, m = 1) {
   // its blocks of m × m × m kept or not (3^L each way), once; a cell's its block's
   const B = 3 ** L,
     n = B * m,
-    of = Int32Array.from({ length: n }, (_, x) => Math.floor(x / m)),
+    of = typedOf(Int32Array, n, (x) => Math.floor(x / m)),
     block = new Uint8Array(B ** 3);
   for (let i = 0; i < B ** 3; i++) {
     let x = Math.floor(i / B / B),
@@ -14292,7 +14302,7 @@ function hullMesh(kind, f) {
     squareFaces,
     triFaces,
     triFirst: squareFaces.length * f * f,
-    cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / (f * f))), // (its squares' faces, then its triangles', f² cells each)
+    cellFaces: typedOf(Int32Array, tiles, (_, t) => Math.floor(t / (f * f))), // (its squares' faces, then its triangles', f² cells each)
   }));
 }
 // A hull solid's colourings (Wild, its Face, the zones, the icons) by its faces' kinds: K colours a face each, of the kind with
@@ -14513,8 +14523,8 @@ function pinwheelSolidMesh(k, cells) {
       cells,
     ),
     {
-      cellFaces: Int32Array.from(tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
-      halves: Int32Array.from(tiles, (_, t) => Math.floor(t / 5 ** n)), // (its bricks' halves in turn, 5ⁿ cells each: see motifOf)
+      cellFaces: typedOf(Int32Array, tiles, (_, t) => Math.floor(t / face.length)), // (its faces in turn, 4 · 5ⁿ cells each)
+      halves: typedOf(Int32Array, tiles, (_, t) => Math.floor(t / 5 ** n)), // (its bricks' halves in turn, 5ⁿ cells each: see motifOf)
       solid: { corners: solidCorners(SURFACES[k].mesh(1)), centres: solidFaceCentres(SURFACES[k].mesh(1)) }, // (its solid's)
       asManyCells: true, // (its tiles turned every way, none alike face to face: its colours' parts as many cells, see spotColours)
     },
@@ -14785,7 +14795,7 @@ POLYHEDRA.stella = (() => {
 // corners, as FACE_MIDDLES lists them): each triangle's face (triangleFaces), each face's middle (its corners', faceMids)
 for (const S of Object.values(POLYHEDRA)) {
   const planes = [];
-  S.triangleFaces = Int32Array.from(S.faces, ([a, b, c]) => {
+  S.triangleFaces = typedOf(Int32Array, S.faces, ([a, b, c]) => {
     const n = unit(cross(sub(S.P[b], S.P[a]), sub(S.P[c], S.P[a]))),
       k = planes.findIndex((pl) => dot3(pl.n, n) > 1 - 1e-9 && Math.abs(dot3(pl.n, S.P[a]) - pl.d) < 1e-9);
     if (k >= 0) {
@@ -14898,10 +14908,7 @@ function flatPolyhedron(name, f, kites = false) {
     return { corners: [A, B, C], normal: normal.map((v) => v / l), lines };
   });
   mesh.perFace = (kites ? 3 : 1) * f * f;
-  mesh.cellFaces = Int32Array.from(
-    { length: mesh.n },
-    (_, t) => POLYHEDRA[name].triangleFaces[Math.floor(t / mesh.perFace)],
-  ); // (each cell's face, see POLYHEDRA's faces)
+  mesh.cellFaces = typedOf(Int32Array, mesh.n, (t) => POLYHEDRA[name].triangleFaces[Math.floor(t / mesh.perFace)]); // (each cell's face, see POLYHEDRA's faces)
   mesh.faceMids = POLYHEDRA[name].faceMids;
   mesh.kite = kites;
   // faces cut from the solid's own (the dodecahedron's pentagons): its corners and its faces' centres
@@ -14951,7 +14958,7 @@ function globeBands(E, K = ringColours(ringVariant())) {
 // middle and rounded to it
 const LENTIL_HALF_THICKNESS = 0.15;
 const lentilVerts = (verts) =>
-  Float64Array.from({ length: verts.length }, (_, i) => {
+  typedOf(Float64Array, verts.length, (i) => {
     const v = i - (i % 3),
       [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]],
       r = Math.acos(Math.abs(z)),
@@ -14967,7 +14974,7 @@ const lentilVerts = (verts) =>
 // caps (its rows narrowing to the poles) its top and its bottom, each corner at its longitude, from the rim's circle to
 // the pole in the middle by its latitude
 const cylinderVerts = (verts, rim) =>
-  Float64Array.from({ length: verts.length }, (_, i) => {
+  typedOf(Float64Array, verts.length, (i) => {
     const v = i - (i % 3),
       [x, y, z] = [verts[v], verts[v + 1], verts[v + 2]],
       lat = Math.asin(Math.max(-1, Math.min(1, z))),
@@ -15196,8 +15203,8 @@ function rosetteSphereMesh(kind, W) {
     weights.push([v, round.map(([u], j) => [u, w[j] / sum])]);
   }
   const embed = (fixed) => {
-    const PX = Float64Array.from(X, (x, v) => fixed.get(v)?.[0] ?? x),
-      PY = Float64Array.from(Y, (y, v) => fixed.get(v)?.[1] ?? y);
+    const PX = typedOf(Float64Array, X, (x, v) => fixed.get(v)?.[0] ?? x),
+      PY = typedOf(Float64Array, Y, (y, v) => fixed.get(v)?.[1] ?? y);
     for (let still = false, turn = 0; !still && turn < 10000; turn++) {
       // (still: within a millionth of R)
       still = true;
@@ -15259,7 +15266,7 @@ function rosetteSphereMesh(kind, W) {
       flatVerts: lentilVerts(verts),
       rosette: true,
       south: m,
-      cellFaces: Int32Array.from({ length: 2 * m }, (_, t) => (t < m ? 0 : 1)), // (its two halves its faces: Tiles each apart)
+      cellFaces: typedOf(Int32Array, 2 * m, (t) => (t < m ? 0 : 1)), // (its two halves its faces: Tiles each apart)
       middles: [F.coreIds, F.coreIds.map((t) => m + t)],
       disc: { kind, W, row: planeRow(kind, W), torus: false, ...plane, xy: (t) => plane.xy(t >= m ? t - m : t) },
     },
@@ -16735,7 +16742,7 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
     latticeCells = sheet.cellPlaces.map(([c, j]) => {
       const i = Math.floor(c / m),
         [s, r] = [(i * Q[1] - j * Q[0]) / D, (P[0] * j - P[1] * i) / D].map((x) => Math.floor(x + 1e-9)),
-        home = `${Math.round(i - s * P[0] - r * Q[0])},${Math.round(j - s * P[1] - r * Q[1])}`;
+        home = Math.round(i - s * P[0] - r * Q[0]) * 1e7 + Math.round(j - s * P[1] - r * Q[1]); // (its two numbers in one: a text key, 150 ms more on 655,360 tiles)
       return ids.get(home) ?? ids.set(home, ids.size).get(home);
     });
   return (meshCache[key] = Object.assign(mesh, {
@@ -16746,8 +16753,8 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
     tiling: kind,
     sheet: [A, B],
     seamTwist: twist, // (in its rows round the tube, its sides B: see sheetPoint)
-    uv: Float64Array.from(tiles.flat(2), units),
-    uvMid: Float64Array.from(sheet.mids, units),
+    uv: typedOf(Float64Array, tiles.flat(2), units),
+    uvMid: typedOf(Float64Array, sheet.mids, units),
     latticeCells,
     cellPlaces: sheet.cellPlaces,
     colourCells: sheet.colourCells,
@@ -17362,7 +17369,7 @@ function exactCover(n, rows, stepsBack = 100000) {
   const byColumn = Array.from({ length: n }, () => []);
   rows.forEach((r, i) => r.forEach((c) => byColumn[c].push(i)));
   const alive = new Uint8Array(rows.length).fill(1),
-    count = Int32Array.from(byColumn, (l) => l.length),
+    count = typedOf(Int32Array, byColumn, (l) => l.length),
     open = new Uint8Array(n).map((_, c) => (count[c] ? 1 : 0)), // (a column in no row: left out)
     trail = [], // (each step's rows killed and columns closed, to undo)
     chosen = [],
@@ -17437,7 +17444,7 @@ function penroseSphereMesh(cells) {
   const { points, tiles, tileFaces, solid } = penroseSphereGraph(PENROSE_SPHERES[cells]),
     R = points.reduce((most, p) => Math.max(most, Math.hypot(...p)), 0); // (no spread: a size's 250,000 points pass the call stack)
   return (meshCache[key] = Object.assign(finishMesh(points.flatMap(unit), tiles, 4, cells), {
-    flatVerts: Float64Array.from(points.flat(), (v) => v / R),
+    flatVerts: typedOf(Float64Array, points.flat(), (v) => v / R),
     cellFaces: Int32Array.from(tileFaces), // (its faces the dodecahedron's, round the icosahedron's corners: FACE_MIDDLES' order)
     solid, // (its symmetries the dodecahedron's, see solidCorners)
   }));
@@ -17481,8 +17488,8 @@ function kitesDartsSphereMesh(cells) {
       cells,
     ),
     {
-      flatVerts: Float64Array.from(G.points.flat(), (v) => v / R),
-      cellFaces: Int32Array.from(K, (c) => G.tileFaces[c.rhombus]),
+      flatVerts: typedOf(Float64Array, G.points.flat(), (v) => v / R),
+      cellFaces: typedOf(Int32Array, K, (c) => G.tileFaces[c.rhombus]),
       solid: G.solid,
     },
   ));
@@ -17514,8 +17521,8 @@ function hexSolidMesh(solid, f) {
     mesh.faceCentres = ico.faces.map((fc) => unit([0, 1, 2].map((d) => fc.corners.reduce((sum, p) => sum + p[d], 0)))); // (see solidFaceCentres)
   // each cell's face (see trianglesFace), whether it is folded over an edge (its triangles on two faces), its solid's faces'
   // middles
-  mesh.cellFaces = Int32Array.from(cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
-  mesh.folded = Uint8Array.from(cells, (tris) => new Set(tris.map((t) => Math.floor(t / (f * f)))).size > 1);
+  mesh.cellFaces = typedOf(Int32Array, cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
+  mesh.folded = typedOf(Uint8Array, cells, (tris) => new Set(tris.map((t) => Math.floor(t / (f * f)))).size > 1);
   mesh.faceMids = POLYHEDRA[solid].faceMids;
   return (meshCache[key] = mesh);
 }
@@ -17583,7 +17590,7 @@ function boyMesh(base, f) {
     projective: true,
     flatVerts: new Float64Array(flat),
     baseTiles: Int32Array.from(baseTiles),
-    cellFaces: g.cellFaces && Int32Array.from(baseTiles, (t) => g.cellFaces[t]), // (its solid's faces: Tiles face by face, see pieceByPiece)
+    cellFaces: g.cellFaces && typedOf(Int32Array, baseTiles, (t) => g.cellFaces[t]), // (its solid's faces: Tiles face by face, see pieceByPiece)
   }));
 }
 
@@ -20478,9 +20485,10 @@ function groupedStarts(g, start, K) {
     C = solidCorners(g); // (by direction: a mesh may lie flat on the solid's faces)
   g.groupedOut ??= [...solidFaceCentres(g, C), ...C].map((p) => {
     // (each point's edges out, once a mesh)
-    const D = (g.directions ??= Float64Array.from(
-      { length: 3 * G.nv },
-      (_, i) => g.verts[i] / Math.hypot(g.verts[i - (i % 3)], g.verts[i - (i % 3) + 1], g.verts[i - (i % 3) + 2]),
+    const D = (g.directions ??= typedOf(
+      Float64Array,
+      3 * G.nv,
+      (i) => g.verts[i] / Math.hypot(g.verts[i - (i % 3)], g.verts[i - (i % 3) + 1], g.verts[i - (i % 3) + 2]),
     ));
     let top = -Infinity,
       ring = [];
@@ -20627,7 +20635,7 @@ const groupTable = (R) => {
   if (groupTables.has(R)) return groupTables.get(R);
   const index = new Map(R.map((M, a) => [roundedKey(M.flat()), a])),
     id = index.get(roundedKey(IDENTITY3.flat())),
-    times = R.map((A) => Int32Array.from(R, (B) => index.get(roundedKey(matMul(A, B).flat())) ?? -1)),
+    times = R.map((A) => typedOf(Int32Array, R, (B) => index.get(roundedKey(matMul(A, B).flat())) ?? -1)),
     order = R.map((_, a) => {
       let p = a,
         q = 1;
@@ -20679,7 +20687,7 @@ const fitsMesh = (g, M) => {
 // by its angles: a map that turns them over, a mirror, would have a walker walk as A's mirror); null where one has none. A
 // tile known by its corners in their order (a Möbius strip's two faces share theirs, the other way round)
 function placeMap(g, corner) {
-  const corners = Int32Array.from({ length: g.verts.length / 3 }, (_, u) => corner(u) ?? -1),
+  const corners = typedOf(Int32Array, g.verts.length / 3, (u) => corner(u) ?? -1),
     tiles = new Int32Array(g.n);
   for (let t = 0; t < g.n; t++) if ((tiles[t] = tileImage(g, (u) => corners[u], t)) < 0) return null;
   return (u, alongEdges) => (alongEdges ? corners[u] : tiles[u]);
@@ -21488,7 +21496,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
         rb = unionFind(p, b);
       if (ra !== rb) p[rb] = ra;
     }
-    const region = Int32Array.from({ length: g.n }, (_, t) => t),
+    const region = typedOf(Int32Array, g.n, (t) => t),
       area = new Int32Array(g.n).fill(1);
     for (let j = 0; j < E; j++) {
       if (lineOf[s][j]) continue;
@@ -21840,7 +21848,7 @@ function battleAreas(P) {
       if (a !== b) parent[b] = a;
       cut[w.j] = 1;
     }
-    const region = Int32Array.from({ length: L.nodes }, (_, i) => i),
+    const region = typedOf(Int32Array, L.nodes, (i) => i),
       size = new Int32Array(L.nodes).fill(1);
     for (let j = 0; j < L.eu.length; j++) {
       if (cut[j]) continue;
@@ -22030,11 +22038,12 @@ const battleHuntKey = () =>
   ].join('|'); // (what its battles are fought at: what it does not vary; a result played keeps it, see playBattle)
 // √r's first n digits in base b, its integer part first (on the page: one integer root, as numberSeed's)
 const rootDigits = (r, base, n) =>
-  Uint8Array.from(
+  typedOf(
+    Uint8Array,
     iroot(BigInt(r) * BigInt(base) ** BigInt(2 * n), 2)
       .toString(base)
       .slice(0, n),
-    (c) => parseInt(c, 36), // (its letters past 9 too: a is 10)
+    (c) => parseInt(c, 36),
   );
 // The hunt's battles played in workers, one a core but the page's (the page draws their numbers and starts, 1 ms; a battle,
 // 30 ms at size 32): each made of the page's own code (see workerOf: a rule changed, changed in them), set once to the
@@ -22734,7 +22743,7 @@ const ELEMENTARY_STARTS = ['cell', 'two', 'half', 'digits'],
 function rowDefects(r, wrap) {
   const n = r.length,
     W = 16 * n,
-    c = Uint8Array.from({ length: W }, (_, x) => cellOf(r, x)),
+    c = typedOf(Uint8Array, W, (x) => cellOf(r, x)),
     at = (x) => (x < W ? c[x] : wrap ? c[x - W] : 0),
     regular = new Uint8Array(W),
     out = new Uint16Array(n);
@@ -23519,10 +23528,10 @@ function surfaceLunes(g) {
   const count = g.globe ? Math.min(...g.columns) : rosetteTurns(g),
     parts = g.rosette && rosetteParts(g, 2 * count);
   return {
-    halves: g.cellFaces ?? Int32Array.from({ length: g.n }, (_, t) => globeHalf(g, t)), // (a rosette sphere's: its faces, its discs)
+    halves: g.cellFaces ?? typedOf(Int32Array, g.n, (t) => globeHalf(g, t)), // (a rosette sphere's: its faces, its discs)
     lunes: {
       count,
-      of: Int32Array.from({ length: g.n }, (_, t) =>
+      of: typedOf(Int32Array, g.n, (t) =>
         g.rosette ? (parts[t] < 0 ? -1 : parts[t] % count) : globeLune(g, t, count),
       ),
     },
@@ -23577,7 +23586,7 @@ function groundColours() {
     groundMemo = {
       of,
       key,
-      col: Uint32Array.from(levels, (l, t) =>
+      col: typedOf(Uint32Array, levels, (l, t) =>
         t < n ? (colours[l - 1] ?? texelRgba(UNLIT, GROUND_ALPHA)) : golds[(l - 1) % golds.length],
       ),
     };
@@ -23599,7 +23608,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes 
   };
   if (rule === 'tiles')
     level = alternated
-      ? Uint8Array.from({ length: n }, (_, t) => 1 + alternated(t))
+      ? typedOf(Uint8Array, n, (t) => 1 + alternated(t))
       : apart
         ? pieceByPiece(n, bySide, apart)
         : dsatur(n, bySide).colour; // (a periodic grid, on the plane or a sheet, by its alternation: see alternationOf; a surface else piece by piece; else DSatur)
@@ -23693,9 +23702,7 @@ const tilesBroken = (w) => {
 // each cell's kind of tile, by construction: its tiling's own tile where it has several with as many corners (protos: de
 // Bruijn's rhombi, Penrose's thick and thin, see discPatch), else its corners' count (corners: its grid's, see meshCorners)
 const tileKinds = (corners, protos = null) =>
-  Int32Array.from({ length: corners.start.length - 1 }, (_, t) =>
-    protos ? protos[t] : corners.start[t + 1] - corners.start[t],
-  );
+  typedOf(Int32Array, corners.start.length - 1, (t) => (protos ? protos[t] : corners.start[t + 1] - corners.start[t]));
 // its section: the rules as cards, then the palettes, each a tile with its colours
 // an Explore colouring's why not at variant w ('' allowed): the cuts of its own it needs (a solid's faces, a sphere's lunes)
 const exploreRuleWhyNot = (key, w) =>
@@ -24852,7 +24859,7 @@ function planeTurns(kind, W) {
   if (kind === 'square') {
     const last = W - 1,
       xy = (f) =>
-        Int32Array.from({ length: n }, (_, t) => {
+        typedOf(Int32Array, n, (t) => {
           const [u, v] = f(t % W, Math.floor(t / W));
           return v * W + u;
         });
@@ -25162,7 +25169,7 @@ function tilePatch(rows, out, W, mid, each = flatEach) {
     ...F,
     n: rows.length,
     coreIds,
-    kinds: rows[0].kind === undefined ? null : Uint8Array.from(rows, (h) => h.kind), // (its tiles' kinds, where its tiling has several alike: see tileKinds)
+    kinds: rows[0].kind === undefined ? null : typedOf(Uint8Array, rows, (h) => h.kind), // (its tiles' kinds, where its tiling has several alike: see tileKinds)
     core: coreIds.map((t) => F.poly(t)),
     width: Math.sqrt(area / rows.length),
   }; // (n: its cells, then its walls; norm: its way to measure, its disc's; width: its cells', see cellWidth)
@@ -28273,12 +28280,12 @@ function lifeLook(L, lifted = false) {
   const grad = Array.from({ length: 32 }, (_, i) => pack(lift(gradientAt(i / 31))));
   // the colours on a log scale, in tables (millions of cells): of an age (up to 64), of an activity
   const level = (v, max) => Math.min(31, Math.round((Math.log(v) / Math.log(Math.max(2, max))) * 31));
-  const byAge = Uint32Array.from({ length: 65 }, (_, a) => grad[31 - level(a + 1, 65)]); // the rainbow backwards: warm newborns, cold old cells
+  const byAge = typedOf(Uint32Array, 65, (a) => grad[31 - level(a + 1, 65)]); // the rainbow backwards: warm newborns, cold old cells
   const byActivity =
     colour === 'digit'
-      ? Uint32Array.from({ length: Math.min(maxAct, 65535) + 1 }, (_, v) => (v ? grad[level(v + 1, maxAct + 1)] : 0))
+      ? typedOf(Uint32Array, Math.min(maxAct, 65535) + 1, (v) => (v ? grad[level(v + 1, maxAct + 1)] : 0))
       : null;
-  const byDying = Uint32Array.from({ length: L.C }, (_, st) =>
+  const byDying = typedOf(Uint32Array, L.C, (st) =>
     st < 2
       ? 0
       : pack(faded(oceanOn() ? LANDS[0] : LIFE_ALIVE, dyingShare(st - 1, L.C), blankTile()), dyingShare(st - 1, L.C)),
@@ -31020,7 +31027,7 @@ function blockStep(M, a, b, g) {
     }
     return;
   }
-  if (M.move) a = Uint8Array.from(M.move, (m) => a[m]);
+  if (M.move) a = typedOf(Uint8Array, M.move, (m) => a[m]);
   b.set(a);
   for (let i = 0; i < turn.length; i += M.k) {
     let st = 0;
@@ -31177,7 +31184,7 @@ function cellBlocks(B, n, cell, stars, first = cell(0)) {
             .join(' ');
           (across.get(away) ?? across.set(away, []).get(away)).push(t);
         }
-    move = Int32Array.from({ length: n }, (_, t) => t);
+    move = typedOf(Int32Array, n, (t) => t);
     for (const [u, v] of across.values())
       if (v !== undefined) {
         move[u] = v;
@@ -31247,7 +31254,7 @@ function meshIsing(M, wraps = true) {
   return {
     ising: true,
     k: 1,
-    turns: [0, 1].map((c) => Int32Array.from({ length: n }, (_, t) => t).filter((t) => colour[t] === c)),
+    turns: [0, 1].map((c) => typedOf(Int32Array, n, (t) => t).filter((t) => colour[t] === c)),
     sides,
     to: new Uint8Array(0),
     wraps,
@@ -33013,7 +33020,7 @@ const FIGURE_PARTS = {
     fits: (K, { variant }) => K === APERIODIC[variant.plane].pieces,
     parts: (K) => {
       const n = walk.plane.n;
-      return Int32Array.from({ length: n }, (_, t) => Math.floor((t * K) / n));
+      return typedOf(Int32Array, n, (t) => Math.floor((t * K) / n));
     },
   },
   // a walled grid in a hexagon or a disc, or of 3, 6, 8 or 12 colours: its slices round the middle (see planeSlices)
@@ -33024,7 +33031,7 @@ const FIGURE_PARTS = {
     parts: (K) => {
       const [cols, rows] = teamGrid(K),
         F = planeFrame();
-      return Int32Array.from({ length: walk.life.seed.length }, (_, t) => F.block(t, cols, rows));
+      return typedOf(Int32Array, walk.life.seed.length, (t) => F.block(t, cols, rows));
     },
   },
   // a Möbius strip: its colours in turn along it twice round (its two sides one strip, 2L, see mobiusLoop: s and s + L are
@@ -33037,7 +33044,7 @@ const FIGURE_PARTS = {
         s0 = mobiusMiddle(g) - g.L / 2,
         stretch = (2 * g.L) / K,
         along = (t) => (((colourUnitPlaces(g)[2 * t] - s0) % (2 * g.L)) + 2 * g.L) % (2 * g.L);
-      return Int32Array.from({ length: g.n }, (_, t) => Math.min(K - 1, Math.floor(along(t) / stretch + 1e-9)));
+      return typedOf(Int32Array, g.n, (t) => Math.min(K - 1, Math.floor(along(t) / stretch + 1e-9)));
     },
   },
   // a torus, a Klein bottle: its blocks on the sheet (see torusBlocks), each tile in the one its colour unit's middle is in (a
@@ -33050,7 +33057,7 @@ const FIGURE_PARTS = {
       const g = walk.surface,
         blocks = torusBlocks(K);
       if (faceRunsOn(K, g)) return faceRuns(K, g);
-      return Int32Array.from({ length: g.n }, (_, t) => {
+      return typedOf(Int32Array, g.n, (t) => {
         const [u, v] = g.klein ? sheetMiddle(g, t) : colourUnitPlaces(g).subarray(2 * t, 2 * t + 2);
         return sheetBlock(u, v, g.nu, g.nv, blocks);
       });
@@ -33064,7 +33071,7 @@ const FIGURE_PARTS = {
     parts: (K) => {
       const g = walk.surface,
         up = K === 2 && !duelAcross();
-      return Int32Array.from({ length: g.n }, (_, t) => (up ? globeHalf(g, t) : globeLune(g, t, K)));
+      return typedOf(Int32Array, g.n, (t) => (up ? globeHalf(g, t) : globeLune(g, t, K)));
     },
     solo: true,
   },
@@ -33095,7 +33102,7 @@ const FIGURE_PARTS = {
         hull = hullColours(VARIANTS[walk.variant].surface, K, opposite),
         own = hull.groups.flatMap((gr, k) => gr.map((q) => [hull.mids[q], k])),
         owner = new Map(hull.groups.flatMap((gr, k) => gr.map((q) => [q, k])));
-      return Int32Array.from({ length: g.n }, (_, t) => {
+      return typedOf(Int32Array, g.n, (t) => {
         const q = g.cellFaces[t];
         if (owner.has(q)) return owner.get(q);
         if (opposite) return -1; // (Opposite: its two opposite faces only)
@@ -33128,7 +33135,7 @@ const faceRuns = (K, g) => {
   const q = Math.round((4 * g.seamTwist) / g.nv), // (a face round the ring: the next q faces on, see teamBlocksFit's twist)
     run = (2 * g.nu) / ringCorners(surfaceOf(VARIANTS[walk.variant])), // (two of its line's sides)
     P = colourUnitPlaces(g);
-  return Int32Array.from({ length: g.n }, (_, t) => {
+  return typedOf(Int32Array, g.n, (t) => {
     const face = Math.floor((4 * P[2 * t + 1]) / g.nv),
       along = mod(face * q, 4) * g.nu + P[2 * t];
     return Math.floor(along / run) % K;
@@ -38027,11 +38034,11 @@ function areaSteps() {
 // stays so; one enclosed that stops being from the step after the cut restored. Each region keeps its nodes as a
 // linked list. maxSize: a region of more nodes at the end is outside too.
 function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere, maxSize = Infinity) {
-  const parent = Int32Array.from({ length: n }, (_, i) => i),
+  const parent = typedOf(Int32Array, n, (i) => i),
     chi = new Int32Array(n).fill(1),
     size = new Int32Array(n).fill(1),
     out = new Uint8Array(n);
-  const head = Int32Array.from({ length: n }, (_, i) => i),
+  const head = typedOf(Int32Array, n, (i) => i),
     tail = Int32Array.from(head),
     next = new Int32Array(n).fill(-1);
   const at = new Int32Array(n).fill(-1),
@@ -38893,7 +38900,7 @@ function lifeStepGPU(L, gen, back = false, k = 1) {
         return;
       }
       const K = L.colours,
-        by = (q, x) => Int32Array.from({ length: K + 1 }, (_, c) => (c ? r.read(9 + 4 * (c - 1) + q, 0, x) : 0));
+        by = (q, x) => typedOf(Int32Array, K + 1, (c) => (c ? r.read(9 + 4 * (c - 1) + q, 0, x) : 0));
       E.ready = {
         gen,
         back,
@@ -39219,7 +39226,7 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
     none = [0],
     { start, list } = L.nbr,
     more = L.ringMore,
-    table = (T) => Int32Array.from({ length: Math.max(1024, T?.length ?? 0) }, (_, c) => (T?.[c] ? 1 : 0));
+    table = (T) => typedOf(Int32Array, Math.max(1024, T?.length ?? 0), (c) => (T?.[c] ? 1 : 0));
   const blocks = M
     ? (() => {
         // (a block rule's: each cell's place each phase, the blocks' cells or Ising's 4 sides, the cells across, its rule and its inverse)
@@ -39246,7 +39253,7 @@ function gpuLifeEngine(L, runs = 1, h = 1) {
     oRing: L.ring ?? none,
     oMoreStart: more?.start ?? none,
     oMoreList: more?.list ?? none,
-    oSide: L.side ? Int32Array.from(L.side, Number) : none,
+    oSide: L.side ? typedOf(Int32Array, L.side, Number) : none,
     oB: table(L.B),
     oS: table(L.S),
     oLoops: L.loops ?? none,
@@ -41419,7 +41426,7 @@ function gpuPlane(paint) {
     device.queue.writeBuffer(
       D.planeBase,
       0,
-      Uint32Array.from({ length: F.m }, (_, t) =>
+      typedOf(Uint32Array, F.m, (t) =>
         texelDarkened(t < n ? (ground?.[t] ?? page) : wallShown ? (ground?.[t] ?? walled) : 0, ceiling),
       ), // (0: clear; Tiles: each cell's ground, each brick's)
     );
@@ -41824,7 +41831,7 @@ function computeFill() {
     regions++;
   }
   // 3. back in time, over the regions
-  const parent = Int32Array.from({ length: regions }, (_, r) => r),
+  const parent = typedOf(Int32Array, regions, (r) => r),
     size = new Int32Array(regions).fill(1);
   const out = Uint8Array.from(outside),
     stamp = new Int32Array(regions).fill(-1);

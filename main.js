@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.741';
+const VERSION = '0.5.742';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15608,9 +15608,8 @@ function ringLength(x, square, units, ok = () => true) {
 // a torus's (a Klein bottle's) columns round the ring near x: its colours' blocks a × b (see torusBlocks; a bottle's, slices
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even); own: columns of its own (a
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
-function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
-  const K = ringColours(ringVariant()),
-    runs = !klein && faceRunsOn(K, { nv, seamTwist: seam }), // (its shape's zones of its own: runs along its one face, see faceRuns)
+function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0, K = ringColours(ringVariant())) {
+  const runs = !klein && faceRunsOn(K, { nv, seamTwist: seam }), // (its shape's zones of its own: runs along its one face, see faceRuns)
     [a, b] = klein
       ? [K, 1]
       : runs
@@ -16078,7 +16077,8 @@ function kleinBottlePoint(s, u) {
 // Cairo's Klein bottle: its tiles as its torus's (in the same order), their corners one vertex per point of the bottle, found
 // by their place on the sheet (not in space: it crosses itself, and the points where it does are two); an odd length, so that
 // the ends turned over keep the tiling
-const kleinCairoColumns = (nv, own) => ringColumns(nv / TORUS_TUBE, nv, 1, true, (n) => n % 2 === 1, own);
+const kleinCairoColumns = (nv, own, seam, K) =>
+  ringColumns(nv / TORUS_TUBE, nv, 1, true, (n) => n % 2 === 1, own, 0, K);
 // a point of a Klein bottle's sheet, its place brought within the sheet (up: Cairo's mirror line, see kleinCairoMesh), and that
 // place as a key
 function kleinSheetPlace(x0, y0, nu, nv, up) {
@@ -18016,7 +18016,7 @@ const SURFACES = {
         {
           mesh: (s) => torusCairoMesh(...torusDims(name, s), torusTwist(s, name), turned),
           radius: (s) => (torusDims(name, s)[0] * Math.sqrt(squares)) / (2 * Math.PI * TORUS_TUBE),
-          columns: (nv, own, seam) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own, seam),
+          columns: (nv, own, seam, K) => ringColumns(nv / torusTube(), nv, 2 / squares, false, undefined, own, seam, K),
           perRow: 1,
           steps: [2 / squares, 2 / squares], // (straight: even counts both ways, the tiling repeating every other square)
           tiles: (s) => 2 * squares * torusDims(name, s).reduce((a, b) => a * b),
@@ -18088,7 +18088,7 @@ const SURFACES = {
         {
           mesh: (s) => kleinTilingMesh(kind, s),
           radius: (s) => kleinLength(kind, s).W / (2 * Math.PI * TORUS_TUBE),
-          columns: (s, own) => kleinLength(kind, own ? `${s}x${own}` : s).n,
+          columns: (s, own, seam, K) => kleinLength(kind, own ? `${s}x${own}` : s, K).n,
           perRow: 1,
           steps: [sheetRows(MOBIUS_STRIPS[kleinStrip(kind)].basis), 1],
           tiles: (s) => kleinCount(kind, s),
@@ -18329,7 +18329,8 @@ for (const [name, kind, turned, unit] of [
   SURFACES[name] = {
     mesh: (z) => tilingTorusMesh(name, ...torusDims(name, z), torusTwist(z, name)),
     radius: (z) => (torusDims(name, z)[0] * tube) / (2 * Math.PI * TORUS_TUBE),
-    columns: (nv, own, seam) => ringColumns((nv * tube) / (step * torusTube()), nv, 1, false, undefined, own, seam),
+    columns: (nv, own, seam, K) =>
+      ringColumns((nv * tube) / (step * torusTube()), nv, 1, false, undefined, own, seam, K),
     perRow: per,
     steps: [1, 1],
     least: 2,
@@ -18377,7 +18378,10 @@ function syncSizeStepper() {
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
-  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', '']));
+  sizeTips(
+    'size',
+    ...(SURFACES[kind] && sel.selectedOptions[0] ? [...surfaceCard(kind, f), ringWhy(kind, f)] : ['', '']),
+  );
   // (its rows: a notch each, the one in use's whatever its width, what a notch leads to shown as it will be: see sizeRows,
   // ringSize; its width under it)
   const { options, at } = sizeRows();
@@ -18580,8 +18584,9 @@ function ringSize(kind, rows, width = ringWidthShare, twist = ringTwistShare) {
 }
 const sizeAsked = (kind = surfaceOf(VARIANTS[tabVariant()])) => ringSize(kind, sizeOf($('gridSizeField').value)); // (the menu's rows, its ring's width and twist)
 const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeAsked()); // (the size played: the size asked, kept as its walkers change, see walkersSize)
-// A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given
-function torusDims(kind, size) {
+// A torus's rows and columns: its tiles per row from its rows (squares or regular tiles), or the nearest those given; its
+// columns made for K colours (its colours played's by default, see ringColumns; 1: its usual, see ringWhy)
+function torusDims(kind, size, K) {
   const seam = torusTwist(size, kind) * (SURFACES[kind]?.steps?.[0] ?? 1); // (its twist in its rows, its bricks: its colours' blocks those it glues in line, see ringColumns)
   size = sizeOf(String(size).split('+')[0]); // (as the list has it, its twist apart: a size's tooltip's, "16" before v0.3.70, NaN cells on every tiling's torus)
   if (MOBIUS_KINDS.includes(kind)) {
@@ -18595,16 +18600,27 @@ function torusDims(kind, size) {
     const across = pinwheelAcross(kind); // (a torus's bricks along as a tiling's columns: its colours' blocks square, its corners' sides alike, see ringColumns)
     return [
       cells,
-      ringColumns(across / (F.tube() * (F.turned ? 1 : 2)), across, 1, false, undefined, along || undefined, seam),
+      ringColumns(across / (F.tube() * (F.turned ? 1 : 2)), across, 1, false, undefined, along || undefined, seam, K),
     ]; // (a pinwheel ring's: its cells at its usual length, its bricks along)
   }
-  if (typeof size === 'number') return [size, SURFACES[kind].columns(size, undefined, seam)];
+  if (typeof size === 'number') return [size, SURFACES[kind].columns(size, undefined, seam, K)];
   const [rows, perRow] = size.split('x').map(Number);
-  return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow, seam)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
+  return [rows, SURFACES[kind].columns(rows, perRow / SURFACES[kind].perRow, seam, K)]; // (columns of its own: the nearest its tiling allows, see ringColumns)
 }
 // a torus's size at a height and a width (round the ring: its tiles per row; along a strip: its steps), as a size of its own
 // a surface sized as a ring is, its rows (a pinwheel ring's: its cells at its usual length) × its width (its bricks along)
 const ringSized = (kind) => TORI.includes(kind) || !!PINWHEEL_SHEETS[kind];
+// why a ring's length is not its usual (its one colour's), told in its size's tooltip: its colours' blocks, each square where it
+// can be, a whole count of them round it (see ringColumns); '' where it is its usual
+const ringWhy = (kind, size) => {
+  if (!ringSized(kind)) return '';
+  const K = ringColours(ringVariant()),
+    [, n] = torusDims(kind, size),
+    [, usual] = torusDims(kind, size, 1);
+  return n === usual
+    ? ''
+    : `${formatNumber(n)} round the ring, not its usual ${formatNumber(usual)}: made for its ${K} colours' blocks, each square where it can be, a whole count of them round it`;
+};
 const widthSize = (kind, rows, width, twist) =>
   withTwist(`${rows}x${width * (MOBIUS_KINDS.includes(kind) ? 1 : SURFACES[kind].perRow)}`, twist);
 // A torus's, a Klein bottle's or a Möbius strip's widths at its height (round the ring, along the strip: see torusDims): the same
@@ -18694,12 +18710,12 @@ const sizeCardHtml = (total, text) => {
   return `<b class="tip-name">Size: ${marks(total)}</b>${marks(text).replace(/\n/g, '<br>')}`; // ({b:…}: bold alone)
 };
 // (its grid first, as its shape's name and its words: Dode sph, a dodecahedron of hexagons…; then its size, under a rule)
-const sizeTips = (row, total, text) => {
+const sizeTips = (row, total, text, why = '') => {
   const box = $(`${row}Box`), // (− + its label and its slider, one block; its name and its total first, as a control's; shown again at once if hovered: − + clicked)
     w = tabVariant(),
     grid = `<b class="tip-name">${shapeLabel(NAV[w][2])}</b>${variantWhere(w)}`;
   box.dataset.tip = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1');
-  box.dataset.tipHtml = `${grid}<div class="tip-state"><div>${sizeCardHtml(total, text)}</div></div>`;
+  box.dataset.tipHtml = `${grid}<div class="tip-state"><div>${sizeCardHtml(total, text)}</div></div>${why ? `<div class="tip-state tip-default">${htmlText(why)}</div>` : ''}`; // (why: its length's, see ringWhy)
   if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
 };
 // a face by its corners (a solid's, a sector's count round its middle)

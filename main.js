@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.727';
+const VERSION = '0.5.728';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35831,10 +35831,38 @@ const zoneOfWord = (w) =>
 // (git log --grep "(v0.2.0)", its bundle, tools/at.sh 0.2.0); changed, the version now. Not read otherwise (no old links
 // handled), nor part of what tells setups apart (see isInUse)
 let setupFrom = null; // { setup, v }
+// a link's settings as an older link left them out, at their default (links write them all since v0.5.718, see getSetup):
+// an older link, a Gallery's entry, the same setup as one written whole (see sameSetup)
+const LINK_DEFAULTS = {
+  teams: 1,
+  walkStart: 1,
+  gridTurned: 0,
+  torusShape: 0,
+  kleinShape: 0,
+  battleRule: () => linkWord(BATTLE_RULES[0][1]),
+  battleStarts: 'symmetric',
+  popMixed: 0,
+  duelCut: 0,
+  teamsApart: 0,
+  startPlace: 0,
+  popSymmetry: 'none',
+  popNewcomer: 0,
+  gridWalls: 0,
+  gridOutline: 'hex',
+  popStacked: 0,
+  popFont: 'sans',
+  exploreRule: () => EXPLORE_RULES[0][0],
+  explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
+  playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
+};
+const linkSetting = (s, k) =>
+  k === 'gridSize' && s.gridSize !== undefined
+    ? withTwist(s.gridSize, twistOf(surfaceOf(VARIANTS[setupVariant(s)]), s.gridSize)) // (a ring's size its twist written, its default where left out)
+    : (s[k] ?? (typeof LINK_DEFAULTS[k] === 'function' ? LINK_DEFAULTS[k](s) : LINK_DEFAULTS[k]));
 const sameSetup = (a, b, apart = ['version']) =>
   [...new Set([...Object.keys(a), ...Object.keys(b)])].every(
-    (k) => apart.includes(k) || String(a[k] ?? '') === String(b[k] ?? ''),
-  ); // (apart: the keys not compared)
+    (k) => apart.includes(k) || String(linkSetting(a, k) ?? '') === String(linkSetting(b, k) ?? ''),
+  ); // (apart: the keys not compared; one left out, its default)
 function getSetup() {
   const w = tabVariant(),
     variant = VARIANTS[w],

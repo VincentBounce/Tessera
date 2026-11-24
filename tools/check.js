@@ -1081,7 +1081,7 @@
   // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
   // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
   // variants made in any order)
-  const VARIANTS_PRINT = -471641735; // (v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
+  const VARIANTS_PRINT = 2051800293; // (v0.5.728: a getter by its kind, not its words: the ants' rule changed with the rule played; v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
   const variantsPrint = () => {
     const text = JSON.stringify([
       Object.keys(NAV)
@@ -1092,7 +1092,14 @@
           Object.keys(VARIANTS[w])
             .filter((k) => !k.endsWith('Memo')) // (a memory kept on it as the page goes: arrowsMemo, see walkArrows)
             .sort()
-            .map((k) => [k, typeof VARIANTS[w][k] === 'function' ? 'function' : VARIANTS[w][k]]),
+            .map((k) => [
+              k,
+              Object.getOwnPropertyDescriptor(VARIANTS[w], k)?.get // (a getter's words the state's: an ant's rule, see antRuleText)
+                ? 'getter'
+                : typeof VARIANTS[w][k] === 'function'
+                  ? 'function'
+                  : VARIANTS[w][k],
+            ]),
         ]),
       FAMILIES.map((F) => F.variants.map((ms) => [...ms].sort())),
       MODE_TABS.map(([kind]) => [1, 2].map((level) => navValues(level, [kind]))), // (the menu's order: each mode's spaces and its first space's shapes)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.756';
+const VERSION = '0.5.757';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18665,7 +18665,7 @@ const hexagonOf = (kind, f) => {
 const sizeShape = (kind, f) => {
   const d = gridSize(kind, f);
   return APERIODIC[kind]
-    ? `⌀ ${formatNumber(discOf(d[0]))}`
+    ? (APERIODIC[kind].label?.(d[0]) ?? `⌀ ${formatNumber(discOf(d[0]))}`) // (its own: the pinwheel's triangle's legs)
     : SURFACES[kind]?.disc
       ? `⌀ ${formatNumber(discOf(f))} × 2`
       : shaped(kind)
@@ -18802,6 +18802,7 @@ const howCounted = (kind, f) => {
     return `the cells in a hexagon round its ${middle()} (a point it turns onto by a sixth), as far as each other all in or all out: ${formatNumber(N)} ${d[3]}`;
   }
   // (a disc ⌀ side: as big as a square of side × √π / 2, in whole rows of its items, see sideW: W² of them nearest its middle)
+  if (d && APERIODIC[kind]?.how) return `${APERIODIC[kind].how(d[0], d[3])}`; // (its own: the pinwheel's triangle's cuts)
   if (d && APERIODIC[kind])
     return `a disc ⌀ ${formatNumber(discOf(d[0]))} round its ${middle()} (it never repeats: no rows)\n= the ${formatNumber(d[0])}² ${d[3]} nearest it (whole rows: a square as big as the disc, ${formatNumber(discOf(d[0]))} × √π / 2 = ${formatNumber(d[0])})${d[0] ** 2 > d[2] ? ` − ${formatNumber(d[0] ** 2 - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   if (d && TORI.includes(kind)) {
@@ -25814,11 +25815,15 @@ const PINWHEEL = discMemo((W) => {
 // side), placed round its box's middle; its core the tile its incircle's middle lies in. Its own kind's, the pinwheel's tiles
 // (see PLANE_BASES); outline: a triangle, see outlineOf
 const pinwheelLevel = (W) => Math.floor(Math.log(W * W) / Math.log(5) + 1e-9);
+// its cuts k, its short leg L (its long one 2L) and its incircle's radius r (its middle that far from both legs), at side W
+const pinwheelTriangleOf = (W) => {
+  const k = pinwheelLevel(W),
+    L = 5 ** (k / 2);
+  return { k, L, r: (L * (3 - Math.sqrt(5))) / 2 };
+};
 const PINWHEEL_TRIANGLE = Object.assign(
   discMemo((W) => {
-    const k = pinwheelLevel(W),
-      L = 5 ** (k / 2),
-      r = (L * (3 - Math.sqrt(5))) / 2; // (its incircle's radius, its middle that far from both legs)
+    const { k, L, r } = pinwheelTriangleOf(W);
     let tris = [
       [
         [0, 0],
@@ -25844,6 +25849,19 @@ const PINWHEEL_TRIANGLE = Object.assign(
     outline: 'triangle',
     side: (side) => Math.ceil(Math.sqrt(5 ** Math.max(3, Math.round(Math.log(side * side) / Math.log(5))))), // (its W: one a k)
     cells: (W) => 5 ** pinwheelLevel(W),
+    // (its middle as laid, its incircle's: placed with its box's middle at the grid's, see tilePatch)
+    middle: (W) => {
+      const { L, r } = pinwheelTriangleOf(W);
+      return [r - L + (W - 1) / 2, r - L / 2 + (W - 1) / 2];
+    },
+    label: (W) => {
+      const { L } = pinwheelTriangleOf(W);
+      return `◺ ${formatNumber(Math.round(20 * L) / 10)} × ${formatNumber(Math.round(10 * L) / 10)}`;
+    }, // (its legs)
+    how: (W, unit) => {
+      const { k, L } = pinwheelTriangleOf(W);
+      return `one right triangle, its legs ${formatNumber(Math.round(20 * L) / 10)} and ${formatNumber(Math.round(10 * L) / 10)}, cut in 5 again and again, ${k} times (it never repeats: no rows)\n= 5${superscript(k)} = ${formatNumber(5 ** k)} ${unit}`;
+    },
   },
 );
 /* De Bruijn's multigrids (1981): N families of lines a unit apart, their normals 180°/N apart, all moved by ½ (no three
@@ -26295,6 +26313,9 @@ const APERIODIC = {
 }; // the grids that never repeat: a disc of them, walls round it (outline: its own, the pinwheel's triangle's), never a torus
 // a grid in a disc: one that never repeats, with no outline of its own (the pinwheel's triangle's, see outlineOf)
 const inDisc = (kind) => !!APERIODIC[kind] && !APERIODIC[kind].outline;
+// a grid that never repeats, its middle as laid at side W: a disc's the grid's (see discPatch), else its own (the pinwheel's
+// triangle's, its incircle's)
+const patchMiddle = (kind, W) => APERIODIC[kind].middle?.(W) ?? [(W - 1) / 2, (W - 1) / 2];
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces')
@@ -27464,7 +27485,7 @@ function renderPlaneRow() {
 function renderBrushes(kind) {
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
-  const fits = (p) => !p[1] || (p[1] === baseOf(kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
+  const fits = (p) => !p[1] || (patternOn(p, kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= gridTurns(kind);
   const K = ruleColours();
@@ -32101,7 +32122,7 @@ const HUNT_ZONES = {
   custom: ['link', 'Found'],
 }; // a start from a link with its cells (a hunt's result), from none of these: shown then only
 const famousZone = (zone) => zone === 'patterns' || zone === 'centred';
-const onDisc = () => !!cellsPlane() && !!APERIODIC[patternKind()]; // (a grid that never repeats, a disc: its patterns by their middles, see centredChoices)
+const onDisc = () => !!cellsPlane() && inDisc(patternKind()); // (a grid in a disc: its patterns by their middles, see centredChoices; the pinwheel's triangle none, its patterns its disc's cells)
 // the Icon and Punk zones' pictures (pixelarticons.js, punks.js): 24 × 24 bits each, their names (a link's: an icon's, a
 // punk's number), what one is called, where they come from
 const ICON_SETS = {
@@ -32600,7 +32621,7 @@ function planeSlices(K) {
       planeShape(kind, W) ??
       (APERIODIC[kind]
         ? {
-            o: [(W - 1) / 2, (W - 1) / 2],
+            o: patchMiddle(kind, W),
             ...(discMirrorWay(kind) !== null
               ? { corner: discMirrorWay(kind), step: (2 * Math.PI) / figureTurns(kind) }
               : {}),
@@ -34026,7 +34047,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
               ? planeFrame().lattice(K).middles[i]
               : planeFrame().middle(i, cols, rows)
             : APERIODIC[kind]
-              ? [(W - 1) / 2, (W - 1) / 2]
+              ? patchMiddle(kind, W)
               : (planeShape(kind, W)?.o ?? box());
     return {
       at: (p) => p,
@@ -35270,6 +35291,9 @@ for (const [table, off] of [
   }
 const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their numbers, see DRAW_PATTERNS)
+// whether pattern p lays on a grid of kind: one of its tiles' (see baseOf), a disc's (its cells by their numbers) on a disc
+// only (the pinwheel's triangle none, see inDisc)
+const patternOn = (p, kind) => p[1] === baseOf(kind) && (!discPattern(p) || inDisc(kind));
 // A disc's cells (its disc of W, the shown one's by default, see cellsPlane), a disc pattern's by their numbers: a disc's cells
 // numbered from its middle out, nearest first, the same at every size (see discPatch). laid(cells, k): a pattern's cells
 // turned k of the figure's turns round the middle, [cell, state] (null if one is past the disc); way(cells), the way it lies
@@ -35455,7 +35479,7 @@ function laidChoices(centred, any = false) {
     fits = ([a, b]) => (centred ? b <= short - 2 : a <= short && b <= long);
   const shapes = [],
     seen = new Set();
-  for (const p of DRAW_PATTERNS.filter((q) => q[1] === baseOf(kind) && (mine || q[2].includes(rule)))) {
+  for (const p of DRAW_PATTERNS.filter((q) => patternOn(q, kind) && (mine || q[2].includes(rule)))) {
     for (let t = 0; t < gridTurns(kind); t++)
       for (const f of [false, true]) {
         const cells = orientPattern(kind, p[4], t, f),

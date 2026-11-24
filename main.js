@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.802';
+const VERSION = '0.5.803';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -32437,7 +32437,10 @@ const seedThatFits = (r) => {
 // copies' words third); or over its whole part (a start that fills it: Wild's soup, Formula's digits). The one in effect the
 // one picked where allowed, else the first allowed, none (-1) off a solid (see placeNow)
 const START_PLACES = [
-  ['Side by side', "Each colour's start on its own face, the colours' faces side by side, alike"],
+  [
+    'Side by side',
+    "Each colour's start on its own face, the colours' faces side by side, alike; on the irregular polyhedra, its colouring's own face",
+  ],
   ['Face to face', "Each colour's start on its own face, each face across the centre from another colour's"],
   [
     'Doubled',
@@ -32454,17 +32457,13 @@ const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startP
   startOpposite = () => !!walk.surface && placeNow() === 2;
 const spotsOf = (col) => (placeNow() === 1 ? col?.facing : col?.patch); // (a colouring's spots as the start's place lays them)
 // each of K colours' face on a solid (its colouring apart or not: see piecesApart), known from the solid and its colouring,
-// on its least mesh: the faces whose middles are its spots, alike, side by side or face to face (see fairSpots: a hull
-// solid's of its colours' faces, another's an index in FACE_MIDDLES, see cellFaces); null where none alike, a spot off a
-// face's middle, in Solo, off a solid
+// on its least mesh: the faces whose middles are its spots, alike, side by side or face to face (an index in FACE_MIDDLES,
+// see cellFaces); an irregular polyhedron's (a hull solid's) its colouring's own, each colour's first face, the one its
+// patterns lie on (see hullColourings, patternPlace: one rule for all its starts, no side by side nor face to face there);
+// null where none alike, a spot off a face's middle, in Solo, off a solid
 function colourFaces(surface, K, apart = piecesApart(), facing = placeNow() === 1) {
   if (K < 2 || !SOLIDS.includes(surface)) return null;
-  if (hullSolidOf(surface)) {
-    const hull = hullColours(surface, K),
-      g = leastMesh(surface),
-      colour = hull?.mids.map((_, q) => hull.groups.findIndex((gr) => gr.includes(q)));
-    return hull ? fairSpots(g, surfaceSymmetries(g), hull.mids.map(unit), colour, K, facing) : null; // (its faces alike, as a solid's spots)
-  }
+  if (hullSolidOf(surface)) return hullColours(surface, K)?.groups.map((gr) => gr[0]) ?? null;
   const mids = FACE_MIDDLES[surface]?.() ?? [],
     col = colouring(surface, K, false, apart);
   const faces = (facing ? col?.facing : col?.patch)?.map((i) =>
@@ -32539,9 +32538,11 @@ const PART_CHOICES = {
         return "Not with Formula: its digits fill each colour's part.";
       if (k === 0 && soup && !colourFaces(surface, K, apart, false))
         return "Only where the colours' faces can lie side by side, alike.";
+      if (k === 1 && hull)
+        return "Not on the irregular polyhedra: each colour's face its colouring's own (Side by side).";
       if (
         k === 1 &&
-        (K % 2 || !(soup || hull ? colourFaces(surface, K, apart, true) : colouring(surface, K, false, apart)?.facing))
+        (K % 2 || !(soup ? colourFaces(surface, K, apart, true) : colouring(surface, K, false, apart)?.facing))
       )
         return 'Only with an even count of colours whose faces can stand across the centre from one another, alike.';
       if (k === 2 && !oppositeAllowed(surface, K))

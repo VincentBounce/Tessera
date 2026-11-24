@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.740';
+const VERSION = '0.5.741';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28766,6 +28766,12 @@ const TEAM_GRID = {
 // first (its columns made for a, see ringColumns), and on a twisted torus those its twist shifts by whole blocks (b = 1 always:
 // bands round the tube); a Klein bottle's its length's (see kleinLength: b = 1 or 2, its half turn
 // round the tube), Cairo's slices along the ring only; a pinwheel ring's of whole bricks (see teamBlocksFit)
+// Blocks near 1:1 left out on the Triangle (a quarter twist always, Penrose's: the seam glues each face onto the next), in
+// Dozen (2026-11-24, kept so): Squares (48 rows, 180 columns), 6 × 2 blocks of 30 × 24, fair only as a staircase (each block
+// 2 rows down from the one before, 6 of them the twist's 12): blocks here are straight, shifted by whole blocks at the seam,
+// so bands round the tube (15 × 12 a face: near square already); Pinwheel, a brick 2:1 on a face, 1 brick × 2 faces (1:1)
+// meets its seam half a block over (two colours there: as many cells, not alike, TEAMS.md's rule) and a staircase would
+// cut its bricks (1/6 of a face a step): bands, its ring twice as long (12 bricks along, not 6)
 function torusBlocks(K, g = walk.surface) {
   let best = [K, 1],
     err = Infinity;

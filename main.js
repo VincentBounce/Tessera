@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.800';
+const VERSION = '0.5.801';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14503,19 +14503,25 @@ function hullColourings(surface) {
     'all',
     faces.map((_, q) => [q]),
   );
-  // (a face apart, the one of its kind, against the others: a Duel's Up / Down, the pyramid's base and its sides, not alike,
-  // their cells as many as their faces have; see hullColours)
-  const apart = kinds.find(([, qs]) => qs.length === 1)?.[1][0];
-  if (apart !== undefined)
-    (out[2] ??= []).push({
-      kind: 'apart',
-      groups: spread([[apart], faces.flatMap((_, q) => (q === apart ? [] : [q]))]),
-      mids,
-      pairs: false,
-      whole: false,
-      crossed: false,
-      squares: kinds[0][1].length,
-    });
+  // (a solid with a face apart, the one of its kind (the pyramid's base), coloured unlike by choice, its parts' cells as many as
+  // their faces have: that face against the others (a Duel's Up / Down), and each face its own, 'all' (the pyramid's 5); see
+  // hullColours, Teams' Custom)
+  const apart = kinds.find(([, qs]) => qs.length === 1)?.[1][0],
+    unlike = (groups) =>
+      (out[groups.length] ??= []).push({
+        kind: 'unlike',
+        unlike: true,
+        groups: spread(groups),
+        mids,
+        pairs: false,
+        whole: false,
+        crossed: false,
+        squares: kinds[0][1].length,
+      });
+  if (apart !== undefined) {
+    unlike([[apart], faces.flatMap((_, q) => (q === apart ? [] : [q]))]);
+    for (const c of out[faces.length] ?? []) c.unlike ||= c.kind === 'all'; // (each face its own: its face apart unlike the others)
+  }
   return (hullColourMemo[surface] = out);
 }
 // the hull solid a surface is (itself, or the solid it cuts: see FACE_BASE), else null
@@ -14525,9 +14531,10 @@ const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (
 // (its colours' faces may face each other: Face to face); else its first; null where none
 const hullColours = (surface, K, opposite = false) => {
   const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null,
-    alike = all?.filter((c) => c.kind !== 'apart');
-  if (all?.some((c) => c.kind === 'apart') && !opposite && !duelAcross()) return all.find((c) => c.kind === 'apart'); // (a Duel's Up / Down)
-  return (alike?.length && (alike.find((c) => (opposite ? c.whole : !c.crossed)) ?? alike[0])) || null;
+    unlike = all?.find((c) => c.unlike),
+    alike = all?.filter((c) => !c.unlike) ?? [];
+  if (unlike && !opposite && (!alike.length || !duelAcross())) return unlike; // (a Duel's Up / Down, or the only one)
+  return (alike.length && (alike.find((c) => (opposite ? c.whole : !c.crossed)) ?? alike[0])) || null;
 };
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
 // a face's cells (see cellFaces)
@@ -25105,7 +25112,7 @@ const oppositeAllowed = (surface, K) =>
   SOLIDS.includes(surface) &&
   (K > 1
     ? hullColours(surface, K)
-      ? !!hullColours(surface, K, true).whole
+      ? !!hullColours(surface, K, true)?.whole // (none: unlike by choice only, see hullColourings)
       : !!colouring(surface, K, true)
     : surfaceSymmetries(leastMesh(surface)).some(
         (M) => roundedKey(M.flat()) === roundedKey(IDENTITY3.flat().map((x) => -x)),
@@ -28861,7 +28868,7 @@ const duelCutsOf = (w) => {
       ? !planeTorus(m.plane) && wallTurns(m.plane) % 2 === 0
       : !!g?.globe ||
         (!!g?.rosette && rosetteTurns(g) % 2 === 0) ||
-        !!(hullSolidOf(m.surface) && hullColourings(hullSolidOf(m.surface))[2]?.some((c) => c.kind === 'apart')))
+        !!(hullSolidOf(m.surface) && hullColourings(hullSolidOf(m.surface))[2]?.some((c) => c.unlike)))
   );
 };
 // a plane's colour blocks, cols × rows (see TEAM_GRID): a Duel's up and down, one over the other, unless Left / Right
@@ -33338,7 +33345,7 @@ const FIGURE_PARTS = {
   // a hull solid (see hullColourings): a colour's faces its own (two opposite faces a colour: both, its part two pieces, as
   // TEAMS.md's rule has it), the others' cells each to the nearest colour's face's middle, as near two none's
   hull: {
-    fits: (K, f) => solidFits(K, f),
+    fits: (K, f) => solidFits(K, f) || !!hullColourings(hullSolidOf(f.variant.surface))[K]?.some((c) => c.unlike), // (or unlike by choice: the pyramid's 5, see hullColourings)
     parts: (K, opposite) => {
       const g = walk.surface,
         hull = hullColours(VARIANTS[walk.variant].surface, K, opposite),
@@ -33398,7 +33405,11 @@ const ZONE_SHAPES = [
     "Each team round a pole: a Duel's north and south hemispheres, or slices of a rosette sphere's two discs",
   ],
   ['faces', 'Faces', "Each team faces of the solid, alike by its turns (Boy's surface: its solid's)"],
-  ['custom', 'Custom', "Each team a part of the shape's own: the pinwheel triangle's 5 pieces"],
+  [
+    'custom',
+    'Custom',
+    "Each team a part of the shape's own: the pinwheel triangle's 5 pieces; the pyramid's base and sides, or its 5 faces, not alike",
+  ],
 ];
 const ZONE_OF_ROW = {
   slices: 'angles',
@@ -33413,6 +33424,7 @@ const ZONE_OF_ROW = {
 const zoneShapeOf = (K, f = shownFigure()) => {
   const row = figureOf(K, f);
   if (row === 'globe') return K === 2 && !duelAcross() ? 'poles' : 'lunes'; // (see FIGURE_PARTS.globe)
+  if (row === 'hull' && hullColours(f.variant.surface, K)?.unlike) return 'custom'; // (unlike by choice, see hullColourings)
   if (row === 'rosette') return rosetteHalved(f.g, K) ? 'poles' : 'lunes'; // (see rosetteParts)
   if (row === 'lattice') return TORUS_CUTS[torusCutNow()][0]; // (the cut picked, see TORUS_CUTS)
   if (row !== 'sheet') return ZONE_OF_ROW[row];
@@ -33669,8 +33681,8 @@ function huntFits() {
       if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
       if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
         const p = huntParts(0, K, false, teamsMixed(zone)),
-          apart = hullColours(VARIANTS[walk.variant].surface, K).kind === 'apart'; // (a face apart: unlike by choice, see hullColourings)
-        return [zone, !peakHunt() && (apart || p.every((x) => x.length === p[0].length))];
+          unlike = hullColours(VARIANTS[walk.variant].surface, K).unlike; // (unlike by choice, see hullColourings)
+        return [zone, !peakHunt() && (unlike || p.every((x) => x.length === p[0].length))];
       } // (a hull solid's Wild: its parts alike, else greyed)
       if (!r) return [zone, !peakHunt()]; // (the whole grid: no peak to look for, a soup full already)
       return [zone, patchesApart(zoneParts(zone, K))]; // (each its own cells, none without: a face for each colour)

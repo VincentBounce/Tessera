@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.723';
+const VERSION = '0.5.724';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18886,9 +18886,7 @@ function fillGridSizes(kind, initial = SURFACES[kind].initial) {
   if (sel.dataset.kind === key && sel.dataset.cellsAsked === String(cellsAsked)) return; // (a size asked on another grid: its nearest here)
   const now = was === kind && sel.dataset.cellsAsked === String(cellsAsked) ? sel.value : null; // (the same surface, its colours or its shape changed: its size kept, rows and width)
   sel.replaceChildren(...sizes.map((f) => new Option(sizeLabel(kind, walkersSize(kind, f)), f))); // (a size asked, its words the size played's)
-  if (now)
-    selectRows(kind, Number(now)); // (rows of its own, a link's, kept)
-  else sel.value = sizeAt(kind, initial);
+  sel.value = now && sizes.includes(Number(now)) ? now : sizeAt(kind, initial); // (its rows kept where its sizes still have them: a globe's change with its colours, see ownSizes)
   sel.dataset.kind = key;
   sel.dataset.cellsAsked = cellsAsked;
 }

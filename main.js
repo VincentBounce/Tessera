@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.803';
+const VERSION = '0.5.804';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27639,7 +27639,10 @@ function renderPlaneRow() {
 function renderBrushes(kind) {
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
-  const fits = (p) => !p[1] || (patternOn(p, kind) && (mine || !p[2].length || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's (none listed: any, Paste's)
+  const fits = (p) =>
+    !p[1] ||
+    ((patternOn(p, kind) || (hullFaced() && ['square', 'tri'].includes(p[1]))) &&
+      (mine || !p[2].length || p[2].includes(rule))); // the rule's patterns, a solid of squares and triangles both kinds'; your own rule: all the grid's (none listed: any, Paste's)
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= gridTurns(kind);
   const K = ruleColours();
@@ -28314,6 +28317,7 @@ function brushTilesAt(t) {
   }
   const place = cellPlace(t);
   if (!place && !frameless(g)) return null; // (a cell folded over an edge: none goes; frameless, its tile's own heading)
+  if (hullFaced() && place.on !== p[1]) return null; // (a solid of squares and triangles: a pattern on a face of its kind only)
   const cells = brushCells(),
     at = APERIODIC[patternKind()]
       ? patternOnCell(patternFrame(0, 1, place), cells, t)
@@ -34076,11 +34080,15 @@ const patternsOn = () => {
 // the grid the patterns are of: the plane's, else the cells' (the cube's squares, the sheets', the solids' triangles)
 const cellKind = (g) => g.cells; // (a mesh's cells' kind, its surface's tab's, see surfaceCells)
 const patternKind = () => {
-  const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts());
+  const h = hullColours(VARIANTS[walk.variant].surface, walk.life && lifeParts()),
+    held = hullFaced() && drawing && DRAW_BY_ID.get(brush.id)?.[1]; // (Draw's pattern in hand on a solid of squares and triangles: its own)
   return (
-    cellsPlane()?.kind ?? (h && h.groups[0][0] >= h.squares && !walk.surface.tiling ? 'tri' : cellKind(walk.surface))
+    cellsPlane()?.kind ??
+    (held || (h && h.groups[0][0] >= h.squares && !walk.surface.tiling ? 'tri' : cellKind(walk.surface)))
   );
-}; // (a hull solid's: its first colour's face's, a square or a triangle)
+}; // (a hull solid's: its first colour's face's, a square or a triangle; Draw's brush's there)
+// a solid of squares and triangles shown, its faces both (an irregular polyhedron's, not a cut's tiling): Draw's brushes of both
+const hullFaced = () => !!walk.surface && !walk.surface.tiling && !!hullSolidOf(VARIANTS[walk.variant].surface);
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
 const levelOf = (n) => {

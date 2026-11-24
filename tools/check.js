@@ -10,6 +10,7 @@
 //   await tesseraCheck({ colours: true });                                 // every Life surface offers colours (more than Solo) at one of its sizes at least
 //   await tesseraCheck({ battles: true });                                 // every walk on a surface: its battles' walkers each A's path moved, Land no collision kept apart, 5 minutes
 //   await tesseraCheck({ parts: true });                                   // every count of colours offered, as many cells a colour: plane and solids, 7 minutes
+//   await tesseraCheck({ alike: true });                                   // and every count offered on a solid or a torus, its parts alike: its symmetries carry each onto every other (TEAMS.md's rule)
 //   await tesseraCheck({ deep: true });                                    // every grid's rules (yours too), How it works, colours, zones, smallest size: a night's
 //   await tesseraCheck({ known: true });                                   // Life's known results, played on the graphics card: a minute
 // Returns { ok, failures, checked }. The meshes: a torus straight and turned, its tiles' neighbours alike; a Möbius
@@ -1722,6 +1723,92 @@
     return checked;
   }
 
+  // Every count of colours offered on a solid or a torus (FIGURE_PARTS' fits), its parts alike, TEAMS.md's rule: a symmetry of
+  // the figure that lays one part wholly onto another joins them, and they all end joined. Its symmetries: a solid's turns and
+  // mirrors in space (surfaceSymmetries); a torus's sheet's moves (its places, see colourUnitPlaces: its blocks' steps a × b,
+  // round its seam's twist, see torusBlocks; its one face's runs, see faceRuns), not its turns in space (a block round the tube
+  // is no turn of the torus in view). A Klein bottle, a Möbius strip, the globe, a rosette sphere, Boy's surface: not checked
+  // here (their parts by their own construction; their counts, see partsEqual)
+  async function partsAlike(fail) {
+    const keepAsked = cellsAsked;
+    cellsAsked = null;
+    let checked = 0;
+    const variants = Object.keys(VARIANTS).filter((w) => {
+      const m = VARIANTS[w],
+        kind = m.surface && surfaceOf(m);
+      return (
+        m.life &&
+        playsLife(w) &&
+        !m.margolus &&
+        !m.elementary &&
+        !m.loops &&
+        kind &&
+        (SOLIDS.includes(kind) || (TORI.includes(kind) && !kind.startsWith('klein') && !MOBIUS_KINDS.includes(kind))) &&
+        [...$('variant').options].some((o) => o.value === w)
+      );
+    });
+    for (const w of variants) {
+      location.hash = toHash({ ...variantWords(w), teams: 1 });
+      await until(shown(w, () => lifeTeams === 1));
+      for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
+        location.hash = toHash({ ...variantWords(w), teams: K });
+        await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
+        if (lifeTeams !== K) continue; // (its count taken: partsEqual's to tell)
+        const g = walk.surface,
+          own = FIGURE_PARTS[figureOf(K)].parts(K),
+          moves = [];
+        if (g.nu) {
+          // (a move of the sheet by du along, dv across: past its seam, its twist; a cell to the one at its place moved)
+          const P = colourUnitPlaces(g),
+            key = (u, v) => {
+              const tw = g.seamTwist ?? 0;
+              while (u >= g.nu - 1e-6) [u, v] = [u - g.nu, v + tw];
+              while (u < -1e-6) [u, v] = [u + g.nu, v - tw];
+              v = ((v % g.nv) + g.nv) % g.nv;
+              return `${Math.round(u * 1000) % Math.round(g.nu * 1000)},${Math.round(v * 1000) % Math.round(g.nv * 1000)}`;
+            },
+            at = new Map();
+          for (let t = 0; t < g.n; t++) at.set(key(P[2 * t], P[2 * t + 1]), t);
+          const [a, b] = torusBlocks(K),
+            steps = [
+              [g.nu / a, 0],
+              [0, g.nv / b],
+              ...(faceRunsOn(K, g) ? [[(2 * g.nu) / torusForm().corners, 0]] : []),
+            ];
+          for (const [du, dv] of steps) moves.push((t) => at.get(key(P[2 * t] + du, P[2 * t + 1] + dv)) ?? -1);
+        } else {
+          const at = new Map(
+            Array.from({ length: g.n }, (_, t) => [pointCode(g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]), t]),
+          );
+          for (const M of surfaceSymmetries(g))
+            moves.push(
+              (t) => at.get(pointCode(...matTimesPoint(M, Array.from(g.cen.subarray(3 * t, 3 * t + 3))))) ?? -1,
+            );
+        }
+        // (the parts joined: each move laying part i wholly onto part j joins them)
+        const root = Array.from({ length: K }, (_, i) => i),
+          find = (i) => (root[i] === i ? i : (root[i] = find(root[i])));
+        for (const move of moves) {
+          const onto = new Array(K).fill(undefined);
+          for (let t = 0; t < g.n; t++) {
+            if (own[t] < 0) continue;
+            const u = move(t),
+              j = u < 0 ? -1 : own[u];
+            onto[own[t]] = onto[own[t]] === undefined || onto[own[t]] === j ? j : -1;
+          }
+          onto.forEach((j, i) => {
+            if (j >= 0) root[find(i)] = find(j);
+          });
+        }
+        const sets = new Set(root.map((_, i) => find(i))).size;
+        if (sets > 1) fail(`${w} in ${K} colours (${figureOf(K)}): its parts in ${sets} sets no symmetry joins`);
+        checked++;
+      }
+    }
+    cellsAsked = keepAsked;
+    return checked;
+  }
+
   // The Penrose sphere's sizes (PENROSE_SPHERES in main.js): Todd's algorithm II's corners P1 up to radius most (the rhombi's
   // corners v, and v + λ d along the decagon's 10 ways, λ in {φ, 1, tan 18°}), one of each turned by 72° or mirrored (the
   // rhombi's own symmetries: the same pentagon, the same tiling); each judged first on a band along its pentagon's sides (where
@@ -1909,6 +1996,7 @@
 
   window.tesseraCheck = async ({
     parts = false,
+    alike = false,
     known = false,
     crawl: andCrawl = false,
     clickAll = false,
@@ -1955,6 +2043,7 @@
     if (colours) checked += await coloursOffered(fail);
     if (battles) checked += await battlesFair(fail);
     if (parts) checked += await partsEqual(fail);
+    if (alike) checked += await partsAlike(fail);
     if (andDeep) checked += await deep(fail, from, only);
     return { ok: !failures.length, failures, checked };
   };

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.811';
+const VERSION = '0.5.812';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12968,11 +12968,13 @@ function brushOn(k, v) {
   if (brush.colour) population.set(k, K > 1 ? brush.colour + K * (v - 1) : v);
   else population.delete(k);
 }
-// a cell drawn (its key in the population): in the brush's colour, or off if it has it; one colour: alive, then each dying
-// state, back to dead
+// a cell clicked (its key in the population): in the brush's colour, alive; already of it, its next stage, each dying state
+// then dead (one colour or many alike: colour k + K × stage s); a stroke paints alive, its states never turned (see strokeTo)
 function toggleDrawn(k) {
-  const v = population.get(k) ?? 0,
-    c = walk.life.colours > 1 ? (v === brush.colour ? 0 : brush.colour) : (v + 1) % walk.life.C;
+  const K = walk.life.colours,
+    v = population.get(k) ?? 0,
+    s = Math.floor((v - 1) / K) + 1, // (its next stage)
+    c = !v || ((v - 1) % K) + 1 !== brush.colour ? brush.colour : s < walk.life.C - 1 ? brush.colour + K * s : 0;
   if (c) population.set(k, c);
   else population.delete(k);
 }

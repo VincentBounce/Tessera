@@ -1088,7 +1088,7 @@
   // them) or its mode's (the same for each mode and its own choices there: a walk's kind, its side), none mixed; and the
   // variants as they were (VARIANTS_PRINT: their fields, the menu's places and order, the families, the page's options; the
   // variants made in any order)
-  const VARIANTS_PRINT = -1882618078; // (v0.5.755: the pinwheel's triangle; v0.5.728: a getter by its kind, not its words: the ants' rule changed with the rule played; v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
+  const VARIANTS_PRINT = -1820518366; // (v0.5.777: 2D squares named 2D boxed; v0.5.755: the pinwheel's triangle; v0.5.728: a getter by its kind, not its words: the ants' rule changed with the rule played; v0.5.653: the pinwheel rings, torus, Möbius strip and Klein bottle; v0.5.634: the pinwheel solids, v0.5.542, and the squares turned on a Möbius strip and a Klein bottle, v0.5.569; v0.5.530: Boy's surface, its variants by their links' words; v0.5.452: lattice's 'surface' gone)
   const variantsPrint = () => {
     const text = JSON.stringify([
       Object.keys(NAV)

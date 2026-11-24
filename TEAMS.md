@@ -302,7 +302,7 @@ plane's turns and mirrors, a solid's Opposite).
 
 | figure | 1 | 2 (Duel) | 3 to 12 |
 |---|---|---|---|
-| Life › 2D boxed › any repeating tile (Squares, Triangles…) › Square or Rhombus (a torus) | whole grid | `torusLattice` (Apart: `spread`) | `torusLattice` (Apart: `spread`) |
+| Life › 2D boxed › any repeating tile (Squares, Triangles…) › Square or Rhombus (a torus) | whole grid | `torusLattice` (Apart: `spread`; Teams' zones Lattice, Quarters or Stack: `TORUS_CUTS`, the blocks along the sides by construction) | `torusLattice` (Apart: `spread`) |
 | Life › 2D boxed › any repeating tile › Walls (a rectangle walled; R. walls: a rhombus, its half turn only) | whole grid | `planeFrame.block`, `teamGrid`: Up / Down 1 × 2, Left / Right 2 × 1 | 4: blocks 2 × 2; 8 on squares: `planeSlices` as many cells; 3, 6, 12 greyed (`wallTurns`) |
 | Life › 2D boxed › Rectangle torus · Walled hexagon › Triangles, Hexagons… › Hex | whole grid | `planeSlices` rings (Left / Right: upright, by angles) | `planeSlices`: rings for 3, 6, 12; angles for 4 (its mirrors' cells no one's) |
 | Life › 2D circles › Never repeating, Flowers, Mirrors, Hexas, Rings › Penrose, Hats, Flower 6… | whole disc | `planeSlices` from a corner (`CORNER_DISCS`) | `planeSlices` by angles; no turn (Hats, Spectre…): as many cells each |

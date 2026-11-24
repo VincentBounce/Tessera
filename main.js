@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.799';
+const VERSION = '0.5.800';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33668,8 +33668,9 @@ function huntFits() {
         ]; // (whether some, not them all)
       if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
       if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
-        const p = huntParts(0, K, false, teamsMixed(zone));
-        return [zone, !peakHunt() && p.every((x) => x.length === p[0].length)];
+        const p = huntParts(0, K, false, teamsMixed(zone)),
+          apart = hullColours(VARIANTS[walk.variant].surface, K).kind === 'apart'; // (a face apart: unlike by choice, see hullColourings)
+        return [zone, !peakHunt() && (apart || p.every((x) => x.length === p[0].length))];
       } // (a hull solid's Wild: its parts alike, else greyed)
       if (!r) return [zone, !peakHunt()]; // (the whole grid: no peak to look for, a soup full already)
       return [zone, patchesApart(zoneParts(zone, K))]; // (each its own cells, none without: a face for each colour)

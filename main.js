@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.806';
+const VERSION = '0.5.807';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34240,12 +34240,16 @@ function cellPlace(t) {
   if (g.hexagons) {
     const k = g.cellFaces[t],
       at = (c) => Array.from(g.cen.subarray(3 * c, 3 * c + 3)),
-      far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d]));
+      far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d])),
+      way = (c) => dot3(Array.from(g.nrm.subarray(3 * c, 3 * c + 3)), unit(g.faceMids[k])); // (how much it looks the face's way)
     g.faceMiddleCells ??= [];
     if (g.faceMiddleCells[k] === undefined) {
-      const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k);
-      g.faceMiddleCells[k] = own.length ? own.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
-    } // (its face's middle cell, of its cells: none, its frame none)
+      const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k),
+        most = Math.max(...own.map(way)),
+        flat = own.filter((c) => way(c) > most - 1e-9);
+      g.faceMiddleCells[k] = flat.length ? flat.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
+    } // (its face's middle cell, of its cells in its face's plane, those looking its way: a stella's face's middle lies on another
+    // face's cells, folded over its arms, its frame then askew till v0.5.807; none, its frame none)
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
   if (!cubeRoom(g)) return null; // (no face a grid of squares: no frame, no pattern laid there, see laidChoices)
@@ -34530,7 +34534,7 @@ function patternOnCell(F, cells, t, anchor = null) {
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
 // patternFrom). F's, its face's frame's (see patternFrame): its cell under t's middle, its edges by its neighbours F lays by
 // it, two at least (a solid's corner's tile, one: its neighbour's heading carried to it, see headingAcross)
-function headingOn(g, F, t) {
+function headingOn(g, F, t, asked = new Set()) {
   const kind = patternKind(),
     k = g.sides,
     edges = liveEdges(g, t),
@@ -34549,7 +34553,8 @@ function headingOn(g, F, t) {
       hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
     return { g, t, cell, e0: edges[mod(e0 - hand * j0, edges.length)], hand };
   }
-  return found.length ? headingAcross(headingOn(g, F, found[0][2]), t) : null;
+  asked.add(t); // (a tile asked once: two tiles each finding only the other, no end before v0.5.807, the Dode sph's)
+  return found.length && !asked.has(found[0][2]) ? headingAcross(headingOn(g, F, found[0][2], asked), t) : null;
 }
 // a tile's edges with a tile across, as a walk on cells counts them (see surfaceStep)
 const liveEdges = (g, u) => [...Array(g.sides).keys()].filter((e) => g.nbr[g.sides * u + e] >= 0);

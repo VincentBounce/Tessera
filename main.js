@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.743';
+const VERSION = '0.5.744';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28063,7 +28063,7 @@ function brushTilesAt(t) {
     return discBrush(p, cellMiddle(patternKind(), ...g.disc.xy(t))).map(([u, v]) => [u + half, v]);
   }
   const place = cellPlace(t);
-  if (!place) return null;
+  if (!place && !frameless(g)) return null; // (a cell folded over an edge: none goes; frameless, its tile's own heading)
   const cells = brushCells(),
     at = APERIODIC[patternKind()]
       ? patternOnCell(patternFrame(0, 1, place), cells, t)
@@ -28075,7 +28075,15 @@ function brushTilesAt(t) {
 let brushHeading = null;
 const brushHeadingAt = (t, place) =>
   (brushHeading?.g === walk.surface && (brushHeading.t === t ? brushHeading : headingAcross(brushHeading, t))) ||
-  headingOn(walk.surface, patternFrame(0, 1, place), t);
+  (place ? headingOn(walk.surface, patternFrame(0, 1, place), t) : tileHeading(walk.surface, t));
+// a tile's own heading, where its surface has no frame (a globe, Boy's surface: see frameless): a plane cell as many sides,
+// its first edge that cell's edge 0; a pattern laid from it as a cell is, turned as the tile lies (see patternFrom)
+const tileHeading = (g, t) => {
+  const kind = patternKind(),
+    edges = liveEdges(g, t),
+    cell = [0, 0];
+  return planeCorners(kind, ...cell).length === edges.length ? { g, t, cell, e0: edges[0], hand: 1 } : null;
+};
 // the brush's ink, half seen under the pointer (the plane's, a surface's): its colour (the eraser's, a dead cell's) and its
 // share over what is under it
 const ghostInk = () => [
@@ -33815,6 +33823,7 @@ function cellPlace(t) {
   const g = walk.surface;
   if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
+  if (frameless(g)) return null; // (a globe, Boy's surface: no face, its tiles' own heading, see tileHeading; Boy's triangles no solid's)
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
     return triPlace(Math.floor((t - (g.triFirst ?? 0)) / (g.triFaces ? g.size * g.size : g.perFace)));

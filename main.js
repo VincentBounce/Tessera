@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.738';
+const VERSION = '0.5.739';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15494,6 +15494,7 @@ const TORUS_SHAPES = [
       square: true,
       corners: 3,
       arms: 'up', // (its line's plane upright: its arms raised up as it bends, see lineFlat)
+      teams: { 3: 'faceRuns', 6: 'faceRuns' }, // (its colours' zones of its own, by their count: see faceRunsOn)
     },
   ],
 ]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
@@ -33058,10 +33059,12 @@ const FIGURE_PARTS = {
   // Klein bottle's by its own middle: its slices whole copies along, a glide's half a lattice cell, see kleinLength)
   sheet: {
     fits: (K, { g }) =>
-      g.copyLength ? kleinLength(g.kindK, g.size, K).fits : teamBlocksFit(K, g, torusBlocks(K, g)[1]), // (a tiling's bottle: its blocks alike, see kleinBlocksSlid; a torus: its blocks fitting it, its columns made for its colours, see ringColumns)
+      faceRunsOn(K, g) ||
+      (g.copyLength ? kleinLength(g.kindK, g.size, K).fits : teamBlocksFit(K, g, torusBlocks(K, g)[1])), // (its shape's zones of its own, see faceRunsOn; a tiling's bottle: its blocks alike, see kleinBlocksSlid; a torus: its blocks fitting it, its columns made for its colours, see ringColumns)
     parts: (K) => {
       const g = walk.surface,
         blocks = torusBlocks(K);
+      if (faceRunsOn(K, g)) return faceRuns(K, g);
       return Int32Array.from({ length: g.n }, (_, t) => {
         const [u, v] = g.klein ? sheetMiddle(g, t) : colourUnitPlaces(g).subarray(2 * t, 2 * t + 2);
         return sheetBlock(u, v, g.nu, g.nv, blocks);
@@ -33126,6 +33129,25 @@ const FIGURE_PARTS = {
       return spotsOf(col) ? centreCells(col.items[spotsOf(col)[i]]) : []; // (no spots alike: no patch, see fairSpots)
     },
   },
+};
+// A torus's colours along its one face: a square section twisted by odd quarters, its four faces one (each round the ring
+// leading to the next), cut along it in runs of two of its line's sides (the Triangle's: 6 runs, Trio's twice round, Sextet's
+// once), where its shape's teams ask it for K (see TORUS_SHAPES); a cell's run by its place along that face: its face (a
+// quarter of its rows, a corner at its middle row, see torusPoint) in the order its seam leads them, then along
+const faceRunsOn = (K, g) =>
+  !!g?.nu &&
+  !g.klein &&
+  torusForm().teams?.[K] === 'faceRuns' &&
+  Math.abs(Math.round((4 * g.seamTwist) / g.nv)) % 2 === 1;
+const faceRuns = (K, g) => {
+  const q = Math.round((4 * g.seamTwist) / g.nv), // (a face round the ring: the next q faces on, see teamBlocksFit's twist)
+    run = (2 * g.nu) / torusForm().corners,
+    P = colourUnitPlaces(g);
+  return Int32Array.from({ length: g.n }, (_, t) => {
+    const face = Math.floor((4 * P[2 * t + 1]) / g.nv),
+      along = mod(face * q, 4) * g.nu + P[2 * t];
+    return Math.floor(along / run) % K;
+  });
 };
 // a surface with no frame yet to lay a patch or a pattern on (see patternPlace): a globe, Boy's surface
 const frameless = (g) => !!(g?.globe || g?.projective);

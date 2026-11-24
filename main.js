@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.798';
+const VERSION = '0.5.799';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14503,6 +14503,19 @@ function hullColourings(surface) {
     'all',
     faces.map((_, q) => [q]),
   );
+  // (a face apart, the one of its kind, against the others: a Duel's Up / Down, the pyramid's base and its sides, not alike,
+  // their cells as many as their faces have; see hullColours)
+  const apart = kinds.find(([, qs]) => qs.length === 1)?.[1][0];
+  if (apart !== undefined)
+    (out[2] ??= []).push({
+      kind: 'apart',
+      groups: spread([[apart], faces.flatMap((_, q) => (q === apart ? [] : [q]))]),
+      mids,
+      pairs: false,
+      whole: false,
+      crossed: false,
+      squares: kinds[0][1].length,
+    });
   return (hullColourMemo[surface] = out);
 }
 // the hull solid a surface is (itself, or the solid it cuts: see FACE_BASE), else null
@@ -14511,8 +14524,10 @@ const hullSolidOf = (surface) => (HULL_SOLIDS[FACE_BASE[surface] ?? surface] ? (
 // (opposite), its first whose colours each hold their faces' opposites; the others', its first with no colour holding both
 // (its colours' faces may face each other: Face to face); else its first; null where none
 const hullColours = (surface, K, opposite = false) => {
-  const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null;
-  return (all && (all.find((c) => (opposite ? c.whole : !c.crossed)) ?? all[0])) ?? null;
+  const all = hullSolidOf(surface) && K > 1 ? hullColourings(hullSolidOf(surface))[K] : null,
+    alike = all?.filter((c) => c.kind !== 'apart');
+  if (all?.some((c) => c.kind === 'apart') && !opposite && !duelAcross()) return all.find((c) => c.kind === 'apart'); // (a Duel's Up / Down)
+  return (alike?.length && (alike.find((c) => (opposite ? c.whole : !c.crossed)) ?? alike[0])) || null;
 };
 // a face's cells, on the walk's mesh: its f² cells, each cut into so many on a cut, in turn (see HULL_CUTS)
 // a face's cells (see cellFaces)
@@ -28777,10 +28792,13 @@ const mixable = (zone, variant = VARIANTS[tabVariant()], start = plane.start) =>
 // a Duel's two halves, one choice of two (DUEL_CUTS, the link's duelCut: its place): up and down, or left and right, as
 // seen (a sphere's: its two discs or hemispheres, or two lunes); where its figure has both (see duelCutsOf)
 const DUEL_CUTS = [
-  ['Up / Down', "The two colours one over the other: a sphere's north and south, a walled figure's top and bottom"],
+  [
+    'Up / Down',
+    "The two colours one over the other: a sphere's north and south, a walled figure's top and bottom, the pyramid's base and its sides",
+  ],
   [
     'Left / Right',
-    "The two colours side by side: a sphere's two lunes, pole to pole, a walled figure's left and right",
+    "The two colours side by side: a sphere's two lunes, pole to pole, a walled figure's left and right, the pyramid's halves through its tip",
   ],
 ];
 const duelAcross = () => lifeTeams === 2 && duelCut === 1 && duelCutsOf(tabVariant()); // (Left / Right picked, in a Duel, where it cuts both ways)
@@ -28832,7 +28850,8 @@ const piecesOf = (w, K = lifeTeams, sym = startOpposite()) => {
   );
 };
 // whether a figure takes its Duel both ways (a variant's, as its button opens it): a globe, a rosette sphere of an even
-// turn, a walled figure of the plane (its half turn), never a torus nor a solid (its own colouring)
+// turn, a walled figure of the plane (its half turn), a solid with a face apart (the pyramid's base, see hullColourings); never
+// a torus nor another solid (its own colouring)
 const duelCutsOf = (w) => {
   const m = VARIANTS[w],
     { g } = pickedFigure(w);
@@ -28840,7 +28859,9 @@ const duelCutsOf = (w) => {
     !!m.life &&
     (m.plane
       ? !planeTorus(m.plane) && wallTurns(m.plane) % 2 === 0
-      : !!g?.globe || (!!g?.rosette && rosetteTurns(g) % 2 === 0))
+      : !!g?.globe ||
+        (!!g?.rosette && rosetteTurns(g) % 2 === 0) ||
+        !!(hullSolidOf(m.surface) && hullColourings(hullSolidOf(m.surface))[2]?.some((c) => c.kind === 'apart')))
   );
 };
 // a plane's colour blocks, cols × rows (see TEAM_GRID): a Duel's up and down, one over the other, unless Left / Right
@@ -32467,7 +32488,7 @@ const PART_CHOICES = {
     whyNot: ({ w, lifeTeams: K }) =>
       K === 2 && duelCutsOf(w)
         ? ''
-        : 'Only in a Duel, on a globe, a rosette sphere of an even turn or a walled grid of the plane.',
+        : 'Only in a Duel, on a globe, a rosette sphere of an even turn, a walled grid of the plane or the pyramid.',
   },
   teamsApart: {
     list: PIECES,

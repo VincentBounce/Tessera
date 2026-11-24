@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.808';
+const VERSION = '0.5.809';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34249,10 +34249,12 @@ function cellPlace(t) {
     if (g.faceMiddleCells[k] === undefined) {
       const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k),
         most = Math.max(...own.map(way)),
-        flat = own.filter((c) => way(c) > most - 1e-9);
+        inPlane = (c) => g.cellFaces[c] === k && way(c) > most - 1e-9,
+        flat = own.filter((c) => inPlane(c) && liveEdges(g, c).every((e) => inPlane(g.nbr[g.sides * c + e]))); // (a whole hexagon, its neighbours in its plane too: one cut by a fold, a stella's arm's, smaller, its frame's step wrong)
       g.faceMiddleCells[k] = flat.length ? flat.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
-    } // (its face's middle cell, of its cells in its face's plane, those looking its way: a stella's face's middle lies on another
-    // face's cells, folded over its arms, its frame then askew till v0.5.807; none, its frame none)
+    } // (its face's middle cell, of its cells in its face's plane, those looking its way, whole: a stella's face's middle lies on
+    // another face's cells, folded over its arms, its frame then askew till v0.5.807, or on a hexagon cut by a fold, its step
+    // too short till v0.5.809; none, its frame none)
     return g.faceMiddleCells[k] < 0 ? null : { on: 'hex', c0: g.faceMiddleCells[k] };
   }
   if (!cubeRoom(g)) return null; // (no face a grid of squares: no frame, no pattern laid there, see laidChoices)

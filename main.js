@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.720';
+const VERSION = '0.5.721';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23439,16 +23439,20 @@ const surfaceColouring = (g) => ({
 // bands mirrored about its equator) and its lune, pole to pole, of as many as it cuts alike (a rosette sphere's turns, its
 // lunes as rosetteParts' in halves, each disc's; a globe's fewest columns), a pole's cell none (-1); none elsewhere
 const inLunes = (surface) => surface === 'globe' || !!SURFACES[surface]?.disc;
+// a globe's cell's hemisphere (0 north, 1 south: by its centre's height) and its lune of K between meridians (its caps none,
+// -1): its Duel's halves and its colours' lunes (see FIGURE_PARTS), Explore's Hemispheres and Max lunes alike
+const globeHalf = (g, t) => (g.cen[3 * t + 2] > 0 ? 0 : 1),
+  globeLune = (g, t, K) => (t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1);
 function surfaceLunes(g) {
   if (!g.globe && !g.rosette) return { halves: null, lunes: null };
   const count = g.globe ? Math.min(...g.columns) : rosetteTurns(g),
     parts = g.rosette && rosetteParts(g, 2 * count);
   return {
-    halves: g.cellFaces ?? Int32Array.from({ length: g.n }, (_, t) => (t < g.n / 2 ? 0 : 1)), // (a rosette sphere's: its faces, its discs)
+    halves: g.cellFaces ?? Int32Array.from({ length: g.n }, (_, t) => globeHalf(g, t)), // (a rosette sphere's: its faces, its discs)
     lunes: {
       count,
       of: Int32Array.from({ length: g.n }, (_, t) =>
-        g.rosette ? (parts[t] < 0 ? -1 : parts[t] % count) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * count) : -1,
+        g.rosette ? (parts[t] < 0 ? -1 : parts[t] % count) : globeLune(g, t, count),
       ),
     },
   };
@@ -33025,9 +33029,7 @@ const FIGURE_PARTS = {
     parts: (K) => {
       const g = walk.surface,
         up = K === 2 && !duelAcross();
-      return Int32Array.from({ length: g.n }, (_, t) =>
-        up ? (g.cen[3 * t + 2] > 0 ? 0 : 1) : t > 0 && t < g.n - 1 ? Math.floor(g.along[t] * K) : -1,
-      );
+      return Int32Array.from({ length: g.n }, (_, t) => (up ? globeHalf(g, t) : globeLune(g, t, K)));
     },
     solo: true,
   },

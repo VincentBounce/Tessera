@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.757';
+const VERSION = '0.5.758';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26320,7 +26320,7 @@ const patchMiddle = (kind, W) => APERIODIC[kind].middle?.(W) ?? [(W - 1) / 2, (W
 for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces')
     n[1] = '3D solids'; // (the solids and the round surfaces, one space: its groups, see shapeGroupsOf)
-  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = inDisc(VARIANTS[w].plane) ? '2D circles' : '2D squares'; // (by its shape: a disc's round, the pinwheel's triangle straight)
+  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares'; // (a grid that never repeats, a disc's or the pinwheel's triangle, among the circles)
 // the plane cells lie on: the plane's own; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
 function cellsPlane() {

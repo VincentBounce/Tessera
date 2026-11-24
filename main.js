@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.768';
+const VERSION = '0.5.769';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -874,16 +874,36 @@ const memoryKeys = (store) =>
 // Ids for whole-number keys (below 2⁵³), each new one the next, as a Map's would give them, in typed arrays hashed open
 // (most: the keys at most): a map of millions of keys 4 to 5 times as fast (a disc of a million hats' 14 million corners)
 const keyIds = (most) => {
-  const size = 2 ** Math.ceil(Math.log2(2 * most + 2)),
+  let size = 2 ** Math.ceil(Math.log2(2 * most + 2)), // (twice its keys at most: none to move; doubled, should more come)
     keys = new Float64Array(size),
     used = new Uint8Array(size), // (a key any number, below 0 too: its slot's use apart)
-    ids = new Int32Array(size);
-  let count = 0;
+    ids = new Int32Array(size),
+    count = 0;
+  const slot = (k) => {
+    let h = (Math.imul((k % 4294967296) | 0, 0x9e3779b1) ^ Math.imul((k / 4294967296) | 0, 0x85ebca77)) & (size - 1);
+    while (used[h] && keys[h] !== k) h = (h + 1) & (size - 1);
+    return h;
+  };
+  const grow = () => {
+    const [K, U, I] = [keys, used, ids];
+    size *= 2;
+    [keys, used, ids] = [new Float64Array(size), new Uint8Array(size), new Int32Array(size)];
+    for (let h = 0; h < U.length; h++)
+      if (U[h]) {
+        const g = slot(K[h]);
+        [used[g], keys[g], ids[g]] = [1, K[h], I[h]];
+      }
+  };
   return {
     id: (k) => {
-      let h = (Math.imul((k % 4294967296) | 0, 0x9e3779b1) ^ Math.imul((k / 4294967296) | 0, 0x85ebca77)) & (size - 1);
-      while (used[h] && keys[h] !== k) h = (h + 1) & (size - 1);
-      if (!used[h]) [used[h], keys[h], ids[h]] = [1, k, count++];
+      let h = slot(k);
+      if (!used[h]) {
+        if (2 * (count + 1) > size) {
+          grow();
+          h = slot(k);
+        }
+        [used[h], keys[h], ids[h]] = [1, k, count++];
+      }
       return ids[h];
     },
     count: () => count,

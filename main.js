@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.748';
+const VERSION = '0.5.749';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15583,16 +15583,17 @@ function ringLength(x, square, units, ok = () => true) {
 // along its ring), a whole count of them and of step (the hexagons' and the triangles': even); own: columns of its own (a
 // link's "16x40"), in its usual's place: the nearest its tiling allows, never a ring glued askew (as a strip's, see stripSteps)
 function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0, K = ringColours(ringVariant())) {
-  const runs = !klein && faceRunsOn(K, { nv, seamTwist: seam }), // (its shape's zones of its own: runs along its one face, see faceRuns)
+  const v = VARIANTS[ringVariant()],
+    corners = ringCorners(surfaceOf(v)), // (a Triangle's 3: as many tiles on each side)
+    runs = !klein && faceRunsOn(K, { nv, seamTwist: seam }), // (its shape's zones of its own: runs along its one face, see faceRuns)
     [a, b] = klein
       ? [K, 1]
       : runs
-        ? [ringCorners(surfaceOf(VARIANTS[ringVariant()])) / 2, 4] // (a run two sides long, a face wide: as many a ring, faces a tube)
+        ? [corners / 2, 4] // (a run two sides long, a face wide: as many a ring, faces a tube)
         : torusBlocks(K, { nv, seamTwist: seam }), // (a twisted one's those its seam glues in line, see teamBlocksFit)
     unit = runs ? step : a * step, // (each block a whole count of step: Cairo's 2 squares a period, its blocks copies; a % step only till v0.5.730; runs: their ends at its corners, see whole)
-    v = VARIANTS[ringVariant()],
     along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1, // (a reversible one's: its blocks' sets come round along it)
-    whole = lcm(lcm(unit, along), ringCorners(surfaceOf(v))); // (a Triangle's: as many on each side, see ringCorners)
+    whole = lcm(lcm(unit, along), corners);
   return ringLength(own ?? x, own ?? (x * (klein ? TORUS_TUBE : torusTube()) * a) / b, [whole], ok);
 }
 // a ring's corners, its shape's (see TORUS_SHAPES: a Triangle's 3), 1 a round one's or a bottle's: its length a whole count of
@@ -33032,7 +33033,7 @@ const faceRunsOn = (K, g) =>
   !g.klein && torusForm().teams?.[K] === 'faceRuns' && Math.abs(Math.round((4 * g.seamTwist) / g.nv)) % 2 === 1;
 const faceRuns = (K, g) => {
   const q = Math.round((4 * g.seamTwist) / g.nv), // (a face round the ring: the next q faces on, see teamBlocksFit's twist)
-    run = (2 * g.nu) / torusForm().corners,
+    run = (2 * g.nu) / ringCorners(surfaceOf(VARIANTS[walk.variant])), // (two of its line's sides)
     P = colourUnitPlaces(g);
   return Int32Array.from({ length: g.n }, (_, t) => {
     const face = Math.floor((4 * P[2 * t + 1]) / g.nv),

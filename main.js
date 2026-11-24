@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.783';
+const VERSION = '0.5.784';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29059,29 +29059,33 @@ const choiceTabs = (field, list, now, pick, whyNot, then) =>
 function renderTeams() {
   const w = tabVariant();
   cellsTuning(); // (the debug panel's Solo or battle)
-  if (walkTeamsHere(w)) {
-    $('colourBlocks').replaceChildren(...walkTeamTiles());
-    return;
-  }
   const zones = lifeTeams > 1 && walk.life && walk.variant === w ? zoneShapeOf(lifeTeams) : null, // (the walk shown's, built)
     cut = PART_CHOICES.torusCut,
     cutNow = cut.now(),
     cuts = TORUS_CUTS.map(([key]) => key);
   $('teamsZones').replaceChildren(
-    textTabs(
-      ZONE_SHAPES.map(([key, text, title]) =>
-        cutNow >= 0 && cuts.includes(key)
-          ? choiceTile('torusCut', [text, title], cuts.indexOf(key), cutNow, cut.pick, cut.whyNot) // (a torus of the plane's: its cut picked)
-          : tile({
-              text,
-              title,
-              on: key === zones,
-              can: key === zones,
-              greyed: zones ? 'Not how this figure lays its teams.' : 'Solo: one team, no zones.',
-            }),
-      ),
-    ),
-  ); // (shown only, out of the menu's graph: a torus of the plane's cut a choice, see TORUS_CUTS)
+    ...(!VARIANTS[w].life
+      ? []
+      : [
+          textTabs(
+            ZONE_SHAPES.map(([key, text, title]) =>
+              cutNow >= 0 && cuts.includes(key)
+                ? choiceTile('torusCut', [text, title], cuts.indexOf(key), cutNow, cut.pick, cut.whyNot) // (a torus of the plane's: its cut picked)
+                : tile({
+                    text,
+                    title,
+                    on: key === zones,
+                    can: key === zones,
+                    greyed: zones ? 'Not how this figure lays its teams.' : 'Solo: one team, no zones.',
+                  }),
+            ),
+          ),
+        ]),
+  ); // (Life's only; shown only, out of the menu's graph: a torus of the plane's cut a choice, see TORUS_CUTS)
+  if (walkTeamsHere(w)) {
+    $('colourBlocks').replaceChildren(...walkTeamTiles());
+    return;
+  }
   $('colourBlocks').replaceChildren(
     ...TEAM_COUNTS.map((k) =>
       tile({

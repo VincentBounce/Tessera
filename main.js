@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.761';
+const VERSION = '0.5.762';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14638,6 +14638,7 @@ function pinwheelRingMesh(k, cells, twist = 0, along = pinwheelAlong(k)) {
       asManyCells: true,
       seamTwist: shift,
       bricks: [along, pinwheelAcross(k)],
+      form: F.fold === 'torus' ? torusForm() : null, // (its shape's, once, see sheetPoint)
     }, // (asManyCells: see pinwheelSolidMesh; bricks: its colours' blocks, see teamBlocksFit)
     halves = Int32Array.from(
       F.fold === 'mobius' ? [...sheet.halves, ...sheet.halves.map((h) => h + 2 * sheet.halves.length)] : sheet.halves,
@@ -14655,13 +14656,8 @@ function pinwheelRingMesh(k, cells, twist = 0, along = pinwheelAlong(k)) {
     }));
   }
   const frame = { step: L / Math.ceil(L), by: W / Math.ceil(W), n: Math.ceil(L), nv: Math.ceil(W) },
-    { mesh, tiles } = foldMesh(
-      frame,
-      sheet,
-      sheet.twist,
-      (x, y) => sheetPoint({ ...marks, klein: sheet.twist }, x, y, 1),
-      shift,
-    );
+    folded = { ...marks, klein: sheet.twist }, // (once, not a copy a point)
+    { mesh, tiles } = foldMesh(frame, sheet, sheet.twist, (x, y) => sheetPoint(folded, x, y, 1), shift);
   return (meshCache[key] = Object.assign(mesh, marks, {
     klein: sheet.twist,
     halves,
@@ -16164,9 +16160,11 @@ function torusCairoMesh(nv, nu, twist = 0, turned = false) {
   const { verts, add } = vertexStore(),
     tube = nv / nu,
     { tiles, places, sides } = cairoSheet(nu, nv, turned),
-    cell = turned ? 1 : 2; // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
-  const ids = tiles.map((c) => c.map(([i, j]) => add(...torusPoint(i, j, nu, nv, 1, tube, null, cell * twist))));
+    cell = turned ? 1 : 2, // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
+    form = torusForm(); // (its shape's, once: as its key's, see sheetPoint)
+  const ids = tiles.map((c) => c.map(([i, j]) => add(...torusPoint(i, j, nu, nv, 1, tube, form, cell * twist))));
   return (meshCache[key] = Object.assign(finishTorus(verts, ids, 5, nu, nv, tiles.flat(2)), {
+    form,
     tube,
     cairo: true,
     seamTwist: cell * twist,
@@ -16723,11 +16721,12 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
     sheet = foldSheet(kind, name, nv * rows, nu),
     frame = { step, by: sheet.W / (nv * rows), n: nu, nv: nv * rows },
     tube = (nv * Math.hypot(...B)) / (nu * step),
+    form = torusForm(), // (its shape's, once: as its key's, see sheetPoint)
     { mesh, tiles } = foldMesh(
       frame,
       sheet,
       false,
-      (x, y) => torusPoint(x, y, sheet.L, sheet.W, 1, tube, null, (twist * sheet.W) / nv),
+      (x, y) => torusPoint(x, y, sheet.L, sheet.W, 1, tube, form, (twist * sheet.W) / nv),
       (twist * sheet.W) / nv,
     ),
     units = (x, i) => x * (i % 2 ? nv / sheet.W : nu / sheet.L); // (x, then y: in its sides)
@@ -16747,6 +16746,7 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
     });
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
+    form,
     nu,
     nv,
     tube,
@@ -16855,8 +16855,9 @@ function mobiusFaces(sheet, L, W) {
     });
   return { verts: cv, tiles, uv, edge: ids.flatMap((t, i) => (t.some((v) => onEdge[v]) ? [i] : [])) };
 }
-// The sheet point of a surface: a torus, or a Möbius strip
-const sheetPoint = (g, i, j, m, form = null) => {
+// The sheet point of a surface: a torus, or a Möbius strip (a torus's in its form, the one it was made in: see
+// tilingTorusMesh; never asked of the menu again for each point, 655,360 times 2.5 µs, v0.5.762)
+const sheetPoint = (g, i, j, m, form = g.form) => {
   if (g.mobius) return mobiusPoint(i, j, g.L, g.W, m);
   if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
   // (a twisted one rolled to 0.2, twisted to ⅓, the rest its bend's as a straight one's; see torusTwist)

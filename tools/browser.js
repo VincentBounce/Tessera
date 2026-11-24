@@ -9,6 +9,8 @@
 //   node tools/browser.js go <tab> <url>     that tab to url
 //   node tools/browser.js click <tab> <x> <y> a click there, as a hand's (its events trusted)
 //   node tools/browser.js shot <tab> <file>  that tab's picture, a PNG
+//   node tools/browser.js profile <tab> <url> <seconds> [file]  that tab to url, its CPU profile for so many seconds: the
+//                                            functions by their own time, the 30 longest (file: the profile, as Chrome's)
 //   node tools/browser.js stop               closed
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -107,6 +109,51 @@ const commands = {
     fs.writeFileSync(file, Buffer.from(data, 'base64'));
     return file;
   },
+  profile: async (tab, url, seconds = 10, file = '') => {
+    // (one connection for it all: a profile lasts while its session does)
+    const t = (await pages()).find((p) => p.id.startsWith(tab));
+    if (!t) throw new Error(`no tab ${tab}`);
+    const ws = new WebSocket(t.webSocketDebuggerUrl);
+    await new Promise((ok, fail) => {
+      ws.onopen = ok;
+      ws.onerror = fail;
+    });
+    let id = 0;
+    const waiting = new Map();
+    ws.onmessage = (e) => {
+      const m = JSON.parse(e.data);
+      if (waiting.has(m.id)) waiting.get(m.id)(m.result ?? m);
+    };
+    const send = (method, params = {}) =>
+      new Promise((ok) => {
+        waiting.set(++id, ok);
+        ws.send(JSON.stringify({ id, method, params }));
+      });
+    await send('Profiler.enable');
+    await send('Profiler.setSamplingInterval', { interval: 200 });
+    await send('Profiler.start');
+    await send('Page.navigate', { url });
+    await new Promise((r) => setTimeout(r, Number(seconds) * 1000));
+    const { profile } = await send('Profiler.stop');
+    ws.close();
+    if (file) fs.writeFileSync(file, JSON.stringify(profile));
+    // (each sample's time to its function, its own: the sampled node's)
+    const byId = new Map(profile.nodes.map((n) => [n.id, n])),
+      own = new Map();
+    profile.samples.forEach((s, i) => {
+      const f = byId.get(s).callFrame,
+        key = `${f.functionName || '(anonymous)'} ${f.url.split('/').pop().split('?')[0]}:${f.lineNumber + 1}`;
+      own.set(key, (own.get(key) ?? 0) + (profile.timeDeltas[i + 1] ?? 0) / 1000);
+    });
+    const total = [...own.values()].reduce((a, b) => a + b, 0);
+    return [
+      `${Math.round(total)} ms sampled`,
+      ...[...own]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 30)
+        .map(([k, ms]) => `${String(Math.round(ms)).padStart(6)} ms  ${k}`),
+    ].join('\n');
+  },
   stop: async () => {
     await call('', 'Browser.close').catch(() => {});
     return 'stopped';
@@ -115,7 +162,7 @@ const commands = {
 
 const [name, ...args] = process.argv.slice(2);
 if (!commands[name]) {
-  console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 10).join('\n'));
+  console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 12).join('\n'));
   process.exit(1);
 }
 commands[name](...args).then(

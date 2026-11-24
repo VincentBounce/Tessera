@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.749';
+const VERSION = '0.5.750';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33059,7 +33059,8 @@ const wallFits = (K, kind) => {
 // a solid's counts: its groups' (see colouring)
 const solidFits = (K, { variant }) => !!solidCounts(variant.surface)?.includes(K);
 // a figure's row of FIGURE_PARTS (K colours: the plane's walled grid's slices or blocks by them, a hull solid's by its
-// colourings), the figure picked's or the one shown (see pickedFigure, shownFigure), by the same flags
+// colourings), the figure picked's or the one shown (see pickedFigure, shownFigure), by the same flags; none (a walk's
+// grid, no Life surface): a solid's, its counts none (see solidFits)
 const figureOf = (K, { variant, g } = shownFigure()) =>
   variant.plane
     ? g.torus
@@ -33067,15 +33068,15 @@ const figureOf = (K, { variant, g } = shownFigure()) =>
       : wallSlices(K, g.kind)
         ? 'slices'
         : 'blocks'
-    : g.mobius
+    : g?.mobius
       ? 'strip'
-      : g.torus
+      : g?.torus
         ? 'sheet'
-        : g.globe
+        : g?.globe
           ? 'globe'
-          : g.rosette
+          : g?.rosette
             ? 'rosette'
-            : g.projective
+            : g?.projective
               ? 'projective'
               : hullColours(variant.surface, K)
                 ? 'hull'

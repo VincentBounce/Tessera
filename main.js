@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.779';
+const VERSION = '0.5.780';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17317,37 +17317,40 @@ function kitesDartsOf(G) {
     l.flatMap(([i, tip, o], x) => l.slice(x + 1).map(([j, , o2]) => [[i, j], [+k.split(',')[0], o, tip, o2], 1])),
   );
   const rows = [...kites, ...darts];
-  // the dodecahedron's 60 turns map the sphere onto itself: a row and its images one choice, a cover alike round every corner
-  // (each point's way once, not again at each turn; a half by its base, a number: the two halves of one rhombus on it, told
-  // apart by their apex; text keys before v0.5.766, 64 million of them at its largest: minutes)
+  // the dodecahedron's 60 turns map the sphere onto itself: a row and its images one choice, a cover alike round every corner.
+  // A half's image at a turn asked when needed, a row's or a hole's first only (its images then in its orbit: 60 times fewer
+  // than every half's at every turn, 40 million at its largest, 20 s before v0.5.780); a half by its rhombus, known by
+  // construction: the rhombus of t its halves 2t and 2t + 1, its base the diagonal they share, the two told apart by their
+  // apex; points and rhombi numbered by keyIds, a key not on the sphere a number past them; a row by its first half's rows,
+  // never a text key (64 million of them at its largest before v0.5.766: minutes)
   const U = G.points.map(unit),
-    codes = new Map(U.map((p, i) => [pointCode(...p), i])),
-    images = solidRotations(G.solid.corners.map(unit)).map((M) =>
-      U.map((p) => codes.get(pointCode(...matTimesPoint(M, p)))),
-    ),
-    np = G.points.length,
-    baseKey = (b, d) => Math.min(b, d) * np + Math.max(b, d),
-    onBase = new Map();
-  halves.forEach(([, , b, d], i) => onBase.set(baseKey(b, d), [...(onBase.get(baseKey(b, d)) ?? []), i]));
-  const halfAt = (c, a, b, d) => onBase.get(baseKey(b, d))?.find((j) => halves[j][0] === c && halves[j][1] === a),
-    halfImages = images.map((P) => halves.map(([c, a, b, d]) => halfAt(c, P[a], P[b], P[d]))),
-    rowAt = new Map(rows.map(([h], r) => [[...h].sort((x, y) => x - y).join(), r])),
+    np = U.length,
+    nt = G.tiles.length,
+    codes = keyIds(np),
+    rhombi = keyIds(nt),
+    turns = solidRotations(G.solid.corners.map(unit)),
+    baseKey = (b, d) => Math.min(b, d) * np + Math.max(b, d);
+  U.forEach((p) => codes.id(pointCode(...p)));
+  G.tiles.forEach((_, t) => rhombi.id(baseKey(halves[2 * t][2], halves[2 * t][3])));
+  const pointImage = (k, i) => codes.id(pointCode(...matTimesPoint(turns[k], U[i]))),
+    halfImage = (k, i) => {
+      const [c, a, b, d] = halves[i],
+        [A, B, D] = [a, b, d].map((j) => pointImage(k, j)),
+        t = B < np && D < np ? rhombi.id(baseKey(B, D)) : nt;
+      return t >= nt || halves[2 * t][0] !== c ? undefined : [2 * t, 2 * t + 1].find((j) => halves[j][1] === A);
+    },
+    halfOrbit = (i) => turns.map((_, k) => halfImage(k, i)),
+    rowsOf = halves.map(() => []), // (each half's rows)
     orbits = [],
     inOrbit = new Set();
+  rows.forEach(([h], r) => h.forEach((i) => rowsOf[i].push(r)));
+  // (the row of these halves, any order: among its first one's)
+  const rowOf = (h) =>
+    rowsOf[h[0]]?.find((m) => rows[m][0].length === h.length && rows[m][0].every((i) => h.includes(i)));
   rows.forEach(([h], r) => {
     if (inOrbit.has(r)) return;
-    const members = [
-      ...new Set(
-        halfImages.map((P) =>
-          rowAt.get(
-            h
-              .map((i) => P[i])
-              .sort((x, y) => x - y)
-              .join(),
-          ),
-        ),
-      ),
-    ];
+    const images = h.map(halfOrbit),
+      members = [...new Set(turns.map((_, k) => rowOf(images.map((orbit) => orbit[k]))))];
     members.forEach((m) => inOrbit.add(m));
     const halvesIn = members.flatMap((m) => rows[m][0]);
     if (new Set(halvesIn).size === halvesIn.length) orbits.push(members); // (its images sharing no half)
@@ -17357,7 +17360,7 @@ function kitesDartsOf(G) {
     inHole = new Set();
   halves.forEach((_, i) => {
     if (inHole.has(i)) return;
-    const orbit = [...new Set(halfImages.map((P) => P[i]))];
+    const orbit = [...new Set(halfOrbit(i))];
     orbit.forEach((j) => inHole.add(j));
     holes.push(orbit);
   });

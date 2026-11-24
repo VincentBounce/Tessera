@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.729';
+const VERSION = '0.5.730';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15574,7 +15574,7 @@ function ringLength(x, square, units, ok = () => true) {
 function ringColumns(x, nv, step = 1, klein = false, ok, own, seam = 0) {
   const K = ringColours(ringVariant()),
     [a, b] = klein ? [K, 1] : torusBlocks(K, { nv, seamTwist: seam }), // (a twisted one's those its seam glues in line, see teamBlocksFit)
-    unit = a % step ? a * step : a,
+    unit = a * step, // (each block a whole count of step: Cairo's 2 squares a period, its blocks copies; a % step only till v0.5.730)
     v = VARIANTS[ringVariant()],
     along = v?.margolus ? (BLOCK_ALONG[surfaceOf(v)] ?? 1) : 1, // (a reversible one's: its blocks' sets come round along it)
     whole = lcm(lcm(unit, along), ringCorners(surfaceOf(v))); // (a Triangle's: as many on each side, see ringCorners)

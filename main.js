@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.770';
+const VERSION = '0.5.771';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26903,15 +26903,25 @@ function planeSeed(kind, seq, C, K = 1) {
 }
 // the plane's corners (see meshCorners), wrapping round on a torus (row: its cells a row, the grid's or its blocks', see
 // planeBlocks)
-// (the last one made kept, by all it is made of: its neighbours', its tiles' kinds' and its loops' the same, not three)
+// (one made, with its walls, and kept by all it is made of: its cells first, numbered first, so the mesh without its walls
+// is its start, a view of it (its neighbours', its tiles' kinds' and its loops'), never a second one: three a hats' disc,
+// 5.6 s, till v0.5.771)
 let planeMeshMemo = null;
 function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
-  const key = `${kind}|${W}|${torus}|${row}|${withWalls}|${outlineOf(kind)}`;
-  if (planeMeshMemo?.key === key) return planeMeshMemo.mesh;
-  const { n, xy } = planeGrid(kind, W, row),
-    F = APERIODIC[kind]?.(W),
-    walls = withWalls && !F ? planeWallPlaces(kind, W, torus) : [],
-    m = withWalls && F ? F.m : n + walls.length; // (withWalls: its walls after its cells, as planePolygons has them)
+  const key = `${kind}|${W}|${torus}|${row}|${outlineOf(kind)}`,
+    { n, xy } = planeGrid(kind, W, row),
+    whole =
+      planeMeshMemo?.key === key
+        ? planeMeshMemo.mesh
+        : (planeMeshMemo = { key, mesh: planeMeshWhole(kind, W, torus, row, n, xy) }).mesh;
+  return withWalls
+    ? whole
+    : { start: whole.start.subarray(0, n + 1), list: whole.list.subarray(0, whole.start[n]), nv: whole.nv };
+}
+function planeMeshWhole(kind, W, torus, row, n, xy) {
+  const F = APERIODIC[kind]?.(W),
+    walls = F ? [] : planeWallPlaces(kind, W, torus),
+    m = F ? F.m : n + walls.length; // (its walls after its cells, as planePolygons has them)
   // each cell's corners in its lattice's units (see latticeCorners; a grid that never repeats: its own, flat), wrapping round
   // the grid every its columns' units along (row / its cells a lattice step: a rectangle's not W), W up; the same corner of
   // two cells, one id
@@ -26946,7 +26956,7 @@ function planeMesh(kind, W, torus, row = planeRow(kind, W), withWalls = false) {
     else for (const [u, v] of latticeCorners(kind, ...(t < n ? xy(t) : walls[t - n]))) add(u, v);
     cStart[t + 1] = at;
   }
-  return (planeMeshMemo = { key, mesh: { start: cStart, list: Int32Array.from(cList), nv } }).mesh;
+  return { start: cStart, list: Int32Array.from(cList), nv };
 }
 // the plane's Life neighbours, by its corners (wrapping round, or not past the edges), as the surfaces'; on hexagons,
 // also the 6 around in turn (ring: Callahan's letters); hensel: squares' 8 neighbours in order too

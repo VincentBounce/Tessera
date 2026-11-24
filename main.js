@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.785';
+const VERSION = '0.5.786';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12622,12 +12622,22 @@ new MutationObserver((ms) => {
   .observe(document.body, { attributes: true, attributeFilter: ['title'], subtree: true });
 // words told in the tooltip's corner till the mouse is on something else, as a tooltip: "Name: its words", the name in bold
 // (a rule refused, a formula's error: see refuseRule, fieldError)
-const showInTip = (text) => {
+const tipWords = (text) => {
   const [, name, words] = text.match(/^([^\n]+?): ([^]*)$/) ?? [null, '', text];
-  $('tip').replaceChildren(
+  return [
     ...(name ? [Object.assign(document.createElement('b'), { className: 'tip-name', textContent: name })] : []),
     words.replace(/^./, (c) => c.toUpperCase()),
-  );
+  ];
+};
+const showInTip = (text) => $('tip').replaceChildren(...tipWords(text));
+// an alert told over the tooltip a few seconds, its box red (an RLE that does not open, a file refused, states flattened):
+// "Name: words" as a tooltip's, never the browser's alert, which stops the page
+let alertTimer = null;
+const alertTip = (text) => {
+  $('alert').replaceChildren(...tipWords(text));
+  $('alert').hidden = false;
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(() => ($('alert').hidden = true), 5000);
 };
 // whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
 const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));
@@ -23996,6 +24006,17 @@ const DRAW_STEPS = [
 // (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
 // come round a torus and meet the rest, the end later there)
 const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
+// Paste: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
+// (see pasteBrush), its grid then its file's (squares, or hexagons for an RLE in H), any rule; none read yet, its card alone
+const BRUSH_PASTED = [
+  'pasted',
+  '',
+  [],
+  'Paste',
+  'o!',
+  "the pattern copied (an RLE or a .cells, Golly's, LifeWiki's) as the brush",
+  null,
+];
 const DRAW_PATTERNS = [
   [
     'glider',
@@ -27577,7 +27598,7 @@ function renderPlaneRow() {
 function renderBrushes(kind) {
   const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
-  const fits = (p) => !p[1] || (patternOn(p, kind) && (mine || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's
+  const fits = (p) => !p[1] || (patternOn(p, kind) && (mine || !p[2].length || p[2].includes(rule))); // the rule's patterns; your own rule: all the grid's (none listed: any, Paste's)
   if (!fits(DRAW_BY_ID.get(brush.id))) brush.id = 'cell';
   brush.turn %= gridTurns(kind);
   const K = ruleColours();
@@ -27585,7 +27606,7 @@ function renderBrushes(kind) {
   for (const b of $('brushCards').children) {
     const p = DRAW_BY_ID.get(b.dataset.brush);
     b.classList.toggle('active', p[0] === brush.id && !brush.view); // (viewing: no brush in hand)
-    b.hidden = !fits(p);
+    b.hidden = !fits(p) && p[0] !== 'pasted'; // (Paste always: a click reads another)
     b.querySelector('.mode-detail').innerHTML = htmlText(p[5]) + (mine && p[2].length ? ` · ${ruleSpan(p[2][0])}` : ''); // your own rule: which rule it is for
     if (!b.hidden) discCard(b, p);
     if (p[0] === 'cell' && kind && b.dataset.kind !== kind) {
@@ -28206,12 +28227,19 @@ function orientPattern(kind, rle, turn, flip) {
 let brushMemo = null;
 function brushCells() {
   const kind = patternKind(),
-    k = `${kind}|${brush.id}|${brush.turn}|${brush.flip}`;
+    states = parseRule(ruleBody($('lifeRule').value))?.C ?? 2,
+    k = `${kind}|${brush.id}|${brush.turn}|${brush.flip}|${states}|${DRAW_BY_ID.get(brush.id)[4]}`;
   if (brushMemo?.k !== k)
     brushMemo = {
       k,
       cells:
-        brush.id === 'cell' ? [[0, 0, 1]] : orientPattern(kind, DRAW_BY_ID.get(brush.id)[4], brush.turn, brush.flip),
+        brush.id === 'cell'
+          ? [[0, 0, 1]]
+          : orientPattern(kind, DRAW_BY_ID.get(brush.id)[4], brush.turn, brush.flip).map(([x, y, v]) => [
+              x,
+              y,
+              Math.min(v, states - 1),
+            ]), // (a state past the rule's, a pasted one's: its last)
     };
   return brushMemo.cells;
 }
@@ -35534,7 +35562,7 @@ for (const [table, off] of [
       ]),
     );
   }
-const DRAW_BY_ID = new Map([BRUSH_CELL, ...DRAW_PATTERNS].map((p) => [p[0], p]));
+const DRAW_BY_ID = new Map([BRUSH_CELL, BRUSH_PASTED, ...DRAW_PATTERNS].map((p) => [p[0], p]));
 const discPattern = (p) => Array.isArray(p[4]); // (a disc's: its cells by their numbers, see DRAW_PATTERNS)
 // whether pattern p lays on a grid of kind: one of its tiles' (see baseOf), a disc's (its cells by their numbers) on a disc
 // only (the pinwheel's triangle none, see inDisc)
@@ -36684,7 +36712,7 @@ function saveSetup() {
   } // already one of them (its ★ yellow): out of them
   list.push(savedOf(setup, list));
   list.sort((a, b) => a.name.localeCompare(b.name));
-  if (!writeGallery(list)) alert('This browser does not allow saving (private window?).');
+  if (!writeGallery(list)) alertTip('This browser does not allow saving (private window?).');
   fillGalleryList();
   wantThumbnail()
     .then((thumbnail) => thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))))
@@ -36739,7 +36767,7 @@ async function importGallery(file) {
     writeGallery(list);
     fillGalleryList();
   } catch {
-    alert('This file is not a Tessera Gallery file.');
+    alertTip('This file is not a Tessera Gallery file.');
   }
 }
 
@@ -36809,7 +36837,7 @@ async function refreshThumbnails() {
     } catch (e) {
       refreshing = false;
       syncRefreshTile();
-      alert(e.message);
+      alertTip(e.message);
       return;
     } // (none kept: none taken)
   const used = new Set(readGallery().map((x) => thumbnailKey(x.setup))); // (the thumbnails no card shows any more, a setup gone or its key changed: erased)
@@ -43555,16 +43583,19 @@ stage.addEventListener('pointerleave', () => {
   }
 });
 $('brushCards').replaceChildren(
-  ...[BRUSH_CELL, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
+  ...[BRUSH_CELL, BRUSH_PASTED, ...DRAW_PATTERNS].map(([id, kind, , name, rle, what, art]) => {
     const b = card({
-      pic: art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
+      pic: id === 'pasted' ? icon('copy') : art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
       name,
       detail: what,
       byDefault: id === 'cell' ? 'yes' : '',
-      click: () => {
-        brush.id = id;
-        brushInHand();
-      },
+      click:
+        id === 'pasted'
+          ? pasteBrush
+          : () => {
+              brush.id = id;
+              brushInHand();
+            },
     }); // (see brush)
     b.dataset.brush = id;
     return b;
@@ -43576,6 +43607,41 @@ function brushInHand() {
   brush.view = false;
   seekTo(0);
   renderPlaneRow();
+}
+// Paste: the pattern copied taken as the brush, a pattern alone (a whole world: Paste RLE's), on its grid, as large as the
+// plane shown at most; its card then its name, its size and its rule; what it cannot do told (see alertTip)
+async function pasteBrush() {
+  const file = rleRead(await navigator.clipboard.readText().catch(() => '')),
+    kind = patternKind(),
+    room = walk.plane && pictureCells(),
+    states = parseRule(ruleBody($('lifeRule').value))?.C ?? 2;
+  if (!file) return alertTip("Paste: no pattern copied, an RLE or a .cells (Golly's, LifeWiki's).");
+  if (file.world)
+    return alertTip("Paste: a whole world (a bounded grid's, or the app's own setup): Paste RLE lays it.");
+  if (baseOf(kind) !== file.grid)
+    return alertTip(`Paste: a pattern of ${file.grid === 'hex' ? 'hexagons' : 'squares'}, for a grid of them.`);
+  if (room && (file.w > room.w || file.h > room.h))
+    return alertTip(`Paste: ${file.w} × ${file.h}, at most ${room.w} × ${room.h} here: at a larger size.`);
+  if (file.cells.some(([, , v]) => v >= states))
+    alertTip(
+      `Paste: its dying states flattened, this rule's cells ${states === 2 ? 'alive or dead' : `of ${states} states`}.`,
+    );
+  const rle = populationRle(new Map(file.cells.map(([x, y, v]) => [planeKey(x, y), v]))).replace(/^[^:]*:/, ''),
+    p = [
+      'pasted',
+      file.grid,
+      [],
+      file.name || 'Pasted',
+      rle,
+      `${file.w} × ${file.h}${file.rule ? ` · ${file.rule.text}` : ''}`,
+      null,
+    ];
+  DRAW_BY_ID.set('pasted', p);
+  const b = $('brushCards').querySelector('[data-brush="pasted"]');
+  b.querySelector('.mode-name').innerHTML = cardNameHtml(p[3]);
+  b.querySelector('.mode-icon').innerHTML = cellsIcon(file.grid, rle);
+  brush.id = 'pasted';
+  brushInHand();
 }
 // View: a switch, on: a click draws nothing (its brush kept), off: it draws again with it, at gen 0 (as a brush picked)
 $('drawView').addEventListener('click', () => {
@@ -44115,12 +44181,14 @@ $('saveRle').addEventListener('click', () => {
 // An RLE file's pattern (Golly's, LifeWiki's, Save RLE's): its cells [x, y, state] from its top left (Golly's hexagons
 // mirrored back, see lifeRle; on Golly's bounded grid, from the grid's, where its Pos lays it), its size (a bounded grid's
 // its own; else its header's, its cells' at least), its rule as the app reads it (Golly's names, see GOLLY_NAMES; Generations, survival/birth/states, the other
-// way round, see gollyRule) and its grid (H after its rule: hexagons); the app's own (Save RLE's), its setup too, from
-// its link (#C Tessera: …); null: no pattern, or no rule the app reads
+// way round, see gollyRule; null where the app reads none: a brush draws it all the same) and its grid (H after its rule:
+// hexagons); the app's own (Save RLE's), its setup too, from its link (#C Tessera: …); world: a whole world, not a pattern
+// alone (a bounded grid's, or the app's own setup: see Draw's Paste); its name (#N, LifeWiki's); a plaintext file
+// (.cells: . and O, ! its comments) as one, its rule none; null: no pattern
 function rleRead(text) {
   const lines = text.split(/\r?\n/).map((line) => line.trim()),
     head = lines.findIndex((line) => /^x\s*=/.test(line));
-  if (head < 0) return null;
+  if (head < 0) return plaintextRead(lines);
   const [named, bounds] = (lines[head].match(/rule\s*=\s*([^\s,]+(?:,\d+\*?)?)/i)?.[1] ?? 'B3/S23').split(':'),
     said = GOLLY_NAMES[named] ?? named,
     grid = bounds?.match(/^[TKP](\d+)\*?,(\d+)/i), // (Golly's bounded grid, a torus, a Klein bottle or a plane: its width and height)
@@ -44136,7 +44204,7 @@ function rleRead(text) {
     [x, y] = ['x', 'y'].map((d) => Number(lines[head].match(new RegExp(`\\b${d}\\s*=\\s*(\\d+)`))?.[1] ?? 0)), // (its size said)
     w = W ?? Math.max(x, 1 + Math.max(...cells.map(([cx]) => cx))),
     h = H ?? Math.max(y, 1 + Math.max(...cells.map(([, cy]) => cy)));
-  if (!rule || !cells.length) return null;
+  if (!cells.length) return null;
   return {
     rule,
     grid: hex ? 'hex' : 'square',
@@ -44144,7 +44212,33 @@ function rleRead(text) {
     h,
     cells: cells.map(([x, y, v]) => [x, hex ? h - 1 - y : y, v]),
     setup: link && parseHash(link.slice(link.indexOf('#', 1))),
+    world: !!grid || !!link,
+    name: lines
+      .find((line) => line.startsWith('#N'))
+      ?.slice(2)
+      .trim(),
   };
+}
+// a plaintext file (.cells, LifeWiki's): rows of . dead and O alive (* too), ! its comments (!Name: its name); squares, two
+// states, no rule; null: none
+function plaintextRead(lines) {
+  const rows = lines.filter((line) => !line.startsWith('!'));
+  if (!rows.length || rows.some((row) => /[^.O*]/.test(row))) return null;
+  const cells = rows.flatMap((row, y) => [...row].flatMap((c, x) => (c === '.' ? [] : [[x, y, 1]])));
+  return cells.length
+    ? {
+        rule: null,
+        grid: 'square',
+        w: Math.max(...rows.map((row) => row.length)),
+        h: rows.length,
+        cells,
+        world: false,
+        name: lines
+          .find((line) => line.startsWith('!Name:'))
+          ?.slice(6)
+          .trim(),
+      }
+    : null;
 }
 // Paste RLE, Open RLE: an RLE file as Draw's cells, in its own setup (the app's file: its link's, its start the file's
 // cells at gen 0), else in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
@@ -44152,7 +44246,7 @@ function rleRead(text) {
 // menu's own clicks, each in turn; its rule then, its cells once built (see layCells)
 async function openRle(text) {
   const file = rleRead(text);
-  if (!file) return alert('No RLE pattern here, or none with a rule the app reads.');
+  if (!file?.rule) return alertTip('Paste RLE: no RLE pattern here, or none with a rule the app reads.');
   if (file.setup) {
     const { popDraw, popPicks, popText, popCells, step, ...setup } = file.setup; // (its start: the file's cells, at gen 0)
     applySetup({ ...setup, popStart: 'draw' });
@@ -44166,7 +44260,7 @@ async function openRle(text) {
         s.start === 'draw' &&
         !ruleRefusal(ruleBody(rule.text), s.w),
       [path] = fits(setupNow()) ? [[]] : pathsTo(fits);
-    if (!path) return alert(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
+    if (!path) return alertTip(`No grid of ${grid === 'hex' ? 'hexagons' : 'squares'} here plays ${rule.text}.`);
     for (const [key] of path) {
       document.querySelector(`[data-choice="${CSS.escape(key)}"]`).click();
       await new Promise(requestAnimationFrame);
@@ -44185,7 +44279,7 @@ function layCells({ cells, w, h }) {
     sides = kind && planeSides(kind),
     side = kind && (sides.find((f) => planeW(kind, f) >= Math.max(w, h)) ?? sides.at(-1)),
     room = kind ? { w: planeW(kind, side), h: planeW(kind, side) } : pictureCells();
-  if (w > room.w || h > room.h) return alert(`This pattern is ${w} × ${h}: at most ${room.w} × ${room.h} here.`);
+  if (w > room.w || h > room.h) return alertTip(`This pattern is ${w} × ${h}: at most ${room.w} × ${room.h} here.`);
   const x0 = Math.floor((room.w - w) / 2),
     y0 = Math.floor((room.h - h) / 2),
     cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [room.at(t).join(), t])); // (a sheet's cell at a place)

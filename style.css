@@ -44,6 +44,8 @@
   ); /* (the same whatever lies under it: a box over the sky too) */
   --motif-color: #bc8cff; /* a grid's motif, outlined while its size is hovered (see drawMotif), its words in the size's tooltip */
   --face-color: #e5484d; /* a solid's face round it */
+  --alert-background: #e5484d; /* a told alert's box (see alertTip): a tooltip's, red */
+  --on-alert-color: #ffffff;
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
   --edge-cells-color: #e3b341; /* a Möbius strip's edge's cells, their neighbours not as in its middle (see edgeRibbons) */
   --cell-color: #3fb950; /* a cell of the motif, when it has several (a triangle's 3 kites) */
@@ -67,6 +69,7 @@
   --picked-strong-background: color-mix(in srgb, rgb(240 180 41) 22%, var(--panel-background));
   --motif-color: #8250df;
   --face-color: #c4161c;
+  --alert-background: #c4161c;
   --sector-color: #0969da;
   --edge-cells-color: #bf8700;
   --cell-color: #2da44e;
@@ -2108,6 +2111,7 @@ button.active .bubble.active {
 }
 /* a tooltip, the view's hint: each in a box as the view's others (see .stage-box), its lines left aligned, the name on its own */
 #tip:not(:empty),
+#alert:not([hidden]),
 #hint:not([hidden]) {
   max-width: 420px;
   margin-left: auto;
@@ -2121,6 +2125,13 @@ button.active .bubble.active {
 }
 #tip:empty {
   display: none;
+}
+/* an alert told a few seconds (an RLE that does not open, its states flattened: see alertTip), over the tooltip: its box, red */
+#alert:not([hidden]) {
+  margin-bottom: 6px;
+  background: var(--alert-background);
+  border-color: var(--alert-background);
+  color: var(--on-alert-color);
 }
 #hint:not([hidden]) {
   width: max-content;

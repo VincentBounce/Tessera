@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.792';
+const VERSION = '0.5.793';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27283,12 +27283,16 @@ function planeReseed() {
   showStacks();
   syncLink();
 }
-// its start's cells again and shown, nothing else (0.5 ms: a stroke's at each move, its menu and link once at its end, see
-// strokeTo; the menu's and the link's 10 ms a move lagged it)
+// its start's cells again and shown, nothing else, the plane's or a surface's (0.5 ms: a stroke's at each move, its menu and
+// link once at its end, see strokeTo; the menu's and the link's 10 ms a move lagged it)
 function seedShown() {
   const L = walk.life;
-  lifeStart = null; // the plane's own start again, not the hunt's
-  L.seed.set(planeSeed(walk.plane.kind, walk.digits, L.C, lifeParts()));
+  lifeStart = null; // the grid's own start again, not the hunt's
+  L.seed.set(
+    walk.plane
+      ? planeSeed(walk.plane.kind, walk.digits, L.C, lifeParts())
+      : surfaceSeed(walk.digits, L.seed.length, lifeParts(), L.C),
+  );
   startColours(L.seed);
   countSeed(L);
   restart();
@@ -41252,6 +41256,7 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
         P.under.mapAsync(GPUMapMode.READ).then(() => {
           const t = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
           P.under.unmap();
+          if (stroke?.moved && t >= 0 && t !== stroke.tile) strokeToTile(t); // (a stroke on a surface: its way to it, see strokes)
           if (t === pickedTile) return;
           pickedTile = t;
           statsDirty = true; // (Draw's brush drawn there, see surfaceGhost)
@@ -43383,7 +43388,13 @@ let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
   stage.setPointerCapture(e.pointerId);
-  if (strokes(e)) return void (stroke = { from: [e.clientX, e.clientY], at: [e.clientX, e.clientY], done: new Set() }); // (Draw's Cell held: it paints, see strokeTo)
+  if (strokes(e))
+    return void (stroke = {
+      from: [e.clientX, e.clientY],
+      at: [e.clientX, e.clientY],
+      tile: pickedTile,
+      done: new Set(),
+    }); // (Draw's Cell held: it paints, see strokeTo, strokeToTile)
   drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.classList.add('dragging');
 });
@@ -43396,6 +43407,7 @@ stage.addEventListener('pointermove', (e) => {
       Math.floor(((e.clientY - r.top) * gpuCanvas.height) / r.height),
     ];
     statsDirty = true;
+    if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4) stroke.moved = true; // (past a click's wobble: its tiles painted as read, see gpuPick)
   }
   if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {
     // Draw: the brush follows the pointer (at gen 0 only)
@@ -43428,7 +43440,7 @@ stage.addEventListener('pointermove', (e) => {
 });
 const endDrag = () => {
   drag = null;
-  if (stroke?.done.size) planeReseed(); // (a stroke's menu and link, once)
+  if (stroke?.done.size) lifeReseed(); // (a stroke's menu and link, once)
   stroke = null;
   stage.classList.remove('dragging');
 };
@@ -43467,11 +43479,13 @@ const cellUnder = (x, y) => {
     ...turnPoint([(x - r.left - view.ox) / view.scale, (y - r.top - view.oy) / view.scale], -planeTurn()),
   );
 };
-// Draw's Cell held and moved on the plane (the left button): a stroke, each cell it crosses painted once in the brush's
-// colour (the eraser: dead), along its way by a third of a cell (none skipped, however fast); a click still turns one
-// cell's state, the right button still pans
+// Draw's Cell held and moved (the left button; on a surface with Shift, the left alone still turning the view): a stroke,
+// each cell it crosses painted once in the brush's colour (the eraser: dead), none skipped however fast: on the plane along
+// its way by a third of a cell, on a surface from tile to tile by the shortest way (see strokeToTile); a click still turns
+// one cell's state, the right button still pans
 let stroke = null;
-const strokes = (e) => drawsHere() && !!walk.plane && brush.id === 'cell' && e.button === 0;
+const strokes = (e) =>
+  drawsHere() && brush.id === 'cell' && e.button === 0 && (!!walk.plane || (!!walk.surface && e.shiftKey));
 function strokeTo(x, y) {
   const [x0, y0] = stroke.at,
     steps = Math.ceil(Math.hypot(x - x0, y - y0) / (view.scale / 3));
@@ -43484,6 +43498,26 @@ function strokeTo(x, y) {
     brushOn(k, 1);
   }
   stroke.at = [x, y];
+  seedShown();
+}
+// a surface's stroke on to tile t, the tile under the pointer as read (see gpuPick): the shortest way from its last one,
+// neighbour to neighbour (L.nbr), painted (a jump of more than 64 tiles: t alone)
+function strokeToTile(t) {
+  const { start, list } = walk.life.nbr,
+    from = new Map([[stroke.tile, -1]]);
+  for (const u of from.keys()) {
+    if (u === t || from.size > 4096) break;
+    for (let j = start[u]; j < start[u + 1]; j++) if (!from.has(list[j])) from.set(list[j], u);
+  }
+  const way = [];
+  for (let u = from.has(t) ? t : -1; u >= 0 && way.length < 64; u = from.get(u)) way.push(u);
+  for (const u of way.length && way.length < 64 ? way : [t]) {
+    if (stroke.done.has(u)) continue;
+    if (!stroke.done.size) rememberDrawing(); // (one Undo a stroke)
+    stroke.done.add(u);
+    brushOn(populationKey(u), 1);
+  }
+  stroke.tile = t;
   seedShown();
 }
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)

@@ -192,7 +192,7 @@
     return { ships: f.filter((x) => x.kind === 'ship'), oscs: f.filter((x) => x.kind === 'osc'), starts };
   }
   // A methuselah's lifetime as Life counts it: the generation its debris settle (repeat), the ships flying off left out.
-  // Every 10 generations, a small group with no other cell within 12 steps that, run alone, comes back moved (a ship) is
+  // Every 10 gens, a small group with no other cell within 12 steps that, run alone, comes back moved (a ship) is
   // taken off once it is out of the box of all the rest and flying away from it (it can meet nothing any more).
   // Resumable: settleStart(...) then settleRun(job, ms) until job.done
   function settleStart(kind, rule, rle, W) {
@@ -259,7 +259,7 @@
     while (!job.done && performance.now() - t0 < ms) {
       if (!step(G, job.a, job.b)) {
         job.g++;
-        job.done = `dies at generation ${job.g}`;
+        job.done = `dies at gen ${job.g}`;
         break;
       }
       [job.a, job.b] = [job.b, job.a];
@@ -279,12 +279,12 @@
           job.seen.clear();
         }
       if (job.g % 10 === 0 && touchesEdge(G, job.a)) {
-        job.done = `reaches the grid's edges at generation ${job.g}`;
+        job.done = `reaches the grid's edges at gen ${job.g}`;
         break;
       } // (else what comes round would count)
       const h = hash(job.a);
       if (job.seen.has(h)) {
-        job.done = `settles at generation ${job.seen.get(h)} (period ${job.g - job.seen.get(h)}, ${job.ships} ships off)`;
+        job.done = `settles at gen ${job.seen.get(h)} (period ${job.g - job.seen.get(h)}, ${job.ships} ships off)`;
         job.T = job.seen.get(h);
         break;
       }

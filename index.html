@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.742">
+  <link rel="stylesheet" href="style.css?v=0.5.743">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -184,7 +184,7 @@
           <div id="battleHuntTop"></div>  <!-- the 8 longest battles, each group its title over its list: a click plays one -->
         </div>
         <div id="returnRow" hidden>  <!-- a reversible one: its return to its start, past what is played -->
-          <button id="backBtn" type="button" class="wide" title="Steps its start on, past what is played, till it comes back to it (a reversible rule always does). Recommended on a small grid: a large one's start comes back after far too many generations to be found"></button>  <!-- blocks: see searchBack -->
+          <button id="backBtn" type="button" class="wide" title="Steps its start on, past what is played, till it comes back to it (a reversible rule always does). Recommended on a small grid: a large one's start comes back after far too many gens to be found"></button>  <!-- blocks: see searchBack -->
         </div>
       </section>
 
@@ -275,7 +275,7 @@
               <button id="play" title="Play" aria-label="Play"></button>
               <button id="step" data-icon="step" title="One step" aria-label="One step"></button>
               <button id="end" data-icon="end" title="Jump to the end, through its stops" aria-label="Jump to the end"></button>  <!-- (a run with an end known: a walk's at once; Life's, a reversible one's, once its loop is found: +10k till then) -->
-              <button id="jump10k" title="10,000 generations ahead (E, while its end is not known)">+10k</button>
+              <button id="jump10k" title="10,000 gens ahead (E, while its end is not known)">+10k</button>
             </div>
           </div>
           <div class="player-side">
@@ -348,11 +348,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.742"></script>
-  <script src="punks.js?v=0.5.742"></script>
-  <script src="loops.js?v=0.5.742"></script>
-  <script src="emoji.js?v=0.5.742"></script>
-  <script src="debug.js?v=0.5.742"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.742"></script>
+  <script src="pixelarticons.js?v=0.5.743"></script>
+  <script src="punks.js?v=0.5.743"></script>
+  <script src="loops.js?v=0.5.743"></script>
+  <script src="emoji.js?v=0.5.743"></script>
+  <script src="debug.js?v=0.5.743"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.743"></script>
 </body>
 </html>

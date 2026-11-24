@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.742';
+const VERSION = '0.5.743';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -979,9 +979,9 @@ const rampAt = (stops, f) => {
 // grey-blue to the ink (alive), f from 0 to 1: a Life cell's dying stages, an ant's states alike
 const stateColour = (f, under = UNLIT) => rampAt([under, PALETTE.dying, LIFE_ALIVE], f);
 const statesPicture = () => swatch([0.25, 0.5, 0.75, 1].map((f) => stateColour(f))); // (States' tile, Life's and an ant's)
-// Trail: a Life cell just dead, fading over 8 generations to the empty cell's colour (UNLIT), pale from its first one: a
-// warm echo, read as dead at once (till v0.4.1038 from a near black, a dead cell as dark as a live one for 3 generations:
-// at 72 generations a second, steps of grey all over a soup), not a state
+// Trail: a Life cell just dead, fading over 8 gens to the empty cell's colour (UNLIT), pale from its first one: a
+// warm echo, read as dead at once (till v0.4.1038 from a near black, a dead cell as dark as a live one for 3 gens:
+// at 72 gens a second, steps of grey all over a soup), not a state
 const TRAIL_INK = {
   light: ['#b9ae98', '#e7e0d0'],
   dark: ['#636b7c', '#3a4150'],
@@ -4859,7 +4859,7 @@ const RULES = [
       '▲',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 668 to 983 generations till one is left; 3 colours 1,353 to 1,855 generations till one is left',
+      'a long war in its walls: 2 colours 668 to 983 gens till one is left; 3 colours 1,353 to 1,855 gens till one is left',
     ],
     ['■', 'B2/S345/C4', 'Star Wars', 'Star Wars, square-grid classic (4 states)'],
     ['■', 'B2/S/C3', "Brian's Brain", "Brian's Brain, permanent chaos (3 states)"],
@@ -4867,61 +4867,61 @@ const RULES = [
       '■',
       'B2/S2/C25',
       'Faders',
-      "Faders, by Rudy Rucker and John Walker: Life crossed with Brian's Brain, sparks wandering in long fading trails, still going after 3,000 generations (25 states)",
+      "Faders, by Rudy Rucker and John Walker: Life crossed with Brian's Brain, sparks wandering in long fading trails, still going after 3,000 gens (25 states)",
     ],
     [
       '⎔',
       'B346/S1246',
       'Hexa 4 Life',
-      'soups settling after 192 to 411 generations (2.5 % alive at the end), oscillators in all their ash',
+      'soups settling after 192 to 411 gens (2.5 % alive at the end), oscillators in all their ash',
     ],
     [
       '⬢',
       'B34/S2358',
       'Hexa 5 Life',
-      'soups settling after 147 to 414 generations (3.53 % alive at the end), oscillators in all their ash',
+      'soups settling after 147 to 414 gens (3.53 % alive at the end), oscillators in all their ash',
     ],
     [
       '⏣',
       'B348/S2359',
       'Hexa 6 Life',
-      'soups settling after 186 to 412 generations (3.22 % alive at the end), oscillators in 92 % of their ash',
+      'soups settling after 186 to 412 gens (3.22 % alive at the end), oscillators in 92 % of their ash',
     ],
     [
       '◉',
       'B239/S0456/C5',
       'Hexa 7 embers',
-      'soups settling after 121 to 1,741 generations (4.25 % alive at the end), oscillators in 25 % of their ash (5 states)',
+      'soups settling after 121 to 1,741 gens (4.25 % alive at the end), oscillators in 25 % of their ash (5 states)',
     ],
     [
       '◎',
       'B256/S3467',
       'Hexa 8 Life',
-      'soups settling after 196 to 1,075 generations (1.26 % alive at the end), oscillators in all their ash',
+      'soups settling after 196 to 1,075 gens (1.26 % alive at the end), oscillators in all their ash',
     ],
     [
       '◍',
       'B25/S3467',
       'Hexa 9 Life',
-      'soups settling after 143 to 1,282 generations (1.35 % alive at the end), oscillators in all their ash',
+      'soups settling after 143 to 1,282 gens (1.35 % alive at the end), oscillators in all their ash',
     ],
     [
       '◌',
       'B256/S3467',
       'Hexa 10 Life',
-      'soups settling after 208 to 842 generations (1.32 % alive at the end), oscillators in all their ash',
+      'soups settling after 208 to 842 gens (1.32 % alive at the end), oscillators in all their ash',
     ],
     [
       '◐',
       'B34/S2456',
       'Hexa 11 Life',
-      'soups settling after 116 to over 6,000 generations (3.02 % alive at the end), oscillators in 92 % of their ash',
+      'soups settling after 116 to over 6,000 gens (3.02 % alive at the end), oscillators in 92 % of their ash',
     ],
     [
       '◑',
       'B238/S0456/C5',
       'Hexa 12 embers',
-      'soups settling after 59 to 807 generations (4.34 % alive at the end), oscillators in 17 % of their ash (5 states)',
+      'soups settling after 59 to 807 gens (4.34 % alive at the end), oscillators in 17 % of their ash (5 states)',
     ],
     [
       '⬡',
@@ -4940,21 +4940,16 @@ const RULES = [
     ['⬡', 'B2/S34', 'Classic hex', 'the usual Life of hexagons: oscillators, settles fast from a soup'],
     ['⬡', 'B24/S134/C4', 'Brink', 'on the edge of extinction (4 states)'],
     ['⬡', 'B24/S35', 'Hex Life', 'Life-like, lasting, a few survivors'],
-    ['⬡', 'B234/S234', 'Methuselahs', '3 cells can last 2,000+ generations'],
+    ['⬡', 'B234/S234', 'Methuselahs', '3 cells can last 2,000+ gens'],
     ['⬡', 'B234/S1234', 'Settling methuselahs', 'methuselahs, and every small start settles'],
     ['⬡', 'B2o/S2m34', "Callahan's Life", "Callahan's hexagonal Life, with gliders (o side by side, m one cell apart)"],
     [
       '⬡',
       'B346/S2356',
       'Hex battle',
-      'a battle: in a hexagon, 3 or 6 colours stay in contact some 600 generations, about even',
+      'a battle: in a hexagon, 3 or 6 colours stay in contact some 600 gens, about even',
     ],
-    [
-      '⬡',
-      'B346/S0124',
-      'Hex war',
-      'a long war: in a hexagon, 3 or 6 colours fight some 1,500 generations, thinly spread',
-    ],
+    ['⬡', 'B346/S0124', 'Hex war', 'a long war: in a hexagon, 3 or 6 colours fight some 1,500 gens, thinly spread'],
     ['⬡', 'B2/S24/C3', 'Few spread', 'Life-like from a small start: most die, some grow for a while (3 states)'],
     ['⬡', 'B1/S0123456', 'Snowflakes', 'grown from a few cells'],
     ['■', 'B36/S23', 'HighLife', 'HighLife, with a replicator'],
@@ -4980,114 +4975,109 @@ const RULES = [
       '■',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 1,326 to 1,421 generations till one is left, 1 of 3 soups still at war at 2,000; 4 colours 1,643 to 1,656 generations till one is left, 1 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours 1,326 to 1,421 gens till one is left, 1 of 3 soups still at war at 2,000; 4 colours 1,643 to 1,656 gens till one is left, 1 of 3 soups still at war at 2,000',
     ],
     ['◈', 'B346/S01458', 'Long-lasting war', 'a long war between the colours, as on squares and on triangles'],
     [
       '■',
       'B347/S2/C3',
       'Sponge wanderers',
-      "found on Menger's sponge: a bloom grows to a tenth of it and wanders on, still moving after 2,000 generations at 3 to 8 % alive, never filling it; a soup falls to 5 % and never stops (3 states)",
+      "found on Menger's sponge: a bloom grows to a tenth of it and wanders on, still moving after 2,000 gens at 3 to 8 % alive, never filling it; a soup falls to 5 % and never stops (3 states)",
     ],
     [
       '■',
       'B3478/S2/C3',
       'Sponge bloomers',
-      "found on Menger's sponge, Sponge wanderers born with 8 too: a bloom spreads to a tenth of it more often, still moving after 2,000 generations at 4 to 6 % alive (3 states)",
+      "found on Menger's sponge, Sponge wanderers born with 8 too: a bloom spreads to a tenth of it more often, still moving after 2,000 gens at 4 to 6 % alive (3 states)",
     ],
     [
       '■',
       'B389/S23',
       'Frame Life',
-      "found on a cube's frame: Life born with 8 and 9 too, soups settling after 285 to 1,558 generations (2.44 % alive at the end), oscillators in all their ash",
+      "found on a cube's frame: Life born with 8 and 9 too, soups settling after 285 to 1,558 gens (2.44 % alive at the end), oscillators in all their ash",
     ],
     [
       '■',
       'B39/S2389',
       'Frame keepers',
-      "found on a cube's frame: soups settling after 312 to 2,574 generations (2.72 % alive at the end), oscillators in all their ash",
+      "found on a cube's frame: soups settling after 312 to 2,574 gens (2.72 % alive at the end), oscillators in all their ash",
     ],
     ['⬠', 'B24/S346/C4', 'Cairo Wars', 'never settles: sparks and gliders of 9 cells (4 states)'],
     [
       '⬠',
       'B2v02.3v1/S156v2',
       'Cairo duels',
-      "battles turning round as Life's: 3 changes of the lead a duel, over in 700 generations or so (2 states)",
+      "battles turning round as Life's: 3 changes of the lead a duel, over in 700 gens or so (2 states)",
     ],
-    ['⬠', 'B23/S6/C3', 'Cairo gliders', 'gliders of 6 cells, soups last 2,000 generations (3 states)'],
-    ['⬠', 'B2347/S35/C3', 'Long Cairo', 'soups last 5,000 generations, gliders of 8 cells (3 states)'],
+    ['⬠', 'B23/S6/C3', 'Cairo gliders', 'gliders of 6 cells, soups last 2,000 gens (3 states)'],
+    ['⬠', 'B2347/S35/C3', 'Long Cairo', 'soups last 5,000 gens, gliders of 8 cells (3 states)'],
     [
       '◆',
       'B35/S2356/C4',
       'Kite drifters',
-      'the most Life-like: soups settle after about 1,000 generations, a ship of 9 cells (period 26) (4 states)',
+      'the most Life-like: soups settle after about 1,000 gens, a ship of 9 cells (period 26) (4 states)',
     ],
     [
       '◆',
       'B346/S0127/C4',
       'Kite simmer',
-      "the chaos most like Life's: a plateau about 7 % alive, then settling after 450 to 1,600 generations, oscillators in its ash (4 states)",
+      "the chaos most like Life's: a plateau about 7 % alive, then settling after 450 to 1,600 gens, oscillators in its ash (4 states)",
     ],
     [
       '◆',
       'B34/S0126/C5',
       'Kite marathon',
-      'soups last 1,400 to over 6,000 generations; an oscillator of 3 cells, period 20 (5 states)',
+      'soups last 1,400 to over 6,000 gens; an oscillator of 3 cells, period 20 (5 states)',
     ],
     [
       '◆',
       'B3/S235/C3',
       'Kite Life',
-      'Life-like on kites (9 neighbours): soups thin out and settle after about 1,000 generations (3 states)',
+      'Life-like on kites (9 neighbours): soups thin out and settle after about 1,000 gens (3 states)',
     ],
-    [
-      '◆',
-      'B36/S1258',
-      'Kite gliders',
-      'a glider of 4 cells (period 16); soups settle after about 300 generations (2 states)',
-    ],
+    ['◆', 'B36/S1258', 'Kite gliders', 'a glider of 4 cells (period 16); soups settle after about 300 gens (2 states)'],
     [
       '◆',
       'B35/S123/C5',
       'Kite swarm',
       'gliders of 9 cells everywhere (period 6); soups never settle, about 7 % alive (5 states)',
     ],
-    ['◆', 'B3/S1247', 'Long kites', 'soups last about 900 generations, down to a few still lifes (2 states)'],
+    ['◆', 'B3/S1247', 'Long kites', 'soups last about 900 gens, down to a few still lifes (2 states)'],
     [
       '◆',
       'B3v1235v23/S123v012/C5',
       'Kite ships',
-      'with letters (v: of the live neighbours, how many by a corner only), the most Life-like found on kites: soups settling after 360 to 2,050 generations (4.3 % alive at the end), ships of period 6 (5 states)',
+      'with letters (v: of the live neighbours, how many by a corner only), the most Life-like found on kites: soups settling after 360 to 2,050 gens (4.3 % alive at the end), ships of period 6 (5 states)',
     ],
     [
       '◆',
       'B3/S123v0257/C5',
       'Kite embers',
-      'with letters: soups settling after 360 to 1,650 generations (4.5 % alive at the end), oscillators in 4 ashes of 10 (5 states)',
+      'with letters: soups settling after 360 to 1,650 gens (4.5 % alive at the end), oscillators in 4 ashes of 10 (5 states)',
     ],
     [
       '◆',
       'B34v1236/S0127/C4',
       'Kite glow',
-      'Kite simmer with letters (born with 4 when 1 to 3 of them are by a corner only): soups settling after 235 to 1,040 generations (4.1 % alive at the end) (4 states)',
+      'Kite simmer with letters (born with 4 when 1 to 3 of them are by a corner only): soups settling after 235 to 1,040 gens (4.1 % alive at the end) (4 states)',
     ],
     [
       '◆',
       'B2v01.3v234/S08/C5',
       'Kite wake',
-      'a ship flown at its frozen ash wakes it up for long: 332 generations on average, half of the times 300 or more (Life: 65, 13 %); a sparse world (under 1 % alive) (5 states)',
+      'a ship flown at its frozen ash wakes it up for long: 332 gens on average, half of the times 300 or more (Life: 65, 13 %); a sparse world (under 1 % alive) (5 states)',
     ],
     [
       '◆',
       'B2v01.37/S0/C5',
       'Kite waves',
-      'the longest awakening found on kites: a ship flown at its frozen ash wakes it up for 472 generations on average, 57 % of the times 300 or more (Life: 65, 13 %); a sparse world, surviving with 0 neighbours only (5 states)',
+      'the longest awakening found on kites: a ship flown at its frozen ash wakes it up for 472 gens on average, 57 % of the times 300 or more (Life: 65, 13 %); a sparse world, surviving with 0 neighbours only (5 states)',
     ],
     [
       '◆',
       'B3v012/S0234v3',
       'Kite duels',
-      "the most Life-like found on kites, and its battles turn round twice as often as Life's: 6 changes of the lead a duel (Life: 3), soups settling after 560 generations or so (2 states)",
+      "the most Life-like found on kites, and its battles turn round twice as often as Life's: 6 changes of the lead a duel (Life: 3), soups settling after 560 gens or so (2 states)",
     ],
     [
       '◆',
@@ -5099,170 +5089,160 @@ const RULES = [
       '◆',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 828 to 954 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,218 to 1,352 generations till one is left',
+      'a long war in its walls: 2 colours 828 to 954 gens till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,218 to 1,352 gens till one is left',
     ],
-    [
-      '🎩',
-      'B245/S134/C5',
-      'Hat comets',
-      'as Comets on hexagons: soups end anywhere from 500 to 3,700 generations (5 states)',
-    ],
+    ['🎩', 'B245/S134/C5', 'Hat comets', 'as Comets on hexagons: soups end anywhere from 500 to 3,700 gens (5 states)'],
     [
       '🎩',
       'B257/S367',
       'Hat bats',
-      "Life-like on hats, its patterns like bats: a plateau as Life's, soups settling after 900 to 3,500 generations, oscillators in every ash (2 states)",
+      "Life-like on hats, its patterns like bats: a plateau as Life's, soups settling after 900 to 3,500 gens, oscillators in every ash (2 states)",
     ],
     [
       '🎩',
       'B25-35%/S30-40%',
       'Hat shares',
-      'by shares of the neighbours (a hat has 2 to 7): soups still changing at 600 generations, 2.6 % alive (2 states)',
+      'by shares of the neighbours (a hat has 2 to 7): soups still changing at 600 gens, 2.6 % alive (2 states)',
     ],
     [
       '✧',
       'B3/S023',
       'Penrose Life',
-      "Life with lone cells surviving, on Penrose's rhombi: soups settling after 170 to 1,460 generations, oscillators in most of their ash (2 states)",
+      "Life with lone cells surviving, on Penrose's rhombi: soups settling after 170 to 1,460 gens, oscillators in most of their ash (2 states)",
     ],
     [
       '✧',
       'B39/S0239',
       'Penrose stars',
-      "the most Life-like found on Penrose's rhombi: soups settling after 250 to 2,200 generations (2 states)",
+      "the most Life-like found on Penrose's rhombi: soups settling after 250 to 2,200 gens (2 states)",
     ],
     [
       '✧',
       'B39/S023',
       'Penrose twinkles',
-      'the most Life-like in a circle: soups settling after 362 to 1,361 generations (2.18 % alive at the end), oscillators in half of their ash (2 states)',
+      'the most Life-like in a circle: soups settling after 362 to 1,361 gens (2.18 % alive at the end), oscillators in half of their ash (2 states)',
     ],
     [
       '⬗',
       'B37/S0345/C4',
       'Kites & darts Life',
-      'the highest score on kites and darts (0.22), and the only rule found there whose soups do not spread over the disc: soups settling after 333 to 1,746 generations (2.5 % alive at the end), oscillators in a few of their ash (4 states)',
+      'the highest score on kites and darts (0.22), and the only rule found there whose soups do not spread over the disc: soups settling after 333 to 1,746 gens (2.5 % alive at the end), oscillators in a few of their ash (4 states)',
     ],
     [
       '⬗',
       'B3/S2368',
       'Dart blooms',
-      'Life with 6 and 8 surviving, its soups spreading over the disc (score 0.20): soups settling after 433 to 1,983 generations (1.78 % alive at the end), oscillators in all their ash (2 states)',
+      'Life with 6 and 8 surviving, its soups spreading over the disc (score 0.20): soups settling after 433 to 1,983 gens (1.78 % alive at the end), oscillators in all their ash (2 states)',
     ],
     [
       '⬗',
       'B36/S1345/C5',
       'Dart fuses',
-      'score 0.19: soups settling after 374 to 4,710 generations (2.67 % alive at the end), oscillators in a quarter of their ash (5 states)',
+      'score 0.19: soups settling after 374 to 4,710 gens (2.67 % alive at the end), oscillators in a quarter of their ash (5 states)',
     ],
     [
       '⬗',
       'B389/S0237',
       'Dart sparks',
-      'score 0.16: soups settling after 324 to 832 generations (2.5 % alive at the end), oscillators in most of their ash (2 states)',
+      'score 0.16: soups settling after 324 to 832 gens (2.5 % alive at the end), oscillators in most of their ash (2 states)',
     ],
     [
       '⬗',
       'B39/S236',
       'Dart twinkles',
-      'score 0.14: soups settling after 385 to 2,691 generations (1.38 % alive at the end), oscillators in most of their ash (2 states)',
+      'score 0.14: soups settling after 385 to 2,691 gens (1.38 % alive at the end), oscillators in most of their ash (2 states)',
     ],
     [
       '◭',
       'B389/S0678',
       'Tübingen Life',
-      'the most Life-like on Tübingen triangles (score 0.72): soups settling after 249 to 4,077 generations (1.75 % alive at the end), oscillators in all their ash (2 states)',
+      'the most Life-like on Tübingen triangles (score 0.72): soups settling after 249 to 4,077 gens (1.75 % alive at the end), oscillators in all their ash (2 states)',
     ],
     [
       '◭',
       'B389/S189',
       'Tübingen stars',
-      'score 0.68: soups settling after 437 to 4,736 generations (1.81 % alive at the end), oscillators in all their ash (2 states)',
+      'score 0.68: soups settling after 437 to 4,736 gens (1.81 % alive at the end), oscillators in all their ash (2 states)',
     ],
     [
       '◭',
       'B38/S0679',
       'Tübingen sparks',
-      'score 0.51: soups settling after 309 to 1,525 generations (1.98 % alive at the end), oscillators in all their ash (2 states)',
+      'score 0.51: soups settling after 309 to 1,525 gens (1.98 % alive at the end), oscillators in all their ash (2 states)',
     ],
     [
       '◭',
       'B379/S08',
       'Tübingen embers',
-      'score 0.51: soups settling after 385 to 2,195 generations (1.9 % alive at the end), oscillators in most of their ash (2 states)',
+      'score 0.51: soups settling after 385 to 2,195 gens (1.9 % alive at the end), oscillators in most of their ash (2 states)',
     ],
     [
       '◭',
       'B3/S0678',
       'Tübingen twinkles',
-      "score 0.44, Life's birth: soups settling after 187 to 877 generations (1.98 % alive at the end), oscillators in all their ash (2 states)",
+      "score 0.44, Life's birth: soups settling after 187 to 877 gens (1.98 % alive at the end), oscillators in all their ash (2 states)",
     ],
     [
       '◺',
       'B37/S016',
       'Pinwheel Life',
-      'the most Life-like of all the grids (score 0.90): soups settling after 407 to 2,016 generations (2.41 % alive at the end), oscillators in all their ash (2 states)',
+      'the most Life-like of all the grids (score 0.90): soups settling after 407 to 2,016 gens (2.41 % alive at the end), oscillators in all their ash (2 states)',
     ],
     [
       '◺',
       'B3/S1v0.368',
       'Pinwheel duels',
-      'the most Life-like of the battles turning round: 4 changes of the lead a duel (Life: 3), soups settling after 980 generations or so (2 states)',
+      'the most Life-like of the battles turning round: 4 changes of the lead a duel (Life: 3), soups settling after 980 gens or so (2 states)',
     ],
     [
       '◺',
       'B3v023/S014v135v26v27',
       'Pinwheel tides',
-      "battles turning round as Life's: 3 changes of the lead a duel, some 1,460 generations (2 states)",
+      "battles turning round as Life's: 3 changes of the lead a duel, some 1,460 gens (2 states)",
     ],
     [
       '◺',
       'B389/S0168',
       'Pinwheel sparks',
-      'soups settling after 240 to 2,567 generations (2.36 % alive at the end), oscillators in most of their ash (2 states)',
+      'soups settling after 240 to 2,567 gens (2.36 % alive at the end), oscillators in most of their ash (2 states)',
     ],
-    [
-      '✧',
-      'B346/S01458',
-      'Long-lasting war',
-      'a long war in its walls: 5 colours 1,353 to 1,844 generations till one is left',
-    ],
+    ['✧', 'B346/S01458', 'Long-lasting war', 'a long war in its walls: 5 colours 1,353 to 1,844 gens till one is left'],
     [
       '✺',
       'B25/S357',
       'Spectre Life',
-      'the most Life-like found on spectres: soups settling after 370 to 1,750 generations, oscillators in all their ash (2 states)',
+      'the most Life-like found on spectres: soups settling after 370 to 1,750 gens, oscillators in all their ash (2 states)',
     ],
     [
       '✺',
       'B23/S036/C4',
       'Spectre sparks',
-      'a lasting chaos, about 5 % alive: soups settling after 270 to 2,240 generations (4 states)',
+      'a lasting chaos, about 5 % alive: soups settling after 270 to 2,240 gens (4 states)',
     ],
-    ['✿', 'B24/S456/C4', 'Long florets', 'soups ending anywhere from 500 to over 6,000 generations (4 states)'],
+    ['✿', 'B24/S456/C4', 'Long florets', 'soups ending anywhere from 500 to over 6,000 gens (4 states)'],
     [
       '✿',
       'B26/S3578/C3',
       'Floret Life',
-      "Life-like on floret pentagons: a plateau as Life's, soups settling after 300 to 2,100 generations, oscillators in all their ash (3 states)",
+      "Life-like on floret pentagons: a plateau as Life's, soups settling after 300 to 2,100 gens, oscillators in all their ash (3 states)",
     ],
     [
       '✿',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 987 to 1,275 generations till one is left; 3 colours 763 to 1,645 generations till one is left',
+      'a long war in its walls: 2 colours 987 to 1,275 gens till one is left; 3 colours 763 to 1,645 gens till one is left',
     ],
     [
       '◇',
       'B367/S015',
       'Rhombille Life',
-      'soups settling after 360 to 1,050 generations, oscillators in all their ash (2 states)',
+      'soups settling after 360 to 1,050 gens, oscillators in all their ash (2 states)',
     ],
     [
       '◇',
       'B358/S0237/C4',
       'Rhombille sparks',
-      "a plateau as Life's, soups settling after 170 to 1,500 generations (4 states)",
+      "a plateau as Life's, soups settling after 170 to 1,500 gens (4 states)",
     ],
     [
       '◇',
@@ -5274,50 +5254,50 @@ const RULES = [
       '◇',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 1,376 to 1,670 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,450 generations till one is left, 2 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours 1,376 to 1,670 gens till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,450 gens till one is left, 2 of 3 soups still at war at 2,000',
     ],
     [
       '✳',
       'B279/S069/C4',
       'Rhombitri Life',
-      "the most Life-like of the new tilings: a plateau as Life's, soups settling after 640 to 3,700 generations, oscillators in all their ash (4 states)",
+      "the most Life-like of the new tilings: a plateau as Life's, soups settling after 640 to 3,700 gens, oscillators in all their ash (4 states)",
     ],
     [
       '✳',
       'B2v0145v1236/S08/C3',
       'Rhombitri duels',
-      "battles turning round more than Life's: 4 changes of the lead a duel (Life: 3), soups settling after 550 generations or so (3 states)",
+      "battles turning round more than Life's: 4 changes of the lead a duel (Life: 3), soups settling after 550 gens or so (3 states)",
     ],
     [
       '✳',
       'B246v3/S045/C5',
       'Rhombitri tides',
-      '4 changes of the lead a duel (Life: 3), soups settling after 510 generations or so (5 states)',
+      '4 changes of the lead a duel (Life: 3), soups settling after 510 gens or so (5 states)',
     ],
     [
       '✳',
       'B3/S02358',
       'Rhombitri battle',
-      'a battle: in a hexagon, 3 or 6 colours stay in contact some 400 to 450 generations, about even',
+      'a battle: in a hexagon, 3 or 6 colours stay in contact some 400 to 450 gens, about even',
     ],
-    ['✳', 'B29/S067/C4', 'Long rhombitri', 'soups ending anywhere from 500 to over 6,000 generations (4 states)'],
+    ['✳', 'B29/S067/C4', 'Long rhombitri', 'soups ending anywhere from 500 to over 6,000 gens (4 states)'],
     [
       '✳',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 1,329 to 1,651 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,294 generations till one is left, 2 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours 1,329 to 1,651 gens till one is left, 1 of 3 soups still at war at 2,000; 3 colours 1,294 gens till one is left, 2 of 3 soups still at war at 2,000',
     ],
     [
       '✶',
       'B38/S1369',
       'Snub Life',
-      'soups settling after 550 to 1,900 generations, oscillators in nearly all their ash (2 states)',
+      'soups settling after 550 to 1,900 gens, oscillators in nearly all their ash (2 states)',
     ],
     [
       '✶',
       'B359/S0146/C3',
       'Snub embers',
-      'busier: about 10 % alive in the chaos, soups settling after 280 to 1,250 generations (3 states)',
+      'busier: about 10 % alive in the chaos, soups settling after 280 to 1,250 gens (3 states)',
     ],
     [
       '✶',
@@ -5329,9 +5309,9 @@ const RULES = [
       '◰',
       'B28/S28',
       'Pythagoras Life',
-      'soups settling after 430 to 4,400 generations, oscillators in all their ash (2 states)',
+      'soups settling after 430 to 4,400 gens, oscillators in all their ash (2 states)',
     ],
-    ['◰', 'B267/S3457', 'Pythagoras sparks', 'soups settling after 270 to 1,750 generations (2 states)'],
+    ['◰', 'B267/S3457', 'Pythagoras sparks', 'soups settling after 270 to 1,750 gens (2 states)'],
     [
       '◰',
       'B23/S13/C8',
@@ -5342,7 +5322,7 @@ const RULES = [
       '⊟',
       'B3/S023',
       'Elongated Life',
-      'soups settling after 228 to 1,353 generations (2.31 % alive at the end), oscillators in most of their ash (2 states)',
+      'soups settling after 228 to 1,353 gens (2.31 % alive at the end), oscillators in most of their ash (2 states)',
     ],
     [
       '⊟',
@@ -5354,33 +5334,28 @@ const RULES = [
       '⊟',
       'B3/S0239',
       'Elongated fuses',
-      'soups settling after 469 to 3,097 generations, a methuselah of 7 cells: 2,183 (2 states)',
+      'soups settling after 469 to 3,097 gens, a methuselah of 7 cells: 2,183 (2 states)',
     ],
     [
       '⌂',
       'B25/S157/C5',
       'Prismatic Life',
-      'soups settling after 400 to 3,200 generations, oscillators in all their ash (5 states)',
+      'soups settling after 400 to 3,200 gens, oscillators in all their ash (5 states)',
     ],
     [
       '⌂',
       'B23v14v0/S0467/C4',
       'Prismatic wake',
-      'wakes its ash up longer than Life: a ship flown into a frozen soup sets it going again some 155 generations (Life: 65), a quarter of them past 990 (4 states)',
+      'wakes its ash up longer than Life: a ship flown into a frozen soup sets it going again some 155 gens (Life: 65), a quarter of them past 990 (4 states)',
     ],
-    ['⌂', 'B245/S16/C5', 'Long prisms', 'soups ending anywhere from 130 to over 6,000 generations (5 states)'],
+    ['⌂', 'B245/S16/C5', 'Long prisms', 'soups ending anywhere from 130 to over 6,000 gens (5 states)'],
     [
       '⌂',
       'B2/S1/C8',
       'Prism trails',
       'comets of 5 cells and their trails, period 4, out of nearly every start; soups break up into them within a hundred generations (8 states)',
     ],
-    [
-      '⌶',
-      'B345/S0236',
-      '𝙸 Life',
-      'the best found with 6 neighbours: soups settling after 180 to 410 generations (2 states)',
-    ],
+    ['⌶', 'B345/S0236', '𝙸 Life', 'the best found with 6 neighbours: soups settling after 180 to 410 gens (2 states)'],
     [
       '⌶',
       'B2/S24/C8',
@@ -5391,44 +5366,44 @@ const RULES = [
       '◪',
       'B347/S017/C4',
       'Kis drifters',
-      'a slow ship of period 32, soups settling after 312 to 1,925 generations, a methuselah of 12 cells: 563 (4 states)',
+      'a slow ship of period 32, soups settling after 312 to 1,925 gens, a methuselah of 12 cells: 563 (4 states)',
     ],
     [
       '◪',
       'B367/S127/C4',
       'Kis ships',
-      'ships of period 10 out of its soups, settling after 355 to 2,428 generations, no oscillator in their ash; a methuselah of 10 cells: 1,028 (4 states)',
+      'ships of period 10 out of its soups, settling after 355 to 2,428 gens, no oscillator in their ash; a methuselah of 10 cells: 1,028 (4 states)',
     ],
     [
       '◪',
       'B389/S0157/C3',
       'Kis Life',
-      'soups settling after 344 to 1,461 generations, oscillators of period 3 in half their ash, a methuselah of 11 cells: 1,233 (3 states)',
+      'soups settling after 344 to 1,461 gens, oscillators of period 3 in half their ash, a methuselah of 11 cells: 1,233 (3 states)',
     ],
     [
       '◪',
       'B36/S0158/C3',
       'Long kis',
-      'its soups the longest, settling after 559 to 2,337 generations, oscillators of period 3 in most of their ash, a methuselah of 5 cells: 723 (3 states)',
+      'its soups the longest, settling after 559 to 2,337 gens, oscillators of period 3 in most of their ash, a methuselah of 5 cells: 723 (3 states)',
     ],
     [
       '◪',
       'B37/S0159/C3',
       'Kis steady',
-      'soups settling the most evenly, after 351 to 1,192 generations, a methuselah of 11 cells: 874 (3 states)',
+      'soups settling the most evenly, after 351 to 1,192 gens, a methuselah of 11 cells: 874 (3 states)',
     ],
     [
       '◩',
       'B3v12/S1247/C4',
       'Tetrakis wake',
-      'wakes its ash up as Life does, twice as long: a ship flown into a frozen soup sets it going again some 116 generations (Life: 65), often past 300 (4 states)',
+      'wakes its ash up as Life does, twice as long: a ship flown into a frozen soup sets it going again some 116 gens (Life: 65), often past 300 (4 states)',
     ],
-    ['◩', 'B37/S1', 'Tetrakis Life', 'soups settling after 470 to over 6,000 generations (2 states)'],
+    ['◩', 'B37/S1', 'Tetrakis Life', 'soups settling after 470 to over 6,000 gens (2 states)'],
     [
       '◩',
       'B2v14v2/S23v238',
       'Tetrakis duels',
-      "the most Life-like found on tetrakis triangles with battles turning round as Life's: 3 changes of the lead a duel, soups settling after 760 generations or so (2 states)",
+      "the most Life-like found on tetrakis triangles with battles turning round as Life's: 3 changes of the lead a duel, soups settling after 760 gens or so (2 states)",
     ],
     [
       '◩',
@@ -5440,7 +5415,7 @@ const RULES = [
       '◩',
       'B3/S278',
       'Tetrakis embers',
-      'soups settling after 580 to 3,800 generations, oscillators in all their ash (2 states)',
+      'soups settling after 580 to 3,800 gens, oscillators in all their ash (2 states)',
     ],
     [
       '◩',
@@ -5452,650 +5427,650 @@ const RULES = [
       '◩',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 1,071 to 1,983 generations till one is left; 4 colours 907 generations till one is left, 2 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours 1,071 to 1,983 gens till one is left; 4 colours 907 gens till one is left, 2 of 3 soups still at war at 2,000',
     ],
     [
       '◬',
       'B356/S6789/C5',
       'Kisrhombille Life',
-      "a plateau as Life's, soups settling after 180 to 1,430 generations, oscillators in all their ash (5 states)",
+      "a plateau as Life's, soups settling after 180 to 1,430 gens, oscillators in all their ash (5 states)",
     ],
-    ['◬', 'B38/S169/C3', 'Long kisrhombille', 'soups ending anywhere from 170 to over 6,000 generations (3 states)'],
+    ['◬', 'B38/S169/C3', 'Long kisrhombille', 'soups ending anywhere from 170 to over 6,000 gens (3 states)'],
     [
       '◬',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 1,532 to 1,916 generations till one is left, 1 of 3 soups still at war at 2,000; 3 colours 864 to 1,456 generations till one is left',
+      'a long war in its walls: 2 colours 1,532 to 1,916 gens till one is left, 1 of 3 soups still at war at 2,000; 3 colours 864 to 1,456 gens till one is left',
     ],
     [
       '✤',
       'B236/S0/C4',
       'Type 9 ships',
-      'ships of periods 2 and 4 out of its soups, settling after 189 to 3,243 generations; an oscillator of period 121 (4 states)',
+      'ships of periods 2 and 4 out of its soups, settling after 189 to 3,243 gens; an oscillator of period 121 (4 states)',
     ],
     [
       '✣',
       'B257/S0345/C4',
       'Type 10 Life',
-      'soups settling after 376 to 2,374 generations, oscillators in three quarters of their ash, a methuselah of 11 cells: 1,050 (4 states)',
+      'soups settling after 376 to 2,374 gens, oscillators in three quarters of their ash, a methuselah of 11 cells: 1,050 (4 states)',
     ],
     [
       '✢',
       'B247/S0345/C4',
       'Type 11 Life',
-      'soups settling after 332 to 2,490 generations, a methuselah of 11 cells: 542 (4 states)',
+      'soups settling after 332 to 2,490 gens, a methuselah of 11 cells: 542 (4 states)',
     ],
     [
       '❆',
       'B25/S0345/C4',
       'Type 13 ships',
-      'ships of period 12 out of its soups (6 cells), settling after 265 to 1,545 generations (4 states)',
+      'ships of period 12 out of its soups (6 cells), settling after 265 to 1,545 gens (4 states)',
     ],
     [
       '✦',
       'B24/S0345/C4',
       'Stein sparks',
-      "the most Life-like on Stein's pentagon, though far from Life: soups settling after 210 to 920 generations, an oscillator of period 14 (4 states)",
+      "the most Life-like on Stein's pentagon, though far from Life: soups settling after 210 to 920 gens, an oscillator of period 14 (4 states)",
     ],
     [
       '✦',
       'B34/S2357',
       'Stein blinkers',
-      'two states, soups settling after 200 to 570 generations, blinkers in almost every end',
+      'two states, soups settling after 200 to 570 gens, blinkers in almost every end',
     ],
     [
       '✡',
       'B349/S0134/C5',
       'Kagome Life',
-      'soups settling after 485 to 1,428 generations (4.21 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 6 cells: 355 (5 states)',
+      'soups settling after 485 to 1,428 gens (4.21 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 6 cells: 355 (5 states)',
     ],
     [
       '✡',
       'B348/S0134/C5',
       'Kagome embers',
-      'soups settling after 513 to 1,722 generations (4.24 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 9 cells: 498 (5 states)',
+      'soups settling after 513 to 1,722 gens (4.24 % alive at the end), an oscillator of 10 cells, period 5 and a methuselah of 9 cells: 498 (5 states)',
     ],
     [
       '✡',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 255 to 1,224 generations till one is left; 3 colours 836 to 1,758 generations till one is left',
+      'a long war in its walls: 2 colours 255 to 1,224 gens till one is left; 3 colours 836 to 1,758 gens till one is left',
     ],
     [
       '❖',
       'B278/S2',
       'Octagon Life',
-      'soups settling after 359 to 5,735 generations (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)',
+      'soups settling after 359 to 5,735 gens (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)',
     ],
     [
       '❖',
       'B27/S28',
       'Octagon chimes',
-      'soups settling after 473 to 2,464 generations (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)',
+      'soups settling after 473 to 2,464 gens (0.57 % alive at the end), an oscillator of 2 cells, period 2 (2 states)',
     ],
     [
       '✠',
       'B359/S0148/C3',
       'Snub square Life',
-      'soups settling after 265 to 1,638 generations (4.75 % alive at the end), an oscillator of 4 cells, period 3 and a methuselah of 12 cells: 341 (3 states)',
+      'soups settling after 265 to 1,638 gens (4.75 % alive at the end), an oscillator of 4 cells, period 3 and a methuselah of 12 cells: 341 (3 states)',
     ],
     [
       '✠',
       'B367/S1289/C3',
       'Snub square fuses',
-      'soups settling after 350 to 1,924 generations (2.43 % alive at the end), a methuselah of 12 cells: 1,715 (3 states)',
+      'soups settling after 350 to 1,924 gens (2.43 % alive at the end), a methuselah of 12 cells: 1,715 (3 states)',
     ],
     [
       '✠',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours, all 3 soups still at war at 2,000; 4 colours 1,851 generations till one is left, 2 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours, all 3 soups still at war at 2,000; 4 colours 1,851 gens till one is left, 2 of 3 soups still at war at 2,000',
     ],
     [
       '❃',
       'B245/S2378/C5',
       'Big rhombitri gliders',
-      'soups settling after 241 to 3,464 generations (1.48 % alive at the end), a ship of 25 cells, period 8 and an oscillator of 9 cells, period 12 (5 states)',
+      'soups settling after 241 to 3,464 gens (1.48 % alive at the end), a ship of 25 cells, period 8 and an oscillator of 9 cells, period 12 (5 states)',
     ],
     [
       '❃',
       'B27/S1389/C3',
       'Big rhombitri Life',
-      'soups settling after 302 to 3,739 generations (1.13 % alive at the end), a ship of 6 cells, period 4 and an oscillator of 11 cells, period 6 (3 states)',
+      'soups settling after 302 to 3,739 gens (1.13 % alive at the end), a ship of 6 cells, period 4 and an oscillator of 11 cells, period 6 (3 states)',
     ],
     [
       '❋',
       'B246/S0467/C5',
       'Dual 56 gliders',
-      'soups settling after 236 to over 6,000 generations (2.24 % alive at the end), a ship of 10 cells, period 10 (5 states)',
+      'soups settling after 236 to over 6,000 gens (2.24 % alive at the end), a ship of 10 cells, period 10 (5 states)',
     ],
     [
       '❋',
       'B25/S046/C5',
       'Dual 56 ships',
-      'soups settling after 228 to 3,603 generations (2.32 % alive at the end), a ship of 10 cells, period 10 (5 states)',
+      'soups settling after 228 to 3,603 gens (2.32 % alive at the end), a ship of 10 cells, period 10 (5 states)',
     ],
     [
       '❋',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 456 to 1,118 generations till one is left; 3 colours 637 to 1,052 generations till one is left',
+      'a long war in its walls: 2 colours 456 to 1,118 gens till one is left; 3 colours 637 to 1,052 gens till one is left',
     ],
     [
       '❉',
       'B258/S0456/C4',
       'Dual 314 gliders',
-      'soups settling after 296 to 2,584 generations (2.92 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)',
+      'soups settling after 296 to 2,584 gens (2.92 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)',
     ],
     [
       '❉',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 753 generations till one is left, the others at peace; 3 colours 1,325 generations till one is left, the others at peace',
+      'a long war in its walls: 2 colours 753 gens till one is left, the others at peace; 3 colours 1,325 gens till one is left, the others at peace',
     ],
     [
       '❉',
       'B25/S0456/C4',
       'Dual 314 ships',
-      'soups settling after 296 to 1,721 generations (2.95 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)',
+      'soups settling after 296 to 1,721 gens (2.95 % alive at the end), a ship of 5 cells, period 8 and a methuselah of 9 cells: 190 (4 states)',
     ],
     [
       '❁',
       'B236/S046/C4',
       'Dual 16 gliders',
-      'soups settling after 361 to 2,560 generations (1.56 % alive at the end), ships of 7 cells, period 10, and of 12, period 5 (4 states)',
+      'soups settling after 361 to 2,560 gens (1.56 % alive at the end), ships of 7 cells, period 10, and of 12, period 5 (4 states)',
     ],
     [
       '❁',
       'B237/S056/C4',
       'Dual 16 ships',
-      'soups settling after 407 to 4,433 generations (1.79 % alive at the end), ships of 7 cells, period 10 (4 states)',
+      'soups settling after 407 to 4,433 gens (1.79 % alive at the end), ships of 7 cells, period 10 (4 states)',
     ],
     [
       '✜',
       'B23/S1478/C5',
       'Demi 2 ships',
-      'soups settling after 482 to 3,949 generations (0.43 % alive at the end), ships of 11 cells, period 3, and an oscillator of period 52 (5 states)',
+      'soups settling after 482 to 3,949 gens (0.43 % alive at the end), ships of 11 cells, period 3, and an oscillator of period 52 (5 states)',
     ],
     [
       '✜',
       'B35/S0138',
       'Demi 2 Life',
-      'soups settling after 278 generations or more (3.21 % alive at the end), oscillators in most of their ash',
+      'soups settling after 278 gens or more (3.21 % alive at the end), oscillators in most of their ash',
     ],
     [
       '✬',
       'B2/S129',
       'Demi 10 Life',
-      'soups settling after 295 to 4,606 generations (1.87 % alive at the end), a methuselah of 12 cells settling at generation 3,424',
+      'soups settling after 295 to 4,606 gens (1.87 % alive at the end), a methuselah of 12 cells settling at gen 3,424',
     ],
     [
       '✬',
       'B2/S0179',
       'Demi 10 long',
-      'soups settling after 284 to 3,448 generations (1.13 % alive at the end), a methuselah of 12 cells settling at generation 3,139',
+      'soups settling after 284 to 3,448 gens (1.13 % alive at the end), a methuselah of 12 cells settling at gen 3,139',
     ],
     [
       '✬',
       'B29/S168',
       'Demi 10 ships',
-      'soups settling after 337 to 4,436 generations (0.91 % alive at the end), ships of 8 cells, period 24, and a methuselah of 12 cells settling at generation 926',
+      'soups settling after 337 to 4,436 gens (0.91 % alive at the end), ships of 8 cells, period 24, and a methuselah of 12 cells settling at gen 926',
     ],
     [
       '✪',
       'B357/S0345',
       'Demi 13 Life',
-      'soups settling after 366 to 2,253 generations (2.44 % alive at the end), a methuselah of 5 cells settling at generation 1,255',
+      'soups settling after 366 to 2,253 gens (2.44 % alive at the end), a methuselah of 5 cells settling at gen 1,255',
     ],
     [
       '✪',
       'B369/S3458',
       'Demi 13 clocks',
-      'soups settling after 325 generations or more (2.75 % alive at the end), an oscillator of 5 cells, period 22',
+      'soups settling after 325 gens or more (2.75 % alive at the end), an oscillator of 5 cells, period 22',
     ],
     [
       '✯',
       'B348/S135/C5',
       'Demi 20 ships',
-      'soups settling after 273 to 1,655 generations (1.3 % alive at the end), ships of 17 and 31 cells, period 14 (5 states)',
+      'soups settling after 273 to 1,655 gens (1.3 % alive at the end), ships of 17 and 31 cells, period 14 (5 states)',
     ],
     [
       '✯',
       'B379/S0237/C4',
       'Demi 20 embers',
-      'soups settling after 437 to 2,252 generations (1.66 % alive at the end), a methuselah of 4 cells settling at generation 2,146 (4 states)',
+      'soups settling after 437 to 2,252 gens (1.66 % alive at the end), a methuselah of 4 cells settling at gen 2,146 (4 states)',
     ],
     [
       '✯',
       'B367/S023/C4',
       'Demi 20 sparks',
-      'soups settling after 321 to 2,383 generations (1.8 % alive at the end), a methuselah of 4 cells settling at generation 1,590 (4 states)',
+      'soups settling after 321 to 2,383 gens (1.8 % alive at the end), a methuselah of 4 cells settling at gen 1,590 (4 states)',
     ],
     [
       '❂',
       'B238/S0457/C5',
       'Dodecagon Life',
-      'soups settling after 395 to 5,518 generations (1.12 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 699 (5 states)',
+      'soups settling after 395 to 5,518 gens (1.12 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 699 (5 states)',
     ],
     [
       '❂',
       'B235/S0457/C5',
       'Dodecagon sparks',
-      'soups settling after 243 to 1,249 generations (1.01 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 791 (5 states)',
+      'soups settling after 243 to 1,249 gens (1.01 % alive at the end), an oscillator of 10 cells, period 30 and a methuselah of 7 cells: 791 (5 states)',
     ],
     [
       '✾',
       'B368/S3457',
       'Flower 5 Life',
-      'soups settling after 289 to 3,046 generations (1.72 % alive at the end), oscillators in all their ash',
+      'soups settling after 289 to 3,046 gens (1.72 % alive at the end), oscillators in all their ash',
     ],
     [
       '✾',
       'B2/S0345/C5',
       'Flower 5 sparks',
-      'soups settling after 203 to over 6,000 generations (3.56 % alive at the end), oscillators in half their ash (5 states)',
+      'soups settling after 203 to over 6,000 gens (3.56 % alive at the end), oscillators in half their ash (5 states)',
     ],
     [
       '❀',
       'B345/S0238',
       'Flower 6 Life',
-      'soups settling after 311 to 1,397 generations (4.14 % alive at the end), oscillators in all their ash',
+      'soups settling after 311 to 1,397 gens (4.14 % alive at the end), oscillators in all their ash',
     ],
     [
       '❀',
       'B27/S0345/C5',
       'Flower 6 embers',
-      'soups settling after 275 to 1,274 generations (3.3 % alive at the end), oscillators in 75 % of their ash (5 states)',
+      'soups settling after 275 to 1,274 gens (3.3 % alive at the end), oscillators in 75 % of their ash (5 states)',
     ],
     [
       '✽',
       'B25v08/S0345/C5',
       'Flower 7 letters',
-      'letters: born on 2, or on 5 when none of them touch it by a corner only, or on 8; soups settling after 124 to over 6,000 generations (4.08 % alive at the end), oscillators in 75 % of their ash (5 states)',
+      'letters: born on 2, or on 5 when none of them touch it by a corner only, or on 8; soups settling after 124 to over 6,000 gens (4.08 % alive at the end), oscillators in 75 % of their ash (5 states)',
     ],
     [
       '✽',
       'B36/S3457',
       'Flower 7 Life',
-      'soups settling after 420 to 1,864 generations (1.84 % alive at the end), oscillators in all their ash',
+      'soups settling after 420 to 1,864 gens (1.84 % alive at the end), oscillators in all their ash',
     ],
     [
       '✽',
       'B278/S0345/C5',
       'Flower 7 embers',
-      'soups settling after 184 to 1,805 generations (3.25 % alive at the end), oscillators in 75 % of their ash (5 states)',
+      'soups settling after 184 to 1,805 gens (3.25 % alive at the end), oscillators in 75 % of their ash (5 states)',
     ],
     [
       '✸',
       'B37/S0345',
       'Flower 3 Life',
-      'soups settling after 116 to 1,189 generations (3.16 % alive at the end), oscillators in all their ash',
+      'soups settling after 116 to 1,189 gens (3.16 % alive at the end), oscillators in all their ash',
     ],
     [
       '✸',
       'B345/S023',
       'Flower 3 sparks',
-      'soups settling after 236 to 781 generations (4.25 % alive at the end), oscillators in 83 % of their ash',
+      'soups settling after 236 to 781 gens (4.25 % alive at the end), oscillators in 83 % of their ash',
     ],
     [
       '✷',
       'B345/S0457',
       'Flower 4 Life',
-      'soups settling after 121 to 774 generations (3.02 % alive at the end), oscillators in all their ash',
+      'soups settling after 121 to 774 gens (3.02 % alive at the end), oscillators in all their ash',
     ],
     [
       '✷',
       'B257/S034/C4',
       'Flower 4 embers',
-      'soups settling after 146 to over 6,000 generations (3.27 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 146 to over 6,000 gens (3.27 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✹',
       'B36v129/S3457v2',
       'Flower 8 letters',
-      'letters: born on 3, on 6 when one or two touch it by a corner only, or on 9; soups settling after 93 to 1,878 generations (2.04 % alive at the end), oscillators in all their ash',
+      'letters: born on 3, on 6 when one or two touch it by a corner only, or on 9; soups settling after 93 to 1,878 gens (2.04 % alive at the end), oscillators in all their ash',
     ],
     [
       '✹',
       'B345/S0239',
       'Flower 8 Life',
-      'soups settling after 419 to 1,430 generations (3.56 % alive at the end), oscillators in 58 % of their ash',
+      'soups settling after 419 to 1,430 gens (3.56 % alive at the end), oscillators in 58 % of their ash',
     ],
     [
       '✹',
       'B36/S3457',
       'Flower 8 sparks',
-      'soups settling after 312 to 2,417 generations (1.35 % alive at the end), oscillators in all their ash',
+      'soups settling after 312 to 2,417 gens (1.35 % alive at the end), oscillators in all their ash',
     ],
     [
       '✼',
       'B278/S0345/C5',
       'Flower 9 embers',
-      'soups settling after 299 to 4,016 generations (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)',
+      'soups settling after 299 to 4,016 gens (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)',
     ],
     [
       '✼',
       'B369/S3457',
       'Flower 9 Life',
-      'soups settling after 150 to 1,950 generations (1.61 % alive at the end), oscillators in all their ash',
+      'soups settling after 150 to 1,950 gens (1.61 % alive at the end), oscillators in all their ash',
     ],
     [
       '✥',
       'B279/S0345/C5',
       'Flower 10 embers',
-      'soups settling after 172 to 2,921 generations (3.45 % alive at the end), oscillators in 67 % of their ash (5 states)',
+      'soups settling after 172 to 2,921 gens (3.45 % alive at the end), oscillators in 67 % of their ash (5 states)',
     ],
     [
       '✥',
       'B368/S3457',
       'Flower 10 Life',
-      'soups settling after 143 to 1,336 generations (1.38 % alive at the end), oscillators in all their ash',
+      'soups settling after 143 to 1,336 gens (1.38 % alive at the end), oscillators in all their ash',
     ],
     [
       '⁕',
       'B24/S038/C4',
       'Flower 11 embers',
-      'soups settling after 312 to 3,720 generations (3.39 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 312 to 3,720 gens (3.39 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '⁕',
       'B245/S037/C4',
       'Flower 11 sparks',
-      'soups settling after 284 to 1,650 generations (3.42 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 284 to 1,650 gens (3.42 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '⚘',
       'B278/S0345/C5',
       'Flower 12 embers',
-      'soups settling after 227 to over 6,000 generations (3.42 % alive at the end), oscillators in 42 % of their ash (5 states)',
+      'soups settling after 227 to over 6,000 gens (3.42 % alive at the end), oscillators in 42 % of their ash (5 states)',
     ],
     [
       '⚘',
       'B268/S0345/C5',
       'Flower 12 sparks',
-      'soups settling after 225 to 1,871 generations (3.25 % alive at the end), oscillators in 33 % of their ash (5 states)',
+      'soups settling after 225 to 1,871 gens (3.25 % alive at the end), oscillators in 33 % of their ash (5 states)',
     ],
     [
       '❊',
       'B248/S0348/C4',
       'Mirror 7 embers',
-      'soups settling after 158 to 668 generations (3.45 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 158 to 668 gens (3.45 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '❊',
       'B24/S0346/C4',
       'Mirror 7 sparks',
-      'soups settling after 226 to 609 generations (3.53 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 226 to 609 gens (3.53 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✱',
       'B26/S0345/C4',
       'Mirror 8 embers',
-      'soups settling after 726 to 2,826 generations (3.53 % alive at the end), oscillators in 42 % of their ash (4 states)',
+      'soups settling after 726 to 2,826 gens (3.53 % alive at the end), oscillators in 42 % of their ash (4 states)',
     ],
     [
       '✱',
       'B248/S0346/C4',
       'Mirror 8 sparks',
-      'soups settling after 223 to 1,489 generations (3.39 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 223 to 1,489 gens (3.39 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '⚝',
       'B245/S0346/C4',
       'Mirror 3 embers',
-      'soups settling after 362 to 1,608 generations (3.36 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 362 to 1,608 gens (3.36 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '⚝',
       'B247/S0346/C4',
       'Mirror 3 sparks',
-      'soups settling after 384 to 1,817 generations (3.39 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 384 to 1,817 gens (3.39 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '※',
       'B245/S0346/C4',
       'Mirror 4 embers',
-      'soups settling after 191 to 2,424 generations (3.27 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 191 to 2,424 gens (3.27 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '※',
       'B246/S0347/C4',
       'Mirror 4 sparks',
-      'soups settling after 274 to 1,330 generations (3.19 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 274 to 1,330 gens (3.19 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✩',
       'B245/S0346/C4',
       'Mirror 5 embers',
-      'soups settling after 232 to 3,062 generations (3.45 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 232 to 3,062 gens (3.45 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✩',
       'B347/S0237',
       'Mirror 5 Life',
-      'soups settling after 289 to over 6,000 generations (4.48 % alive at the end), oscillators in 25 % of their ash',
+      'soups settling after 289 to over 6,000 gens (4.48 % alive at the end), oscillators in 25 % of their ash',
     ],
     [
       '✫',
       'B245/S0345/C5',
       'Mirror 6 embers',
-      'soups settling after 293 to 933 generations (3.25 % alive at the end), oscillators in 8 % of their ash (5 states)',
+      'soups settling after 293 to 933 gens (3.25 % alive at the end), oscillators in 8 % of their ash (5 states)',
     ],
     [
       '✫',
       'B267/S0345/C4',
       'Mirror 6 sparks',
-      'soups settling after 623 to 3,363 generations (3.62 % alive at the end), oscillators in 42 % of their ash (4 states)',
+      'soups settling after 623 to 3,363 gens (3.62 % alive at the end), oscillators in 42 % of their ash (4 states)',
     ],
     [
       '✭',
       'B269/S0345/C4',
       'Mirror 9 embers',
-      'soups settling after 592 to over 6,000 generations (3.62 % alive at the end), oscillators in 25 % of their ash (4 states)',
+      'soups settling after 592 to over 6,000 gens (3.62 % alive at the end), oscillators in 25 % of their ash (4 states)',
     ],
     [
       '✭',
       'B268/S678',
       'Mirror 9 Life',
-      'soups settling after 713 to over 6,000 generations (1.29 % alive at the end), oscillators in 83 % of their ash',
+      'soups settling after 713 to over 6,000 gens (1.29 % alive at the end), oscillators in 83 % of their ash',
     ],
     [
       '✭',
       'B25-35%/S30-40%',
       'Mirror 9 shares',
-      'by shares of the neighbours: soups still changing at 600 generations, 10 % alive, the most changing found by shares (2 states)',
+      'by shares of the neighbours: soups still changing at 600 gens, 10 % alive, the most changing found by shares (2 states)',
     ],
     [
       '✭',
       'B20-30%/S20-40%',
       'Mirror 9 tides',
-      'by shares of the neighbours: soups still changing at 600 generations, 12 % alive (2 states)',
+      'by shares of the neighbours: soups still changing at 600 gens, 12 % alive (2 states)',
     ],
     [
       '✮',
       'B278/S',
       'Mirror 10 Life',
-      'soups settling after 306 to over 6,000 generations (1.69 % alive at the end), oscillators in 67 % of their ash',
+      'soups settling after 306 to over 6,000 gens (1.69 % alive at the end), oscillators in 67 % of their ash',
     ],
     [
       '✮',
       'B24/S0345/C5',
       'Mirror 10 embers',
-      'soups settling after 297 to 1,630 generations (3.42 % alive at the end), oscillators in 33 % of their ash (5 states)',
+      'soups settling after 297 to 1,630 gens (3.42 % alive at the end), oscillators in 33 % of their ash (5 states)',
     ],
     [
       '✰',
       'B268/S5',
       'Mirror 11 Life',
-      'soups settling after 519 to over 6,000 generations (1.49 % alive at the end), oscillators in 92 % of their ash',
+      'soups settling after 519 to over 6,000 gens (1.49 % alive at the end), oscillators in 92 % of their ash',
     ],
     [
       '✰',
       'B24/S0345/C5',
       'Mirror 11 embers',
-      'soups settling after 300 to 1,050 generations (3.5 % alive at the end), oscillators in 17 % of their ash (5 states)',
+      'soups settling after 300 to 1,050 gens (3.5 % alive at the end), oscillators in 17 % of their ash (5 states)',
     ],
     [
       '⊛',
       'B267/S5',
       'Mirror 12 Life',
-      'soups settling after 351 to over 6,000 generations (1.47 % alive at the end), oscillators in 92 % of their ash',
+      'soups settling after 351 to over 6,000 gens (1.47 % alive at the end), oscillators in 92 % of their ash',
     ],
     [
       '⊛',
       'B289/S568',
       'Mirror 12 sparks',
-      'soups settling after 497 to over 6,000 generations (1.69 % alive at the end), oscillators in 58 % of their ash',
+      'soups settling after 497 to over 6,000 gens (1.69 % alive at the end), oscillators in 58 % of their ash',
     ],
     [
       '❍',
       'B235/S0457/C5',
       'Twisted embers',
-      'soups settling after 611 to 2,403 generations (1.04 % alive at the end), oscillators in 92 % of their ash (5 states)',
+      'soups settling after 611 to 2,403 gens (1.04 % alive at the end), oscillators in 92 % of their ash (5 states)',
     ],
     [
       '❍',
       'B246/S0348/C5',
       'Twisted sparks',
-      'soups settling after 334 to 3,025 generations (0.95 % alive at the end), oscillators in 58 % of their ash (5 states)',
+      'soups settling after 334 to 3,025 gens (0.95 % alive at the end), oscillators in 58 % of their ash (5 states)',
     ],
     [
       '❇',
       'B2/S0345/C5',
       'Ring 7 sparks',
-      'soups settling after 156 to over 6,000 generations (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)',
+      'soups settling after 156 to over 6,000 gens (3.3 % alive at the end), oscillators in 67 % of their ash (5 states)',
     ],
     [
       '❇',
       'B267/S0346/C4',
       'Ring 7 embers',
-      'soups settling after 351 to 1,100 generations (3.22 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 351 to 1,100 gens (3.22 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✲',
       'B267/S0346/C4',
       'Ring 8 embers',
-      'soups settling after 324 to 1,505 generations (3.13 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 324 to 1,505 gens (3.13 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✲',
       'B25/S034/C4',
       'Ring 8 sparks',
-      'soups settling after 237 to 3,691 generations (3.13 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 237 to 3,691 gens (3.13 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✻',
       'B25/S0346/C4',
       'Ring 9 embers',
-      'soups settling after 272 to 3,741 generations (3.42 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 272 to 3,741 gens (3.42 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✻',
       'B2/S034/C4',
       'Ring 9 sparks',
-      'soups settling after 305 to 2,929 generations (3.27 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 305 to 2,929 gens (3.27 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✴',
       'B26/S034/C4',
       'Ring 10 embers',
-      'soups settling after 235 to 2,337 generations (3.16 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 235 to 2,337 gens (3.16 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✴',
       'B27/S0345/C5',
       'Ring 10 sparks',
-      'soups settling after 218 to over 6,000 generations (3.27 % alive at the end), oscillators in two thirds of their ash (5 states)',
+      'soups settling after 218 to over 6,000 gens (3.27 % alive at the end), oscillators in two thirds of their ash (5 states)',
     ],
     [
       '⊚',
       'B267/S0346/C4',
       'Ring 11 embers',
-      'soups settling after 348 to 3,790 generations (3.39 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 348 to 3,790 gens (3.39 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '⊚',
       'B278/S0347/C4',
       'Ring 11 sparks',
-      'soups settling after 209 to 1,407 generations (3.25 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 209 to 1,407 gens (3.25 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '❈',
       'B2/S0345/C5',
       'Ring 12 sparks',
-      'soups settling after 439 to over 6,000 generations (3.71 % alive at the end), oscillators in 58 % of their ash (5 states)',
+      'soups settling after 439 to over 6,000 gens (3.71 % alive at the end), oscillators in 58 % of their ash (5 states)',
     ],
     [
       '❈',
       'B257/S0346/C4',
       'Ring 12 embers',
-      'soups settling after 355 to 3,188 generations (3.25 % alive at the end), no oscillator in their ash (4 states)',
+      'soups settling after 355 to 3,188 gens (3.25 % alive at the end), no oscillator in their ash (4 states)',
     ],
     [
       '✵',
       'B356/S0345/C4',
       'Ammann Life',
-      'soups settling after 336 to 1,174 generations (2.56 % alive at the end), oscillators in 25 % of their ash (4 states)',
+      'soups settling after 336 to 1,174 gens (2.56 % alive at the end), oscillators in 25 % of their ash (4 states)',
     ],
     [
       '✵',
       'B2v024v03/S0347',
       'Ammann duels',
-      "battles turning round more than Life's: 4 changes of the lead a duel (Life: 3), soups settling after 580 generations or so (2 states)",
+      "battles turning round more than Life's: 4 changes of the lead a duel (Life: 3), soups settling after 580 gens or so (2 states)",
     ],
     [
       '✵',
       'B38/S013',
       'Ammann blinkers',
-      'soups settling after 316 to 1,261 generations (4.83 % alive at the end), oscillators in 100 % of their ash (2 states)',
+      'soups settling after 316 to 1,261 gens (4.83 % alive at the end), oscillators in 100 % of their ash (2 states)',
     ],
     [
       '❄',
       'B39/S0238',
       'Rhombs 12 Life',
-      'soups settling after 406 to 1,963 generations (2.53 % alive at the end), oscillators in two thirds of their ash (2 states)',
+      'soups settling after 406 to 1,963 gens (2.53 % alive at the end), oscillators in two thirds of their ash (2 states)',
     ],
     [
       '❄',
       'B39/S3457/C4',
       'Rhombs 12 embers',
-      'soups settling after 332 to 1,430 generations (2.13 % alive at the end), oscillators in a third of their ash (4 states)',
+      'soups settling after 332 to 1,430 gens (2.13 % alive at the end), oscillators in a third of their ash (4 states)',
     ],
     [
       '❅',
       'B378/S023',
       'Rhombs 14 Life',
-      'soups settling after 509 to 2,221 generations (1.75 % alive at the end), oscillators in 75 % of their ash',
+      'soups settling after 509 to 2,221 gens (1.75 % alive at the end), oscillators in 75 % of their ash',
     ],
     [
       '❅',
       'B389/S1345/C5',
       'Rhombs 14 embers',
-      'soups settling after 276 to 1,644 generations (2.7 % alive at the end), oscillators in a quarter of their ash (5 states)',
+      'soups settling after 276 to 1,644 gens (2.7 % alive at the end), oscillators in a quarter of their ash (5 states)',
     ],
     [
       '✵',
       'B346/S01458',
       'Long-lasting war',
-      'a long war in its walls: 2 colours 993 to 1,907 generations till one is left; 4 colours 1,622 to 1,742 generations till one is left, 1 of 3 soups still at war at 2,000',
+      'a long war in its walls: 2 colours 993 to 1,907 gens till one is left; 4 colours 1,622 to 1,742 gens till one is left, 1 of 3 soups still at war at 2,000',
     ],
     [
       '⬟',
       'B247/S034/C4',
       'Type 15 Life',
-      'the most Life-like on the 15th pentagon: soups settling after 270 to 2,600 generations, oscillators in most ends (4 states)',
+      'the most Life-like on the 15th pentagon: soups settling after 270 to 2,600 gens, oscillators in most ends (4 states)',
     ],
     [
       '⬟',
       'B256/S67',
       'Type 15 classic',
-      'two states only, soups settling after 420 to 1,900 generations, oscillators in every end',
+      'two states only, soups settling after 420 to 1,900 gens, oscillators in every end',
     ],
     [
       '⬟',
       'B24/S13/C12',
       'Type 15 trails',
-      'ships of period 14 with trails of a dozen stages, five kinds; soups end in them within about 150 generations (12 states)',
+      'ships of period 14 with trails of a dozen stages, five kinds; soups end in them within about 150 gens (12 states)',
     ],
     [
       '⬠',
@@ -7257,7 +7232,7 @@ function cardWords(name, detail = '', rule = '') {
   else words.append(head);
   return words;
 }
-// Trail: a dead cell fades through greys for a few generations (States and Age, in colours too; two states)
+// Trail: a dead cell fades through greys for a few gens (States and Age, in colours too; two states)
 const trailApplies = (w = walk.life && walk.variant, rule = $('lifeRule').value, look = $('colourMode').value) =>
   !!w &&
   !!VARIANTS[w].life &&
@@ -7278,8 +7253,7 @@ function renderTrailButton() {
     text: 'Trail',
     id: 'lifeTrailButton',
     toggle: true,
-    title:
-      'While it plays, a cell just dead stays pale for a few generations, fading to an empty cell (States and Age)',
+    title: 'While it plays, a cell just dead stays pale for a few gens, fading to an empty cell (States and Age)',
     click: () => {
       $('lifeTrail').checked = !$('lifeTrail').checked;
       $('lifeTrail').dispatchEvent(new Event('change'));
@@ -7541,7 +7515,7 @@ const randomPrimeSize = () => {
   const m = $('formula').value.match(/^\s*randprime\(\s*(\d+)\s*,\s*\d+\s*\)\s*$/);
   return m ? Number(m[1]) : null;
 };
-// In generations (Elementary's rows, computed ahead; Space-time's height, its layers kept): [ − ] 2,000 generations [ + ];
+// In generations (Elementary's rows, computed ahead; Space-time's height, its layers kept): [ − ] 2,000 gens [ + ];
 // Space-time made again. A reversible one has none: played on either way, as a Game of Life forth (see runStart)
 const gensShown = () => !!VARIANTS[tabVariant()].elementary || spaceTimeOn();
 // The last step or generation: walk.n (a Game of Life's, a reversible one's: none, played on), or sooner its last before its
@@ -7653,7 +7627,7 @@ function runStop() {
               ? ['■', 'Frozen: more would draw the same']
               : ['↻', `Back to gen ${formatNumber(s.T)} every ${formatNumber(s.P)}: more would draw the same`]
           : null;
-    return end && { n, label: `${formatNumber(n)} generations max ${end[0]}`, why: end[1] };
+    return end && { n, label: `${formatNumber(n)} gens max ${end[0]}`, why: end[1] };
   }
   if (randomPrimeSize()) return null;
   const asked = lengthAsked(),
@@ -7691,7 +7665,7 @@ function syncDigitsStepper() {
     gens = gensShown(),
     asked = size ?? lengthAsked(),
     steps = size ? PRIME_STEPS : DIGIT_STEPS;
-  const unit = gens ? 'generations' : stepperUnit();
+  const unit = gens ? 'gens' : stepperUnit();
   // the length asked, steps at most, the same words in every tab (its end, a loop, a death, a battle's: the step line, see endMark)
   if (document.activeElement !== $('digitsLabel')) $('digitsLabel').value = `≤${compactCount(asked)} ${STEPS_GLYPH}`; // (in its unit, steps, as the speed field)
   $('digitsLabel').title = [
@@ -8416,7 +8390,7 @@ const spaceTimeTile = tile({
   toggle: true,
   byDefault: 'off',
   title:
-    "The generations stacked up, in 3D, time going up, a cube a live cell, as many generations as asked under the play buttons (a glider: a slanting line; an oscillator: a column); turned as a 3D walk. With walls: through a torus's edges no tree grows",
+    "The generations stacked up, in 3D, time going up, a cube a live cell, as many gens as asked under the play buttons (a glider: a slanting line; an oscillator: a column); turned as a 3D walk. With walls: through a torus's edges no tree grows",
   click: () => {
     spaceTime = !spaceTime;
     if (spaceTime) plane.torus = false;
@@ -23955,7 +23929,7 @@ const DRAW_PATTERNS = [
     ['B3/S23'],
     'R-pentomino',
     'b2o$2o$bo!',
-    'settles at generation 1,103, 6 gliders flying off',
+    'settles at gen 1,103, 6 gliders flying off',
     '.....,..oo.,.oo..,..o..',
   ],
   [
@@ -23964,18 +23938,10 @@ const DRAW_PATTERNS = [
     ['B3/S23'],
     'Acorn',
     'bo$3bo$2o2b3o!',
-    'settles at generation 5,206, 13 gliders flying off',
+    'settles at gen 5,206, 13 gliders flying off',
     '.....,.o...,...o.,oo.oo',
   ],
-  [
-    'diehard',
-    'square',
-    ['B3/S23'],
-    'Diehard',
-    '6bo$2o$bo3b3o!',
-    'dies out at generation 130',
-    '.....,....o,oo...,.o.oo',
-  ],
+  ['diehard', 'square', ['B3/S23'], 'Diehard', '6bo$2o$bo3b3o!', 'dies out at gen 130', '.....,....o,oo...,.o.oo'],
   [
     'pulsar',
     'square',
@@ -23991,7 +23957,7 @@ const DRAW_PATTERNS = [
     ['B3/S23'],
     'Gosper gun',
     '24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4bobo$10bo5bo7bo$11bo3bo$12b2o!',
-    'a glider every 30 generations',
+    'a glider every 30 gens',
     'oo.oo,oo.oo,...+.,....+,..+++',
   ],
   [
@@ -24020,11 +23986,11 @@ const DRAW_PATTERNS = [
     ['B3678/S34678'],
     'Methuselah',
     '2.A$2A2.A$2A2.A$A.2A$2A.2A!',
-    'settles at generation 219 · 14 cells',
+    'settles at gen 219 · 14 cells',
   ],
   ['loops-osc', 'hex', ['B34/S123/C3'], 'Oscillator', '2.A$.A$2A$A$A!', 'period 8 · 6 cells'],
   ['hexclassic-osc', 'hex', ['B2/S34'], 'Oscillator', '3.A$$2.A$.2A$$2A!', 'period 48 · 6 cells'],
-  ['hexclassic-meth', 'hex', ['B2/S34'], 'Methuselah', '4.A$4.A$3.A$4A$3A!', 'settles at generation 254 · 10 cells'],
+  ['hexclassic-meth', 'hex', ['B2/S34'], 'Methuselah', '4.A$4.A$3.A$4A$3A!', 'settles at gen 254 · 10 cells'],
   ['highlife-ship0', 'square', ['B36/S23'], 'Glider', 'A$A.A$2A!', 'flies, period 4 · 5 cells'],
   ['highlife-osc', 'square', ['B36/S23'], 'Oscillator', '5.A2.A$2A2.A3.A$2A2.2A.2A!', 'period 10 · 12 cells'],
   ['highlife-meth', 'square', ['B36/S23'], 'Seed', 'A.2A$3.2A$2A$3.2A$3A!', 'keeps spreading · 12 cells'],
@@ -24034,19 +24000,12 @@ const DRAW_PATTERNS = [
     ['B36/S23'],
     'Replicator',
     '2b3o$bo2bo$o3bo$o2bo$3o!',
-    'copies of itself every 12 generations, along a diagonal · 12 cells',
+    'copies of itself every 12 gens, along a diagonal · 12 cells',
     '..ooo,.o..o,o...o,o..o.,ooo..',
   ],
   ['hexlife-osc', 'hex', ['B24/S35'], 'Oscillator', '3.A$2.A$.A$A!', 'period 6 · 4 cells'],
   ['hbrink-ship0', 'hex', ['B24/S134/C4'], 'Glider', '3.AC$.AB.B$ACACAC$AB.B$.AC!', 'flies, period 2 · 16 cells'],
-  [
-    'hbrink-meth',
-    'hex',
-    ['B24/S134/C4'],
-    'Methuselah',
-    '4.A$.A2.A$A.2A$A2.A$.A!',
-    'settles at generation 1,810 · 9 cells',
-  ],
+  ['hbrink-meth', 'hex', ['B24/S134/C4'], 'Methuselah', '4.A$.A2.A$A.2A$A2.A$.A!', 'settles at gen 1,810 · 9 cells'],
   ['brian-ship0', 'square', ['B2/S/C3'], 'Glider', '2A$2B!', 'flies, period 1 · 4 cells'],
   ['brian-ship1', 'square', ['B2/S/C3'], 'Spaceship', '.A$BAB$3.A$2.B!', 'flies, period 4 · 6 cells'],
   ['brian-meth', 'square', ['B2/S/C3'], 'Seed', '3.2A$A$.4A$4.A$3A.A!', 'keeps spreading · 12 cells'],
@@ -24080,7 +24039,7 @@ const DRAW_PATTERNS = [
   ['cairolife-osc', 'cairo', ['B34/S23'], 'Oscillator', '3.A.A$A2.2A$3.A.A!', 'period 6 · 7 cells'],
   ['tlife-osc', 'tri', ['B3/S23'], 'Oscillator', '4A!', 'period 8 · 4 cells'],
   ['tlife-osc8', 'tri', ['B3/S23'], 'Oscillator', '.3A$.2A$3A!', 'period 8 · 8 cells'],
-  ['tlife-meth4', 'tri', ['B3/S23'], 'Methuselah', '3A$.A!', 'settles at generation 430 · 4 cells'],
+  ['tlife-meth4', 'tri', ['B3/S23'], 'Methuselah', '3A$.A!', 'settles at gen 430 · 4 cells'],
   ['tsparse-osc14', 'tri', ['B45/S345/C4'], 'Oscillator', '3.3A$2.A2B.A$.A.2BA$2.3A!', 'period 4 · 14 cells'],
   ['twin-osc4', 'hex', ['B2om5/S2om4o'], 'Oscillator', '2.A$2.A$2A$.A$A!', 'period 4 · 6 cells'],
   ['loops-osc7', 'hex', ['B34/S123/C3'], 'Oscillator', '.A.A$A2.A$3A$2A!', 'period 7 · 9 cells'],
@@ -24091,7 +24050,7 @@ const DRAW_PATTERNS = [
     ['B3/S23'],
     'Methuselah',
     '4.A2.2A$.A3.2A.A$3A.A.3A$2.2A.A$.A.A!',
-    'settles at generation 1,166 · 19 cells',
+    'settles at gen 1,166 · 19 cells',
   ],
   ['tbrink-meth', 'tri', ['B34/S2/C4'], 'Seed', '3.A2.2A$.3A3.3A$2.A.3A$3A3.A$2.3A!', 'keeps spreading · 20 cells'],
   ['cairogliders-ship0', 'cairo', ['B23/S6/C3'], 'Glider', '$3.A$B.AB.A$2.B!', 'flies, period 2 · 6 cells'],
@@ -24122,7 +24081,7 @@ const DRAW_PATTERNS = [
     ['B45/S345/C4'],
     'Methuselah',
     '4.A.2A.A$2.2A2.2A.A$2.3A2.A$A3.A.A$.A!',
-    'settles at generation 733 · 17 cells',
+    'settles at gen 733 · 17 cells',
   ],
   ['smeth-meth', 'hex', ['B234/S1234'], 'Seed', '2.2A$.2A$A.3A$.2A$A.A!', 'keeps spreading · 12 cells'],
   ['meth-meth', 'hex', ['B234/S234'], 'Seed', '2.A.A$.A2.A$4.A$2A$2.A!', 'keeps spreading · 8 cells'],
@@ -24171,14 +24130,7 @@ const DRAW_PATTERNS = [
   // kites: found by a search of small starts on a kite torus (PATTERNS.md); x along a row, 6 kites a rhombus
   ['kitelife-osc', 'kite', ['B3/S235/C3'], 'Oscillator', '14.A2.A$3.A2.A.B4A.A$6.A!', 'period 12 · 11 cells'],
   ['kitelife-osc3', 'kite', ['B3/S235/C3'], 'Oscillator', '10.2A$6.A2.B$.A.A2.A!', 'period 3 · 7 cells'],
-  [
-    'kitelife-meth',
-    'kite',
-    ['B3/S235/C3'],
-    'Methuselah',
-    '.A2.A.A3.2A$.2A2.2A4.A!',
-    'settles at generation 771 · 10 cells',
-  ],
+  ['kitelife-meth', 'kite', ['B3/S235/C3'], 'Methuselah', '.A2.A.A3.2A$.2A2.2A4.A!', 'settles at gen 771 · 10 cells'],
   ['kitegliders-ship', 'kite', ['B36/S1258'], 'Glider', '11.A$4.A2.A3.A!', 'flies, period 16 · 4 cells'],
   ['kitegliders-osc', 'kite', ['B36/S1258'], 'Oscillator', '3.A.2A$A.A2.A!', 'period 6 · 6 cells'],
   [
@@ -24187,7 +24139,7 @@ const DRAW_PATTERNS = [
     ['B36/S1258'],
     'Methuselah',
     'A.A2.A.A2.2A$2.A3.A2.2A!',
-    'settles at generation 110, a glider flying off · 10 cells',
+    'settles at gen 110, a glider flying off · 10 cells',
   ],
   ['kiteswarm-ship', 'kite', ['B35/S123/C5'], 'Glider', '4.B3.B2.B$.B.BA.B2A!', 'flies, period 6 · 9 cells'],
   ['kiteswarm-osc', 'kite', ['B35/S123/C5'], 'Oscillator', '4.A3.A$4.A$6.A!', 'period 5 · 4 cells'],
@@ -24199,30 +24151,16 @@ const DRAW_PATTERNS = [
     ['B35/S2356/C4'],
     'Methuselah',
     'A10.A$.5A.A3.A!',
-    'settles at generation 799, a ship flying off · 9 cells',
+    'settles at gen 799, a ship flying off · 9 cells',
   ],
   ['kitesimmer-osc', 'kite', ['B346/S0127/C4'], 'Oscillator', '6.A$.A4.A!', 'period 16 · 3 cells'],
   ['kitesimmer-osc8', 'kite', ['B346/S0127/C4'], 'Oscillator', '8.A2.A$4.A$6.A!', 'period 8 · 4 cells'],
-  [
-    'kitesimmer-meth',
-    'kite',
-    ['B346/S0127/C4'],
-    'Methuselah',
-    '2.A4.A$3A.A5.A!',
-    'settles at generation 321 · 7 cells',
-  ],
+  ['kitesimmer-meth', 'kite', ['B346/S0127/C4'], 'Methuselah', '2.A4.A$3A.A5.A!', 'settles at gen 321 · 7 cells'],
   ['kitemarathon-osc', 'kite', ['B34/S0126/C5'], 'Oscillator', '7.A$.A4.A!', 'period 20 · 3 cells'],
   ['kitemarathon-osc10', 'kite', ['B34/S0126/C5'], 'Oscillator', '11.A$.A7.A2.A!', 'period 10 · 4 cells'],
-  [
-    'kitemarathon-meth',
-    'kite',
-    ['B34/S0126/C5'],
-    'Methuselah',
-    '2A5.A$.A.3A3.A!',
-    'settles at generation 454 · 8 cells',
-  ],
+  ['kitemarathon-meth', 'kite', ['B34/S0126/C5'], 'Methuselah', '2A5.A$.A.3A3.A!', 'settles at gen 454 · 8 cells'],
   ['longkites-osc', 'kite', ['B3/S1247'], 'Oscillator', '10.A$6.A.A2.2A$A.A.A!', 'period 5 · 8 cells'],
-  ['longkites-meth', 'kite', ['B3/S1247'], 'Methuselah', '7.A.2A$4.3A!', 'settles at generation 157 · 6 cells'],
+  ['longkites-meth', 'kite', ['B3/S1247'], 'Methuselah', '7.A.2A$4.3A!', 'settles at gen 157 · 6 cells'],
   // the new tilings: from a search of small starts in the app's page (tools/famoussearch.js), as found (not turned)
   ['floretlife-osc', 'floret', ['B26/S3578/C3'], 'Oscillator', '5.A.B$3.B2.A!', 'period 3 · 4 cells'],
   [
@@ -24231,7 +24169,7 @@ const DRAW_PATTERNS = [
     ['B26/S3578/C3'],
     'Methuselah',
     'A3.A2.A2.A$A2.A4.2A.A!',
-    'settles at generation 1,566 · 9 cells',
+    'settles at gen 1,566 · 9 cells',
   ],
   ['longflorets-ship', 'floret', ['B24/S456/C4'], 'Spaceship', '.A3.B2ABA.A$3.CB.C2.CB!', 'flies, period 5 · 12 cells'],
   ['longflorets-osc', 'floret', ['B24/S456/C4'], 'Oscillator', '.B.C.4ABA$3.A2.A.C.A!', 'period 8 · 12 cells'],
@@ -24242,7 +24180,7 @@ const DRAW_PATTERNS = [
     ['B358/S0237/C4'],
     'Methuselah',
     '.3A.A.2A$.A3.A!',
-    'settles at generation 1,588 · 8 cells',
+    'settles at gen 1,588 · 8 cells',
   ],
   [
     'rhombillesparks-ship',
@@ -24267,7 +24205,7 @@ const DRAW_PATTERNS = [
     ['B279/S069/C4'],
     'Methuselah',
     '.A5.A$A3.3A2.A$2.A6.2A!',
-    'settles at generation 3,210 · 10 cells',
+    'settles at gen 3,210 · 10 cells',
   ],
   ['longrhombitri-osc', 'rhombitri', ['B29/S067/C4'], 'Oscillator', 'A5.2A2.2C$2.C.C!', 'period 13 · 7 cells'],
   [
@@ -24276,7 +24214,7 @@ const DRAW_PATTERNS = [
     ['B29/S067/C4'],
     'Methuselah',
     '2.2A2.A.A$5.A$2.A2.A5.A!',
-    'settles at generation 2,369 · 8 cells',
+    'settles at gen 2,369 · 8 cells',
   ],
   ['snublife-osc', 'snubtri', ['B38/S1369'], 'Oscillator', '6.A3.A2.A3.A!', 'period 4 · 4 cells'],
   [
@@ -24285,7 +24223,7 @@ const DRAW_PATTERNS = [
     ['B38/S1369'],
     'Methuselah',
     '19.A$A11.A.A2.2A2.A.A2.A$5.A.A4.A!',
-    'settles at generation 2,497 · 12 cells',
+    'settles at gen 2,497 · 12 cells',
   ],
   ['snubembers-osc', 'snubtri', ['B359/S0146/C3'], 'Oscillator', '5.A3.2A$17.A!', 'period 6 · 4 cells'],
   [
@@ -24294,7 +24232,7 @@ const DRAW_PATTERNS = [
     ['B359/S0146/C3'],
     'Methuselah',
     '9.A$4.A.A4.A3.A$2.2A3.A6.A11.A!',
-    'settles at generation 390 · 10 cells',
+    'settles at gen 390 · 10 cells',
   ],
   ['ilife-osc', 'capitalI', ['B345/S0236'], 'Oscillator', '.A$.2A$A!', 'period 2 · 4 cells'],
   ['itrails-ship', 'capitalI', ['B2/S24/C8'], 'Spaceship', '4.C2A$2.FD2A$.GCDC$FGF!', 'flies, period 3 · 14 cells'],
@@ -24310,22 +24248,8 @@ const DRAW_PATTERNS = [
     'flies, period 2 · 12 cells',
   ],
   ['elongatedlife-osc', 'elongated', ['B3/S023'], 'Oscillator', '3A.2A$A!', 'period 6 · 6 cells'],
-  [
-    'elongatedlife-meth',
-    'elongated',
-    ['B3/S023'],
-    'Methuselah',
-    '.A.2A.A$5A2.A!',
-    'settles at generation 780 · 10 cells',
-  ],
-  [
-    'elongatedfuses-meth',
-    'elongated',
-    ['B3/S0239'],
-    'Methuselah',
-    '3.A$3.3A$A3.2A!',
-    'settles at generation 2,183 · 7 cells',
-  ],
+  ['elongatedlife-meth', 'elongated', ['B3/S023'], 'Methuselah', '.A.2A.A$5A2.A!', 'settles at gen 780 · 10 cells'],
+  ['elongatedfuses-meth', 'elongated', ['B3/S0239'], 'Methuselah', '3.A$3.3A$A3.2A!', 'settles at gen 2,183 · 7 cells'],
   ['kislife-osc', 'kischecker', ['B389/S0157/C3'], 'Oscillator', '2.B.A3.A$A!', 'period 3 · 4 cells'],
   [
     'kislife-meth',
@@ -24333,10 +24257,10 @@ const DRAW_PATTERNS = [
     ['B389/S0157/C3'],
     'Methuselah',
     '.A.A2.A$6.A.2A$2.3A2.A.A!',
-    'settles at generation 1,233 · 11 cells',
+    'settles at gen 1,233 · 11 cells',
   ],
   ['longkis-osc', 'kischecker', ['B36/S0158/C3'], 'Oscillator', '.AB.A$.A!', 'period 3 · 4 cells'],
-  ['longkis-meth', 'kischecker', ['B36/S0158/C3'], 'Methuselah', '5.2A$A3.A.A!', 'settles at generation 723 · 5 cells'],
+  ['longkis-meth', 'kischecker', ['B36/S0158/C3'], 'Methuselah', '5.2A$A3.A.A!', 'settles at gen 723 · 5 cells'],
   ['kissteady-osc', 'kischecker', ['B37/S0159/C3'], 'Oscillator', 'A.BA$A!', 'period 3 · 4 cells'],
   [
     'kissteady-meth',
@@ -24344,7 +24268,7 @@ const DRAW_PATTERNS = [
     ['B37/S0159/C3'],
     'Methuselah',
     '6.A.A2.A.2A$4.A3.4A.A!',
-    'settles at generation 874 · 11 cells',
+    'settles at gen 874 · 11 cells',
   ],
   [
     'kisships-ship',
@@ -24360,7 +24284,7 @@ const DRAW_PATTERNS = [
     ['B367/S127/C4'],
     'Methuselah',
     '.3A.A.A.A$.A2.2A3.A!',
-    'settles at generation 1,028 · 10 cells',
+    'settles at gen 1,028 · 10 cells',
   ],
   [
     'kisdrifters-ship',
@@ -24377,7 +24301,7 @@ const DRAW_PATTERNS = [
     ['B347/S017/C4'],
     'Methuselah',
     'A4.A.A3.A.A$A3.A.A.2A.A.A!',
-    'settles at generation 563 · 12 cells',
+    'settles at gen 563 · 12 cells',
   ],
   ['type9ships-ship', 'pent9', ['B236/S0/C4'], 'Spaceship', '3.3C$B2.3A2B!', 'flies, period 2 · 9 cells'],
   ['type9ships-slow', 'pent9', ['B236/S0/C4'], 'Spaceship', '.2B2.C5.A$.B3.2C.A2.A!', 'flies, period 4 · 9 cells'],
@@ -24396,7 +24320,7 @@ const DRAW_PATTERNS = [
     ['B257/S0345/C4'],
     'Methuselah',
     'A4.2A7.A$A5.2A2.A4.3A!',
-    'settles at generation 1,050 · 11 cells',
+    'settles at gen 1,050 · 11 cells',
   ],
   ['type11life-osc', 'pent11', ['B247/S0345/C4'], 'Oscillator', '5.A4.CB$.A2.BAC2A.A3.C!', 'period 4 · 11 cells'],
   [
@@ -24405,7 +24329,7 @@ const DRAW_PATTERNS = [
     ['B247/S0345/C4'],
     'Methuselah',
     '3.A9.A4.3A$2A7.A3.2A3.A!',
-    'settles at generation 542 · 11 cells',
+    'settles at gen 542 · 11 cells',
   ],
   ['type13ships-ship', 'pent13', ['B25/S0345/C4'], 'Spaceship', 'CA2.C3.A4.AC!', 'flies, period 12 · 6 cells'],
   ['type13ships-osc', 'pent13', ['B25/S0345/C4'], 'Oscillator', '.A2.AC2.AB2.C.BA$10.BA3.A7.C!', 'period 4 · 12 cells'],
@@ -24434,23 +24358,9 @@ const DRAW_PATTERNS = [
     'flies, period 4 · 14 cells',
   ],
   ['tetrakislife-osc', 'tetrakis', ['B37/S1'], 'Oscillator', 'A$A$.A!', 'period 2 · 3 cells'],
-  [
-    'tetrakislife-meth',
-    'tetrakis',
-    ['B37/S1'],
-    'Methuselah',
-    'A.A.A5.A$2A2.A3.3A!',
-    'settles at generation 4,016 · 10 cells',
-  ],
+  ['tetrakislife-meth', 'tetrakis', ['B37/S1'], 'Methuselah', 'A.A.A5.A$2A2.A3.3A!', 'settles at gen 4,016 · 10 cells'],
   ['tetrakisembers-osc', 'tetrakis', ['B3/S278'], 'Oscillator', '.A.A$2.2A!', 'period 4 · 4 cells'],
-  [
-    'tetrakisembers-meth',
-    'tetrakis',
-    ['B3/S278'],
-    'Methuselah',
-    '2A.A$2A.A2.A!',
-    'settles at generation 710 · 7 cells',
-  ],
+  ['tetrakisembers-meth', 'tetrakis', ['B3/S278'], 'Methuselah', '2A.A$2A.A2.A!', 'settles at gen 710 · 7 cells'],
   [
     'tetrakistrails-ship',
     'tetrakis',
@@ -24473,7 +24383,7 @@ const DRAW_PATTERNS = [
     ['B356/S6789/C5'],
     'Methuselah',
     'A.A4.A.A3.A8.2A$A8.A5.A2.A4.A!',
-    'settles at generation 310 · 12 cells',
+    'settles at gen 310 · 12 cells',
   ],
   ['longkisrhombille-osc', 'kisrhombille', ['B38/S169/C3'], 'Oscillator', '4.A.B.A.A!', 'period 3 · 4 cells'],
   [
@@ -24482,7 +24392,7 @@ const DRAW_PATTERNS = [
     ['B38/S169/C3'],
     'Methuselah',
     '.A3.A6.A2.2A$6.A5.A6.A.A!',
-    'settles at generation 463 · 9 cells',
+    'settles at gen 463 · 9 cells',
   ],
   ['steinsparks-osc', 'pent14', ['B24/S0345/C4'], 'Oscillator', '.A3.A2.A.A!', 'period 14 · 4 cells'],
   [
@@ -24491,19 +24401,12 @@ const DRAW_PATTERNS = [
     ['B24/S0345/C4'],
     'Methuselah',
     '5.A3.A4.A$6.A2.A.2A.3A$16.A!',
-    'settles at generation 420 · 11 cells',
+    'settles at gen 420 · 11 cells',
   ],
   ['steinblinkers-osc', 'pent14', ['B34/S2357'], 'Oscillator', '2.A$4A$.A!', 'period 2 · 6 cells'],
   ['steinblinkers-osc4', 'pent14', ['B34/S2357'], 'Oscillator', '2.A$2A.3A$.A!', 'period 4 · 7 cells'],
   ['kagomelife-osc', 'trihex', ['B349/S0134/C5'], 'Oscillator', '6.A$3.2A.A.A$A2.A.2A.A!', 'period 5 · 10 cells'],
-  [
-    'kagomelife-meth',
-    'trihex',
-    ['B349/S0134/C5'],
-    'Methuselah',
-    'A$.A$3.A.A$5.A2.A!',
-    'settles at generation 355 · 6 cells',
-  ],
+  ['kagomelife-meth', 'trihex', ['B349/S0134/C5'], 'Methuselah', 'A$.A$3.A.A$5.A2.A!', 'settles at gen 355 · 6 cells'],
   ['kagomeembers-osc', 'trihex', ['B348/S0134/C5'], 'Oscillator', '6.A$3.2A.A.A$A2.A.2A.A!', 'period 5 · 10 cells'],
   [
     'kagomeembers-meth',
@@ -24511,7 +24414,7 @@ const DRAW_PATTERNS = [
     ['B348/S0134/C5'],
     'Methuselah',
     'A2.A$3.A4.A$2A2.2A$8.A!',
-    'settles at generation 498 · 9 cells',
+    'settles at gen 498 · 9 cells',
   ],
   ['octagonlife-osc', 'truncsquare', ['B278/S2'], 'Oscillator', 'A.A!', 'period 2 · 2 cells'],
   ['octagonchimes-osc', 'truncsquare', ['B27/S28'], 'Oscillator', 'A.A!', 'period 2 · 2 cells'],
@@ -24522,7 +24425,7 @@ const DRAW_PATTERNS = [
     ['B359/S0148/C3'],
     'Methuselah',
     'A5.A$9.3A5.A$6.A4.A5.A$.A8.A4.A!',
-    'settles at generation 341 · 12 cells',
+    'settles at gen 341 · 12 cells',
   ],
   [
     'snubsquarefuses-meth',
@@ -24530,7 +24433,7 @@ const DRAW_PATTERNS = [
     ['B367/S1289/C3'],
     'Methuselah',
     '14.A$.A14.A$6.2A2.2A2.2A$10.2A3.A!',
-    'settles at generation 1,715 · 12 cells',
+    'settles at gen 1,715 · 12 cells',
   ],
   [
     'bigrhombitrilife-ship',
@@ -24587,7 +24490,7 @@ const DRAW_PATTERNS = [
     ['B258/S0456/C4'],
     'Methuselah',
     '8.A13.A5.A$3.A3.A4.A.A5.A6.A!',
-    'settles at generation 190, 3 ships flying off · 9 cells',
+    'settles at gen 190, 3 ships flying off · 9 cells',
   ],
   ['dual314-b25s0456c4-ship', 'dual314', ['B25/S0456/C4'], 'Spaceship', '19.3B2.A$3.A!', 'flies, period 8 · 5 cells'],
   [
@@ -24596,7 +24499,7 @@ const DRAW_PATTERNS = [
     ['B25/S0456/C4'],
     'Methuselah',
     '8.A13.A5.A$3.A3.A4.A.A5.A6.A!',
-    'settles at generation 190, 3 ships flying off · 9 cells',
+    'settles at gen 190, 3 ships flying off · 9 cells',
   ],
   ['dual16gliders-ship', 'dual16', ['B236/S046/C4'], 'Spaceship', '7.AB5.BA2.A3.AB!', 'flies, period 10 · 7 cells'],
   ['dual16gliders-fast', 'dual16', ['B236/S046/C4'], 'Fast ship', 'BC3A.BCB.BA2.C$11.C!', 'flies, period 5 · 12 cells'],
@@ -24617,30 +24520,9 @@ const DRAW_PATTERNS = [
     '6.A5.2BA2.A$A2.B4.B.BADC2.D$B.A.A3.AC.AC.D.2C!',
     'period 52 · 23 cells',
   ],
-  [
-    'demi2life-meth',
-    'demi2',
-    ['B35/S0138'],
-    'Methuselah',
-    '.A.A6.A$.A2.A2.A3.4A!',
-    'settles at generation 157 · 10 cells',
-  ],
-  [
-    'demi10life-meth',
-    'demi10',
-    ['B2/S129'],
-    'Methuselah',
-    '3A2.A3.2A$.3A.2A6.A!',
-    'settles at generation 3,424 · 12 cells',
-  ],
-  [
-    'demi10long-meth',
-    'demi10',
-    ['B2/S0179'],
-    'Methuselah',
-    'A5.5A$.3A.A2.A6.A!',
-    'settles at generation 3,139 · 12 cells',
-  ],
+  ['demi2life-meth', 'demi2', ['B35/S0138'], 'Methuselah', '.A.A6.A$.A2.A2.A3.4A!', 'settles at gen 157 · 10 cells'],
+  ['demi10life-meth', 'demi10', ['B2/S129'], 'Methuselah', '3A2.A3.2A$.3A.2A6.A!', 'settles at gen 3,424 · 12 cells'],
+  ['demi10long-meth', 'demi10', ['B2/S0179'], 'Methuselah', 'A5.5A$.3A.A2.A6.A!', 'settles at gen 3,139 · 12 cells'],
   ['demi10ships-ship', 'demi10', ['B29/S168'], 'Spaceship', '3.2A2.A.2A$2A3.A!', 'flies, period 24 · 8 cells'],
   [
     'demi10ships-meth',
@@ -24648,26 +24530,12 @@ const DRAW_PATTERNS = [
     ['B29/S168'],
     'Methuselah',
     '3.2A.A10.A$4.2A3.A2.2A.A6.2A!',
-    'settles at generation 926 · 12 cells',
+    'settles at gen 926 · 12 cells',
   ],
-  ['demi13life-meth', 'demi13', ['B357/S0345'], 'Methuselah', '.A.2A8.A$8.A!', 'settles at generation 1,255 · 5 cells'],
+  ['demi13life-meth', 'demi13', ['B357/S0345'], 'Methuselah', '.A.2A8.A$8.A!', 'settles at gen 1,255 · 5 cells'],
   ['demi13clocks-osc', 'demi13', ['B369/S3458'], 'Oscillator', '3.A17.3A4.A!', 'period 22 · 5 cells'],
-  [
-    'demi20embers-meth',
-    'demi20',
-    ['B379/S0237/C4'],
-    'Methuselah',
-    '11.A5.A.2A!',
-    'settles at generation 2,146 · 4 cells',
-  ],
-  [
-    'demi20sparks-meth',
-    'demi20',
-    ['B367/S023/C4'],
-    'Methuselah',
-    '2.A7.A3.A2.A!',
-    'settles at generation 1,590 · 4 cells',
-  ],
+  ['demi20embers-meth', 'demi20', ['B379/S0237/C4'], 'Methuselah', '11.A5.A.2A!', 'settles at gen 2,146 · 4 cells'],
+  ['demi20sparks-meth', 'demi20', ['B367/S023/C4'], 'Methuselah', '2.A7.A3.A2.A!', 'settles at gen 1,590 · 4 cells'],
   [
     'demi20ships-ship',
     'demi20',
@@ -24691,7 +24559,7 @@ const DRAW_PATTERNS = [
     ['B238/S0457/C5'],
     'Methuselah',
     '7.A$.A.A.A2.A2.A$5.A!',
-    'settles at generation 699 · 7 cells',
+    'settles at gen 699 · 7 cells',
   ],
   [
     'dodecagonsparks-osc',
@@ -24707,7 +24575,7 @@ const DRAW_PATTERNS = [
     ['B235/S0457/C5'],
     'Methuselah',
     '.A.A$A2.2A3.A2$8.A!',
-    'settles at generation 791 · 7 cells',
+    'settles at gen 791 · 7 cells',
   ],
   [
     'type15life-ship',
@@ -24724,7 +24592,7 @@ const DRAW_PATTERNS = [
     ['B247/S034/C4'],
     'Methuselah',
     '13.2A7.2A$18.A$14.A3.A.A$23.A$5.A!',
-    'settles at generation 363 · 10 cells',
+    'settles at gen 363 · 10 cells',
   ],
   ['type15classic-osc', 'pent15', ['B256/S67'], 'Oscillator', '5.A$5.A!', 'period 2 · 2 cells'],
   [
@@ -24733,7 +24601,7 @@ const DRAW_PATTERNS = [
     ['B256/S67'],
     'Methuselah',
     '22.A$14.A$13.A4.A3.A$5.A14.A$19.A!',
-    'settles at generation 1,277 · 8 cells',
+    'settles at gen 1,277 · 8 cells',
   ],
   [
     'type15trails-ship',
@@ -24760,7 +24628,7 @@ const DRAW_PATTERNS = [
     ['B3/S02358'],
     'Methuselah',
     '3.3A.2A.A$3.2A2.2A.A!',
-    'settles at generation 2,188 · 11 cells',
+    'settles at gen 2,188 · 11 cells',
   ],
   ['floret-b346s01458-osc', 'floret', ['B346/S01458'], 'Oscillator', '3.2A.A!', 'period 2 · 3 cells'],
   [
@@ -24769,7 +24637,7 @@ const DRAW_PATTERNS = [
     ['B346/S01458'],
     'Methuselah',
     '.A2.A2.A.A3.2A2.A$2.A2.A.2A6.A!',
-    'settles at generation 467 · 12 cells',
+    'settles at gen 467 · 12 cells',
   ],
   [
     'tetrakis-b3v12s1247c4-ship',
@@ -24796,7 +24664,7 @@ const DRAW_PATTERNS = [
     ['B3v23/S056'],
     'Methuselah',
     'A5.A3.2A$4.A6.A!',
-    'settles at generation 340 · 6 cells',
+    'settles at gen 340 · 6 cells',
   ],
   [
     'prismatic-b23v14v0s0467c4-ship',
@@ -24827,14 +24695,7 @@ const DRAW_PATTERNS = [
   ],
   ['twistsparks-osc', 'twisttri', ['B246/S0348/C5'], 'Oscillator', '.B.A$A4.B!', 'period 12 · 4 cells'],
   ['twistembers-osc', 'twisttri', ['B235/S0457/C5'], 'Oscillator', '3.AB.A$AB.2B.A$A2.A!', 'period 30 · 10 cells'],
-  [
-    'twistembers-meth',
-    'twisttri',
-    ['B235/S0457/C5'],
-    'Methuselah',
-    '8.A$A.A.2A.A!',
-    'settles at generation 863 · 6 cells',
-  ],
+  ['twistembers-meth', 'twisttri', ['B235/S0457/C5'], 'Methuselah', '8.A$A.A.2A.A!', 'settles at gen 863 · 6 cells'],
   // the rules with none before (tools/tilings/famous.js, 2026-11-04: squares, triangles, Cairo and kites too, as the app lays
   // them; each played in the app by Draw: its period the same, a methuselah's end counted as Life's, its ships taken away)
   ['tri-b346s01458-osc', 'tri', ['B346/S01458'], 'Oscillator', '2.A$A.A!', 'period 2 · 3 cells'],
@@ -24844,7 +24705,7 @@ const DRAW_PATTERNS = [
     ['B2v02.3v1/S156v2'],
     'Methuselah',
     '.A.A2.2A2$.A.A3.A$A4.A!',
-    'settles at generation 4,359 · 9 cells',
+    'settles at gen 4,359 · 9 cells',
   ],
   ['cairo-b2v023v1s156v2-osc', 'cairo', ['B2v02.3v1/S156v2'], 'Oscillator', '3.A$A.2A!', 'period 2 · 4 cells'],
   ['square-b346s01458-osc', 'square', ['B346/S01458'], 'Oscillator', 'A.A$.A$3A$3A!', 'period 44 · 9 cells'],
@@ -24857,7 +24718,7 @@ const DRAW_PATTERNS = [
     ['B389/S23'],
     'Methuselah',
     '4.2A$A.A2.A$6A!',
-    'settles at generation 1,108, a glider flying off · 11 cells',
+    'settles at gen 1,108, a glider flying off · 11 cells',
   ],
   ['square-b39s2389-ship', 'square', ['B39/S2389'], 'Glider', '.A$2.A$3A!', 'flies, period 4 · 5 cells'],
   [
@@ -24866,7 +24727,7 @@ const DRAW_PATTERNS = [
     ['B39/S2389'],
     'Methuselah',
     '3A2.A$A2.2A2$A.A.A!',
-    'settles at generation 1,243, 2 gliders flying off · 10 cells',
+    'settles at gen 1,243, 2 gliders flying off · 10 cells',
   ],
   [
     'kite-b3v1235v23s123v012c5-ship',
@@ -24890,7 +24751,7 @@ const DRAW_PATTERNS = [
     ['B3/S123v0257/C5'],
     'Methuselah',
     '2A2.2A5.A$2A4.A3.2A!',
-    'settles at generation 788 · 10 cells',
+    'settles at gen 788 · 10 cells',
   ],
   ['kite-b3s123v0257c5-osc', 'kite', ['B3/S123v0257/C5'], 'Oscillator', '4.A3.A$3.DA.D$6.A!', 'period 5 · 6 cells'],
   [
@@ -24899,7 +24760,7 @@ const DRAW_PATTERNS = [
     ['B34v1236/S0127/C4'],
     'Methuselah',
     '3.A.A3.2A.A$2.2A6.A6.A!',
-    'settles at generation 581 · 9 cells',
+    'settles at gen 581 · 9 cells',
   ],
   ['kite-b34v1236s0127c4-osc', 'kite', ['B34v1236/S0127/C4'], 'Oscillator', '4.A$.A.A2.A.A$3.A!', 'period 8 · 6 cells'],
   [
@@ -24924,17 +24785,10 @@ const DRAW_PATTERNS = [
     ['B3v012/S0234v3'],
     'Methuselah',
     '6.A.2A5.A.A$2A.A3.A2.2A!',
-    'settles at generation 544 · 11 cells',
+    'settles at gen 544 · 11 cells',
   ],
   ['kite-b3v012s0234v3-osc', 'kite', ['B3v012/S0234v3'], 'Oscillator', '2A.A!', 'period 2 · 3 cells'],
-  [
-    'kite-b3s12v13-meth',
-    'kite',
-    ['B3/S12v1.3'],
-    'Methuselah',
-    '2A5.2A$2A.A2.4A.A!',
-    'settles at generation 432 · 12 cells',
-  ],
+  ['kite-b3s12v13-meth', 'kite', ['B3/S12v1.3'], 'Methuselah', '2A5.2A$2A.A2.4A.A!', 'settles at gen 432 · 12 cells'],
   ['kite-b3s12v13-osc', 'kite', ['B3/S12v1.3'], 'Oscillator', '2A.2A!', 'period 6 · 4 cells'],
 ];
 // the symmetries a start may have (see planeSymmetries): [name, as said, tooltip], in their tabs' order
@@ -26879,7 +26733,7 @@ function iconCells(N, set) {
   });
   return seed;
 }
-// the cells' states at generation 0, as plane says
+// the cells' states at gen 0, as plane says
 function planeSeed(kind, seq, C, K = 1) {
   // K: the civilisations, a live cell of a soup one of them
   const W = planeW(kind, plane.side),
@@ -29517,8 +29371,8 @@ function blockTutorial(entry, to) {
   const maxPeriod =
     `<h3>Max period</h3><p>It runs back, so on a finite grid any start comes back to itself, with no lead-in: its period is the generation it does, a multiple of its ${p} phases. ` +
     (keeps
-      ? `This rule keeps the live cells (each block as many alive after), so a start of m alive cells on n comes back within C(n, m) × ${p} generations: the ways m cells can lie, times the phases.`
-      : `This rule changes how many are alive, so a start on n cells comes back within 2<sup>n</sup> × ${p} generations: all the grid's states, times the phases.`) +
+      ? `This rule keeps the live cells (each block as many alive after), so a start of m alive cells on n comes back within C(n, m) × ${p} gens: the ways m cells can lie, times the phases.`
+      : `This rule changes how many are alive, so a start on n cells comes back within 2<sup>n</sup> × ${p} gens: all the grid's states, times the phases.`) +
     (L
       ? ` Here, ${formatNumber(L.seed.length)} cells${keeps ? `, ${formatNumber(L.seedAlive)} alive` : ''}: at most ${bigWords(B.log).replace(/\^(.*)/, '<sup>$1</sup>')}. ` +
         (L.stable
@@ -29544,7 +29398,7 @@ function blockTutorial(entry, to) {
     `<h2>${entry.name} ${ruleSpan(entry.rule).replace(/,/g, ',<wbr>')}</h2>${BLOCK_WORDS[`${kind}|${entry.name}`] ? `<p>${BLOCK_WORDS[`${kind}|${entry.name}`].slice(2)}.</p>` : ''}${
       ising
         ? `<p>The Ising model of a magnet (Vichniac's Q2R, 1984; Tim Tyler's cell-auto.com): the squares a checkerboard, its two colours in turn, a generation each; a square of the colour's turn turned over when just 2 of its 4 side neighbours are alive, else kept. Turned over or not, as many sides between alive and dead (its energy kept), and the colour not turning stays as it is: so it runs back.${edges}</p>` +
-          `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${['even', 'odd'][j]} generations</figcaption></figure>`).join('')}</div>${cases}${maxPeriod}</div>`
+          `<div class="tut-row tut-phases">${edged.map((blocks, j) => `<figure><div>${phase(blocks)}</div><figcaption>${['even', 'odd'][j]} gens</figcaption></figure>`).join('')}</div>${cases}${maxPeriod}</div>`
         : ''
     }${
       ising
@@ -29675,7 +29529,7 @@ function elementaryTutorial(entry) {
   $('ruleTuto').innerHTML =
     `<div class="tut-body"><h2>${entry.name} ${ruleSpan(`W${N}`)}</h2><p>${words ? `${words[0].toUpperCase()}${words.slice(1)}. ` : ''}A row of cells, each generation the next row down: each cell looks at the three above it (on its left, above it, on its right), 8 cases, and the rule's number in base 2, ${N} = ${N.toString(2).padStart(8, '0')}, gives each one its cell, from 111 to 000 (Wolfram, 1983).</p>` +
     `<h3>Its 8 cases</h3><div class="tut-row">${cases}</div>` +
-    `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 generations</figcaption></figure></div></div>`;
+    `<h3>From one cell</h3><div class="tut-row"><figure><div><svg class="tut-start" viewBox="-0.2 -0.2 31.4 16.4">${picture}</svg></div><figcaption>16 gens</figcaption></figure></div></div>`;
   $('ruleTuto').prepend(tutTools({ close: () => ruleTutorial(null) }));
 }
 function ruleTutorial(entry) {
@@ -30956,7 +30810,7 @@ function lifeReset() {
 }
 
 /* The whole state as a 53-bit number (two FNV-1a style 32-bit hashes). When a fingerprint comes
- * back at generation g after first appearing at generation T, the pattern loops from T with
+ * back at gen g after first appearing at gen T, the pattern loops from T with
  * period g − T (1 = frozen). With N cells there are 2^N states, so this always happens eventually. */
 const LIFE_TRACK = 200000; // generations remembered before giving up
 // (two sums over the cells not dead, each a cell's number and state mixed: in any order, as the graphics card sums them, see
@@ -31057,7 +30911,7 @@ function searchBack(on) {
   };
   slice();
 }
-// a block rule's generation g there, from a into b (as GPU_LIFE's blockRule: Ising's 4 sides, stellated cells across first,
+// a block rule's gen g there, from a into b (as GPU_LIFE's blockRule: Ising's 4 sides, stellated cells across first,
 // flips' cells left out by a wall turned over)
 function blockStep(M, a, b, g) {
   const p = mod(g, M.turns.length),
@@ -31090,7 +30944,7 @@ function blockStep(M, a, b, g) {
 // they sit, Callahan's letters); a newborn takes the colour most of them have; on a tie, the one colour missing
 // around it if just one is (QuadLife's way: 4 colours, 1 + 1 + 1), else none (it stays dead). With C > 2 states a cell
 // that fails to survive goes through the dying stages, keeping its colour, and cannot be born again until
-// it is dead. A cell dying at generation g records died = g (fading trail).
+// it is dead. A cell dying at gen g records died = g (fading trail).
 // Blocks (Margolus's neighbourhood, on any of the reversible tab's grids): a grid's cells round its corners of most cells,
 // 4 squares, 6 triangles (a hexagon), 3 hexagons, 4 Cairo pentagons; those corners in sets, each set's blocks every cell
 // once, the sets in turn a generation each (turn: squares, a corner and the one across a square, Margolus's; triangles,
@@ -31833,7 +31687,7 @@ function bordersOf(L, a) {
  *   same, of the runs dying out; its peak: the most cells alive at once (fewer cells first); reach all: every cell
  *   alive once, the soonest (else the most reached).
  * - Colours, a battle: it lasts and every colour keeps spreading, as much as the others.
- *   S_c = Σ g × (cells born of colour c at generation g), the later the more it counts; the balance,
+ *   S_c = Σ g × (cells born of colour c at gen g), the later the more it counts; the balance,
  *   1 − CV / √(K − 1), CV the standard deviation of the S_c over their mean (1: all even, 0: one colour
  *   spreading alone); score = the generations with two colours side by side, before the run repeats
  *   (or the cap), × the balance.
@@ -31862,7 +31716,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
       GPU.device.queue.writeBuffer(E.cell, 4 * ((E.side * 5 + f) * E.total + r * E.stride), a),
     );
   };
-  // a run: from its start (generation 0), then a generation at a time from its sums (see step)
+  // a run: from its start (gen 0), then a generation at a time from its sums (see step)
   const begin = (seed) => {
     const byColour = new Int32Array(K + 1);
     let alive = 0,
@@ -32096,7 +31950,7 @@ function huntRuns(L, { cells, copies, all, choices, nth }, cap, goal, report) {
       report(top, tried, true);
       return;
     } // (all tried)
-    // (the runs going on only, from the first to the last; as many generations a slice as they're fewer, as much work)
+    // (the runs going on only, from the first to the last; as many gens a slice as they're fewer, as much work)
     const on = runs.flatMap((s, r) => (s ? [r] : [])),
       span = [on[0], on.at(-1) + 1],
       k = Math.min(E.h, LIFE_H * Math.floor(E.runs / on.length));
@@ -32250,7 +32104,7 @@ const punkArt = (i) =>
   ).join(',');
 const iconSet = (zone) => ICON_SETS[zone.startsWith('punk') ? 'punk' : zone === 'emoji' ? 'emoji' : 'icon'];
 const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.indexOf(name)); // (a link's name; unknown, the first)
-const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many generations: in Solo, in colours (a battle)
+const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many gens: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
 const zoneRadius = (zone) => (zone === 'seed' ? plane.seedRadius : 0);
@@ -33584,7 +33438,7 @@ function renderHunt() {
   }); // (by the setup's zone: a click on it lights the zones that allow it, see enablersFor; running, Stop, never greyed)
   $('huntBtn').title = `${hunts}\n${zone}`;
   $('huntBtn').dataset.limits =
-    `Each start played up to ${formatNumber(HUNT_GENERATIONS[K === 1 ? 0 : 1])} generations${K === 1 ? '' : ' (a battle)'}` +
+    `Each start played up to ${formatNumber(HUNT_GENERATIONS[K === 1 ? 0 : 1])} gens${K === 1 ? '' : ' (a battle)'}` +
     `${z === 'numbers' ? `\nNumbers: the fractions p/q, q up to 999, and the roots √n, n up to 9,999 (${formatNumber(DRAWN)})` : ''}\nThe 8 best kept`;
   $('huntStatus').innerHTML = withIcons(hunt.status); // (its zone: in its button's tooltip)
   // each result's light: a battle by its balance (green 0.6 and up: even; orange from 0.3; red: one-sided;
@@ -33602,7 +33456,7 @@ function renderHunt() {
         : K > 1
           ? [
               ...huntLight(r.balance, [0.6, 0.3], ['even', 'uneven', 'one-sided']),
-              `balance ${r.balance.toFixed(2)}: how evenly its colours keep being born (1 all alike, 0 one alone; green from 0.6, orange from 0.3, else red)`,
+              `balance ${r.balance.toFixed(2)}: how evenly its colours keep being born (1 all alike, 0 one alone; green from 0.6, orange from 0.3, else red). Ranked by ${formatNumber(Math.round(r.contacts * r.balance))} = ${formatNumber(r.contacts)} gens in contact × ${r.balance.toFixed(2)} even`, // (its score, see huntRuns)
             ]
           : [
               ...huntLight(r.peak / r.live, [4, 2], ['spreads far', 'spreads some', 'spreads little']),
@@ -33619,7 +33473,7 @@ function renderHunt() {
           ? hunt.goal === 'peak'
             ? [
                 `${formatNumber(r.peak)} cells alive at gen ${formatNumber(r.peakAt)}`,
-                `from ${formatNumber(r.live)} cells · ${formatNumber(r.T)} generations${r.P ? '' : ' or more'}`,
+                `from ${formatNumber(r.live)} cells · ${formatNumber(r.T)} gens${r.P ? '' : ' or more'}`,
               ]
             : hunt.goal === 'cover'
               ? r.allAt
@@ -33629,19 +33483,21 @@ function renderHunt() {
                   ]
                 : [
                     `${Math.floor((100 * r.reached) / n)} % of the cells reached`,
-                    `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${formatNumber(r.T)}` : `in ${formatNumber(r.T)} generations`} · from ${formatNumber(r.live)} cells`,
+                    `${r.P ? `till it ${r.P === 1 ? 'settles' : 'loops'} at gen ${formatNumber(r.T)}` : `in ${formatNumber(r.T)} gens`} · from ${formatNumber(r.live)} cells`,
                   ]
               : [
-                  `${formatNumber(r.T)} generations${r.P ? '' : ' or more'}`,
+                  `${formatNumber(r.T)} gens${r.P ? '' : ' or more'}`,
                   `${r.extinct ? 'dies out' : r.P === 1 ? 'settles' : r.P ? `period-${formatNumber(r.P)} loop` : 'still changing'}${hunt.goal === 'full' ? `, ${Math.floor((100 * r.endAlive) / n)} % alive` : ''} · ${formatNumber(r.live)} cells`,
                 ]
           : [
-              `${formatNumber(r.contacts)} generation${r.contacts === 1 ? '' : 's'} in contact`,
-              r.winner
-                ? `${teamName(r.winner - 1)} wins at gen ${formatNumber(r.alone)}`
-                : r.P
-                  ? `of ${formatNumber(r.T)} before it settles`
-                  : `still fighting at gen ${formatNumber(r.T)}, where the hunt stops`,
+              `${formatNumber(r.contacts)} gen${r.contacts === 1 ? '' : 's'} × ${r.balance.toFixed(2)} even`, // (what ranks it: see huntRuns' score)
+              `in contact, ${
+                r.winner
+                  ? `${teamName(r.winner - 1)} wins at gen ${formatNumber(r.alone)}`
+                  : r.P
+                    ? `of ${formatNumber(r.T)} before it settles`
+                    : `still fighting at gen ${formatNumber(r.T)}, where the hunt stops`
+              }`,
             ]; // its balance: on its light
       return huntCard({
         light: light(r),
@@ -33769,7 +33625,7 @@ function huntClick() {
       }
       const [b, e] = plan.space ?? [],
         of = all ? formatNumber(all) : b && e > 1 ? `${formatNumber(b)}^${formatNumber(e)}` : b ? formatNumber(b) : ''; // (the starts it has: all, or so many a cell's or colour's choices)
-      hunt.status = `${all ? '' : '🎲 '}${of ? `${formatNumber(n)} / ${of}` : formatNumber(n)} tried · ${formatNumber(hunt.top.length)} kept · ${formatNumber(on)} running, up to generation ${formatNumber(g)}`; // (🎲: drawn at random, not each in turn)
+      hunt.status = `${all ? '' : '🎲 '}${of ? `${formatNumber(n)} / ${of}` : formatNumber(n)} tried · ${formatNumber(hunt.top.length)} kept · ${formatNumber(on)} running, up to gen ${formatNumber(g)}`; // (🎲: drawn at random, not each in turn)
       renderHunt();
     },
   );
@@ -34502,19 +34358,14 @@ const CENTRED_OFF = {
     ['B37/S016', 'Oscillator', '98A151A196A', 'period 2 · 3 cells'],
     ['B37/S016', 'Seed', '113A151A152A69A204A216A164A', 'keeps spreading · 7 cells'],
     ['B3/S1v0.368', 'Oscillator', '60A81A93A', 'period 2 · 3 cells'],
-    [
-      'B3/S1v0.368',
-      'Methuselah',
-      '113A131A81A151A98A94A117A199A188A109A62A125A',
-      'settles at generation 222 · 12 cells',
-    ],
+    ['B3/S1v0.368', 'Methuselah', '113A131A81A151A98A94A117A199A188A109A62A125A', 'settles at gen 222 · 12 cells'],
     ['B3/S1v0.368', 'Seed', '94A199A48A196A164A43A241A75A', 'keeps spreading · 8 cells'],
     ['B3v023/S014v135v26v27', 'Oscillator', '48A113A98A', 'period 2 · 3 cells'],
     [
       'B3v023/S014v135v26v27',
       'Methuselah',
       '131A111A151A98A152A69A60A93A199A48A188A204A171A136A216A109A164A43A241A125A75A',
-      'settles at generation 229 · 21 cells',
+      'settles at gen 229 · 21 cells',
     ],
     ['B3v023/S014v135v26v27', 'Seed', '111A98A69A199A48A204A196A109A', 'keeps spreading · 8 cells'],
     ['B389/S0168', 'Oscillator', '60A98A93A', 'period 2 · 3 cells'],
@@ -34526,7 +34377,7 @@ const CENTRED_OFF = {
       'B368/S3457',
       'Seed',
       '101A108A163A138A69A99A152A45A218A142A209A159A39A44A204A194A131A129A249A',
-      'settles at generation 335 · 19 cells',
+      'settles at gen 335 · 19 cells',
     ],
     ['B368/S3457', 'Seed', '101A108A79A163A69A99A72A114A64A45A218A142A209A44A257A129A', 'keeps spreading · 16 cells'],
     ['B2/S0345/C5', 'Seed', '163A138A72A199A209A44A204A194A', 'keeps spreading · 8 cells'],
@@ -34537,7 +34388,7 @@ const CENTRED_OFF = {
       'B345/S0238',
       'Seed',
       '94A104A58A108A59A48A110A49A88A132A209A223A95A184A169A252A',
-      'settles at generation 1258 · 16 cells',
+      'settles at gen 1258 · 16 cells',
     ],
     ['B345/S0238', 'Seed', '94A165A58A108A194A59A142A168A110A49A132A209A55A184A252A', 'keeps spreading · 15 cells'],
     ['B27/S0345/C5', 'Seed', '165A147A80A194A49A209A223A247A', 'keeps spreading · 8 cells'],
@@ -34549,7 +34400,7 @@ const CENTRED_OFF = {
       'B36/S3457',
       'Seed',
       '111A140A104A87A150A138A68A126A160A207A123A74A230A214A47A221A',
-      'settles at generation 242 · 16 cells',
+      'settles at gen 242 · 16 cells',
     ],
     ['B36/S3457', 'Seed', '111A96A166A87A150A138A68A62A160A190A214A116A184A47A70A', 'keeps spreading · 15 cells'],
     ['B278/S0345/C5', 'Seed', '138A68A62A123A201A116A47A181A', 'keeps spreading · 8 cells'],
@@ -34561,7 +34412,7 @@ const CENTRED_OFF = {
       'B345/S023',
       'Seed',
       '103A89A70A121A149A92A161A203A65A218A46A188A116A146A59A248A233A28A',
-      'settles at generation 564 · 18 cells',
+      'settles at gen 564 · 18 cells',
     ],
   ],
   flower4: [
@@ -34577,12 +34428,7 @@ const CENTRED_OFF = {
       'keeps spreading · 17 cells',
     ],
     ['B345/S0239', 'Oscillator', '156A101A212A95A133A', 'period 4 · 5 cells'],
-    [
-      'B345/S0239',
-      'Seed',
-      '103A79A70A174A90A143A87A134A239A37A42A83A219A95A230A206A',
-      'settles at generation 380 · 16 cells',
-    ],
+    ['B345/S0239', 'Seed', '103A79A70A174A90A143A87A134A239A37A42A83A219A95A230A206A', 'settles at gen 380 · 16 cells'],
     ['B345/S0239', 'Seed', '125A118A79A184A174A90A143A182A239A42A219A28A', 'keeps spreading · 12 cells'],
     ['B36/S3457', 'Oscillator', '13A20A51A8A', 'period 2 · 4 cells'],
     [
@@ -34625,7 +34471,7 @@ const CENTRED_OFF = {
       'B378/S023',
       'Seed',
       '119A74A98A163A202A70A45A183A184A215A213A170A144A143A42A34A36A',
-      'settles at generation 216 · 17 cells',
+      'settles at gen 216 · 17 cells',
     ],
     ['B378/S023', 'Seed', '98A101A163A114A213A247A43A36A', 'keeps spreading · 8 cells'],
     ['B389/S1345/C5', 'Oscillator', '34A3A1B23A45A17C36A43D', 'period 8 · 8 cells'],
@@ -34744,7 +34590,7 @@ const CENTRED_OFF = {
       'B256/S3467',
       'Methuselah',
       '96A177A49A83A93A63A62A157A192A191A142A73A133A82A238A',
-      'settles at generation 968 · 15 cells',
+      'settles at gen 968 · 15 cells',
     ],
     ['B256/S3467', 'Seed', '162A49A83A192A128A74A34A33A241A', 'keeps spreading · 9 cells'],
     ['B2345/S134/C5', 'Seed', '97A177A176A192A74A33A', 'keeps spreading · 6 cells'],
@@ -34762,7 +34608,7 @@ const CENTRED_OFF = {
       'B346/S0124',
       'Methuselah',
       '115A114A162A177A176A63A145A128A142A73A133A143A238A240A',
-      'settles at generation 201 · 14 cells',
+      'settles at gen 201 · 14 cells',
     ],
     ['B2/S24/C3', 'Oscillator', '39A93B15B33A63A', 'period 3 · 5 cells'],
     ['B2/S24/C3', 'Seed', '177A176A63A62A74A133A82A81A', 'keeps spreading · 8 cells'],
@@ -34770,12 +34616,7 @@ const CENTRED_OFF = {
   ],
   hexa9: [
     ['B25/S3467', 'Oscillator', '153A234A', 'period 2 · 2 cells'],
-    [
-      'B25/S3467',
-      'Methuselah',
-      '122A121A131A55A93A63A64A169A51A103A104A152A50A19A',
-      'settles at generation 869 · 14 cells',
-    ],
+    ['B25/S3467', 'Methuselah', '122A121A131A55A93A63A64A169A51A103A104A152A50A19A', 'settles at gen 869 · 14 cells'],
     ['B25/S3467', 'Seed', '121A93A102A203A153A43A', 'keeps spreading · 6 cells'],
     ['B2345/S134/C5', 'Seed', '122A55A64A162A213A43A145A', 'keeps spreading · 7 cells'],
     ['B34/S123/C3', 'Oscillator', '103A152A53A151A', 'period 3 · 4 cells'],
@@ -34795,12 +34636,7 @@ const CENTRED_OFF = {
   ],
   hexa10: [
     ['B256/S3467', 'Oscillator', '180A251A', 'period 2 · 2 cells'],
-    [
-      'B256/S3467',
-      'Methuselah',
-      '140A92A99A119A161A171A210A231A230A59A160A21A20A',
-      'settles at generation 599 · 13 cells',
-    ],
+    ['B256/S3467', 'Methuselah', '140A92A99A119A161A171A210A231A230A59A160A21A20A', 'settles at gen 599 · 13 cells'],
     ['B256/S3467', 'Seed', '141A86A92A99A58A104A171A21A', 'keeps spreading · 8 cells'],
     ['B2345/S134/C5', 'Seed', '128A87A86A58A161A210A', 'keeps spreading · 6 cells'],
     ['B34/S123/C3', 'Oscillator', '119A172A59A99B171A', 'period 3 · 5 cells'],
@@ -34842,7 +34678,7 @@ const CENTRED_OFF = {
       'B34/S123/C3',
       'Methuselah',
       '72A87A140A162A161A182A109A62A70A128A71A97A37A36A222A73A168A',
-      'settles at generation 245 · 17 cells',
+      'settles at gen 245 · 17 cells',
     ],
     ['B2/S34', 'Oscillator', '34A96A', 'period 2 · 2 cells'],
     ['B2/S34', 'Seed', '140A162A183A182A70A49A97A37A36A224A195A', 'keeps spreading · 11 cells'],
@@ -34871,7 +34707,7 @@ const CENTRED_OFF = {
       'B368/S3457',
       'Methuselah',
       '135A99A125A152A70A149A180A62A205A175A58A193A239A219A51A31A229A124A188A',
-      'settles at generation 274 · 19 cells',
+      'settles at gen 274 · 19 cells',
     ],
     ['B368/S3457', 'Seed', '135A152A87A149A109A180A205A105A119A239A163A51A229A176A', 'keeps spreading · 14 cells'],
   ],
@@ -34903,34 +34739,24 @@ const CENTRED_OFF = {
       'B257/S367',
       'Methuselah',
       '104A148A127A86A194A89A188A200A213A41A64A137A191A91A43A103A',
-      'settles at generation 294 · 16 cells',
+      'settles at gen 294 · 16 cells',
     ],
     ['B257/S367', 'Seed', '104A71A58A167A200A64A191A', 'keeps spreading · 7 cells'],
   ],
   penrose: [
     ['B3/S023', 'Oscillator', '153A78A117A', 'period 2 · 3 cells'],
-    [
-      'B3/S023',
-      'Methuselah',
-      '131A154A145A107A177A121A201A106A225A45A217A117A',
-      'settles at generation 234 · 12 cells',
-    ],
+    ['B3/S023', 'Methuselah', '131A154A145A107A177A121A201A106A225A45A217A117A', 'settles at gen 234 · 12 cells'],
     ['B3/S023', 'Seed', '84A92A64A201A137A208A93A45A', 'keeps spreading · 8 cells'],
     ['B39/S0239', 'Oscillator', '153A78A117A', 'period 2 · 3 cells'],
     [
       'B39/S0239',
       'Methuselah',
       '112A71A92A145A107A177A64A161A121A201A137A106A208A93A35A171A225A140A29A65A',
-      'settles at generation 224 · 20 cells',
+      'settles at gen 224 · 20 cells',
     ],
     ['B39/S0239', 'Seed', '84A92A64A201A137A208A93A45A', 'keeps spreading · 8 cells'],
     ['B39/S023', 'Oscillator', '153A78A117A', 'period 2 · 3 cells'],
-    [
-      'B39/S023',
-      'Methuselah',
-      '154A177A121A137A54A186A208A93A171A225A78A29A59A',
-      'settles at generation 315 · 13 cells',
-    ],
+    ['B39/S023', 'Methuselah', '154A177A121A137A54A186A208A93A171A225A78A29A59A', 'settles at gen 315 · 13 cells'],
     ['B39/S023', 'Seed', '84A92A64A201A137A208A93A45A', 'keeps spreading · 8 cells'],
     ['B346/S01458', 'Oscillator', '154A177A208A', 'period 2 · 3 cells'],
     ['B346/S01458', 'Seed', '112A92A145A106A93A225A', 'keeps spreading · 6 cells'],
@@ -34941,7 +34767,7 @@ const CENTRED_OFF = {
       'B25/S357',
       'Methuselah',
       '120A142A82A164A152A73A83A53A212A219A220A145A34A46A115A213A66A203A',
-      'settles at generation 324 · 18 cells',
+      'settles at gen 324 · 18 cells',
     ],
     ['B25/S357', 'Seed', '86A82A158A53A100A145A46A68A66A', 'keeps spreading · 9 cells'],
     ['B23/S036/C4', 'Seed', '120A82A152A119A219A34A115A', 'keeps spreading · 7 cells'],
@@ -34954,30 +34780,25 @@ const CENTRED_OFF = {
       'B2v024v03/S0347',
       'Methuselah',
       '90A156A155A177A194A69A129A214A215A238A178A260A263A41A34A78A',
-      'settles at generation 344 · 16 cells',
+      'settles at gen 344 · 16 cells',
     ],
     ['B2v024v03/S0347', 'Seed', '88A90A177A54A215A89A42A78A', 'keeps spreading · 8 cells'],
     ['B38/S013', 'Oscillator', '136A128A214A', 'period 2 · 3 cells'],
-    [
-      'B38/S013',
-      'Methuselah',
-      '90A117A119A177A74A75A128A54A52A89A193A260A263A42A',
-      'settles at generation 343 · 14 cells',
-    ],
+    ['B38/S013', 'Methuselah', '90A117A119A177A74A75A128A54A52A89A193A260A263A42A', 'settles at gen 343 · 14 cells'],
     ['B38/S013', 'Seed', '177A129A52A214A215A238A193A178A260A35A78A', 'keeps spreading · 11 cells'],
     ['B346/S01458', 'Oscillator', '193A69A75A50A', 'period 2 · 4 cells'],
     ['B346/S01458', 'Seed', '90A155A177A52A89A178A', 'keeps spreading · 6 cells'],
   ],
   rhombs12: [
     ['B39/S0238', 'Oscillator', '274A279A318A', 'period 2 · 3 cells'],
-    ['B39/S0238', 'Methuselah', '153A118A61A196A97A45A65A141A142A221A186A127A', 'settles at generation 352 · 12 cells'],
+    ['B39/S0238', 'Methuselah', '153A118A61A196A97A45A65A141A142A221A186A127A', 'settles at gen 352 · 12 cells'],
     ['B39/S0238', 'Seed', '102A117A202A161A96A45A65A127A', 'keeps spreading · 8 cells'],
     ['B39/S3457/C4', 'Oscillator', '75A102A153C97A118A127A142B', 'period 6 · 7 cells'],
     [
       'B39/S3457/C4',
       'Methuselah',
       '123A102A148A117A61A183A196A97A65A142A235A182A186A128A127A',
-      'settles at generation 210 · 15 cells',
+      'settles at gen 210 · 15 cells',
     ],
     ['B39/S3457/C4', 'Seed', '123A102A148A61A161A97A70A186A', 'keeps spreading · 8 cells'],
   ],
@@ -34989,12 +34810,7 @@ const CENTRED = {
     ['B3/S1v0.368', 'Oscillator', '1A12A6A', 'period 2 · 3 cells'],
     ['B3/S1v0.368', 'Seed', '0A2A3A8A15A18A22A29A', 'keeps spreading · 8 cells'],
     ['B3v023/S014v135v26v27', 'Oscillator', '20A23A7A', 'period 10 · 3 cells'],
-    [
-      'B3v023/S014v135v26v27',
-      'Methuselah',
-      '1A8A9A12A13A10A18A19A22A23A24A25A27A',
-      'settles at generation 244 · 13 cells',
-    ],
+    ['B3v023/S014v135v26v27', 'Methuselah', '1A8A9A12A13A10A18A19A22A23A24A25A27A', 'settles at gen 244 · 13 cells'],
     ['B3v023/S014v135v26v27', 'Seed', '1A3A5A14A24A20A29A27A', 'keeps spreading · 8 cells'],
     ['B389/S0168', 'Oscillator', '39A54A16A', 'period 2 · 3 cells'],
     ['B389/S0168', 'Seed', '3A6A11A14A10A18A19A24A', 'keeps spreading · 8 cells'],
@@ -35015,9 +34831,9 @@ const CENTRED = {
   ],
   flower3: [
     ['B37/S0345', 'Oscillator', '39A83A54A59A', 'period 2 · 4 cells'],
-    ['B37/S0345', 'Seed', '1A0A3A8A7A6A11A9A14A16A17A19A21A22A26A24A29A27A', 'settles at generation 201 · 18 cells'],
+    ['B37/S0345', 'Seed', '1A0A3A8A7A6A11A9A14A16A17A19A21A22A26A24A29A27A', 'settles at gen 201 · 18 cells'],
     ['B345/S023', 'Oscillator', '44A29A12A30A15A', 'period 4 · 5 cells'],
-    ['B345/S023', 'Seed', '1A2A8A7A11A9A13A12A14A17A19A21A22A23A24A28A', 'settles at generation 711 · 16 cells'],
+    ['B345/S023', 'Seed', '1A2A8A7A11A9A13A12A14A17A19A21A22A23A24A28A', 'settles at gen 711 · 16 cells'],
   ],
   flower4: [
     ['B345/S0457', 'Oscillator', '7A0A4A6A3A2A5A', 'period 2 · 7 cells'],
@@ -35056,12 +34872,7 @@ const CENTRED = {
   ],
   rhombs14: [
     ['B378/S023', 'Oscillator', '48A29A16A', 'period 2 · 3 cells'],
-    [
-      'B378/S023',
-      'Seed',
-      '2A6A11A4A13A0A3A8A12A7A5A19A22A23A14A26A21A18A15A41A',
-      'settles at generation 259 · 20 cells',
-    ],
+    ['B378/S023', 'Seed', '2A6A11A4A13A0A3A8A12A7A5A19A22A23A14A26A21A18A15A41A', 'settles at gen 259 · 20 cells'],
     ['B378/S023', 'Seed', '6A11A3A22A26A21A15A20A16A', 'keeps spreading · 9 cells'],
     ['B389/S1345/C5', 'Oscillator', '13A44C18B27A30A63D52A41A', 'period 8 · 8 cells'],
     ['B389/S1345/C5', 'Seed', '1A13A3A5A25A23A21A17A15A41A', 'keeps spreading · 10 cells'],
@@ -35087,12 +34898,7 @@ const CENTRED = {
     ['B268/S678', 'Seed', '1A5A2A12A11A22A20A25A38A', 'keeps spreading · 9 cells'],
     ['B25-35%/S30-40%', 'Oscillator', '17A0A4A', 'period 2 · 3 cells'],
     ['B20-30%/S20-40%', 'Oscillator', '9A', 'period 15 · 1 cell'],
-    [
-      'B20-30%/S20-40%',
-      'Methuselah',
-      '1A7A14A15A17A11A16A22A23A26A18A21A20A25A42A',
-      'settles at generation 2,999 · 15 cells',
-    ],
+    ['B20-30%/S20-40%', 'Methuselah', '1A7A14A15A17A11A16A22A23A26A18A21A20A25A42A', 'settles at gen 2,999 · 15 cells'],
   ],
   mirror10: [
     ['B278/S', 'Oscillator', '10A25A', 'period 2 · 2 cells'],
@@ -35115,14 +34921,9 @@ const CENTRED = {
     ['B346/S1246', 'Oscillator', '3A1A13A19A', 'period 3 · 4 cells'],
     ['B2345/S134/C5', 'Seed', '0A6A7A14A21A24A34A', 'keeps spreading · 7 cells'],
     ['B34/S123/C3', 'Oscillator', '8A5B11A18A16A', 'period 3 · 5 cells'],
-    ['B34/S123/C3', 'Methuselah', '3A6A5A7A15A13A11A10A23A19A17A16A20A25A35A', 'settles at generation 268 · 15 cells'],
+    ['B34/S123/C3', 'Methuselah', '3A6A5A7A15A13A11A10A23A19A17A16A20A25A35A', 'settles at gen 268 · 15 cells'],
     ['B2/S34', 'Oscillator', '0A1A', 'period 2 · 2 cells'],
-    [
-      'B24/S134/C4',
-      'Methuselah',
-      '1A7A4A15A9A8A11A21A23A19A18A16A22A26A25A34A',
-      'settles at generation 200 · 16 cells',
-    ],
+    ['B24/S134/C4', 'Methuselah', '1A7A4A15A9A8A11A21A23A19A18A16A22A26A25A34A', 'settles at gen 200 · 16 cells'],
     ['B24/S134/C4', 'Seed', '1A5A12A10A23A17A16A35A', 'keeps spreading · 8 cells'],
     ['B24/S35', 'Oscillator', '3A2A', 'period 2 · 2 cells'],
     ['B234/S234', 'Seed', '0A5A7A12A19A16A', 'keeps spreading · 6 cells'],
@@ -35172,7 +34973,7 @@ const CENTRED = {
     ['B2345/S134/C5', 'Seed', '5A6A0A17A27A20A', 'keeps spreading · 6 cells'],
     ['B34/S123/C3', 'Oscillator', '41A32A22A19A11A', 'period 3 · 5 cells'],
     ['B2/S34', 'Oscillator', '27A50A', 'period 2 · 2 cells'],
-    ['B2/S34', 'Methuselah', '5A3A2A4A7A11A12A17A26A21A27A16A20A19A14A25A41A', 'settles at generation 225 · 17 cells'],
+    ['B2/S34', 'Methuselah', '5A3A2A4A7A11A12A17A26A21A27A16A20A19A14A25A41A', 'settles at gen 225 · 17 cells'],
     ['B2/S34', 'Seed', '3A6A12A9A8A21A27A18A', 'keeps spreading · 8 cells'],
     ['B24/S134/C4', 'Seed', '6A0A13A10A27A18A14A23A', 'keeps spreading · 8 cells'],
     ['B24/S35', 'Oscillator', '14A13A', 'period 2 · 2 cells'],
@@ -35188,7 +34989,7 @@ const CENTRED = {
   ],
   hexa8: [
     ['B256/S3467', 'Oscillator', '1A40A', 'period 2 · 2 cells'],
-    ['B256/S3467', 'Methuselah', '1A7A5A2A10A15A12A8A9A11A31A30A29A25A20A23A', 'settles at generation 1043 · 16 cells'],
+    ['B256/S3467', 'Methuselah', '1A7A5A2A10A15A12A8A9A11A31A30A29A25A20A23A', 'settles at gen 1043 · 16 cells'],
     ['B256/S3467', 'Seed', '1A5A0A13A31A25A22A', 'keeps spreading · 7 cells'],
     ['B2345/S134/C5', 'Seed', '1A4A0A9A28A19A', 'keeps spreading · 6 cells'],
     ['B34/S123/C3', 'Oscillator', '15A21A20A8A', 'period 3 · 4 cells'],
@@ -35207,12 +35008,7 @@ const CENTRED = {
   ],
   hexa9: [
     ['B25/S3467', 'Oscillator', '25A2A', 'period 2 · 2 cells'],
-    [
-      'B25/S3467',
-      'Methuselah',
-      '2A1A3A4A7A14A10A15A13A11A16A12A20A18A34A33A25A31A',
-      'settles at generation 717 · 18 cells',
-    ],
+    ['B25/S3467', 'Methuselah', '2A1A3A4A7A14A10A15A13A11A16A12A20A18A34A33A25A31A', 'settles at gen 717 · 18 cells'],
     ['B25/S3467', 'Seed', '8A3A4A13A20A29A', 'keeps spreading · 6 cells'],
     ['B2345/S134/C5', 'Seed', '8A3A4A13A20A29A', 'keeps spreading · 6 cells'],
     ['B34/S123/C3', 'Oscillator', '34A29A14A13A3A', 'period 3 · 5 cells'],
@@ -35231,7 +35027,7 @@ const CENTRED = {
   ],
   hexa10: [
     ['B256/S3467', 'Oscillator', '12A71A', 'period 2 · 2 cells'],
-    ['B256/S3467', 'Methuselah', '3A4A6A2A9A5A19A12A10A11A18A16A26A21A20A', 'settles at generation 667 · 15 cells'],
+    ['B256/S3467', 'Methuselah', '3A4A6A2A9A5A19A12A10A11A18A16A26A21A20A', 'settles at gen 667 · 15 cells'],
     ['B256/S3467', 'Seed', '4A7A9A5A13A10A18A24A', 'keeps spreading · 8 cells'],
     ['B2345/S134/C5', 'Seed', '4A7A2A10A18A37A', 'keeps spreading · 6 cells'],
     ['B34/S123/C3', 'Oscillator', '10A11A26A27A', 'period 3 · 4 cells'],
@@ -35311,68 +35107,58 @@ const CENTRED = {
     ['B245/S134/C5', 'Oscillator', '73A69D51B46A24A16D45A23B7D6C', 'period 10 · 10 cells'],
     ['B245/S134/C5', 'Seed', '5A6A8A12A20A23A27A29A', 'keeps spreading · 8 cells'],
     ['B257/S367', 'Oscillator', '9A48A', 'period 2 · 2 cells'],
-    ['B257/S367', 'Methuselah', '3A5A9A14A16A17A19A21A22A23A24A28A', 'settles at generation 362 · 12 cells'],
+    ['B257/S367', 'Methuselah', '3A5A9A14A16A17A19A21A22A23A24A28A', 'settles at gen 362 · 12 cells'],
     ['B257/S367', 'Seed', '4A5A9A10A17A19A21A27A', 'keeps spreading · 8 cells'],
     ['B25-35%/S30-40%', 'Oscillator', '58A37A', 'period 2 · 2 cells'],
     [
       'B25-35%/S30-40%',
       'Methuselah',
       '0A2A7A9A10A11A13A14A15A16A17A18A20A21A23A24A27A28A29A',
-      'settles at generation 276 · 19 cells',
+      'settles at gen 276 · 19 cells',
     ],
     ['B25-35%/S30-40%', 'Seed', '0A4A6A8A17A20A21A24A26A28A', 'keeps spreading · 10 cells'],
   ],
   penrose: [
     ['B3/S023', 'Oscillator', '5A13A25A', 'period 2 · 3 cells'],
-    ['B3/S023', 'Methuselah', '1A0A3A7A8A6A9A12A10A17A16A23A20A22A24A32A34A', 'settles at generation 365 · 17 cells'],
+    ['B3/S023', 'Methuselah', '1A0A3A7A8A6A9A12A10A17A16A23A20A22A24A32A34A', 'settles at gen 365 · 17 cells'],
     ['B3/S023', 'Seed', '4A9A19A11A10A16A23A34A', 'keeps spreading · 8 cells'],
     ['B39/S0239', 'Oscillator', '24A29A35A', 'period 2 · 3 cells'],
-    ['B39/S0239', 'Methuselah', '1A0A2A3A6A12A11A10A15A23A21A22A26A27A32A', 'settles at generation 224 · 15 cells'],
+    ['B39/S0239', 'Methuselah', '1A0A2A3A6A12A11A10A15A23A21A22A26A27A32A', 'settles at gen 224 · 15 cells'],
     ['B39/S0239', 'Seed', '2A7A14A11A17A16A21A34A', 'keeps spreading · 8 cells'],
     ['B39/S023', 'Oscillator', '24A29A35A', 'period 2 · 3 cells'],
-    ['B39/S023', 'Methuselah', '0A4A7A5A6A18A13A10A23A22A24A27A33A32A', 'settles at generation 217 · 14 cells'],
+    ['B39/S023', 'Methuselah', '0A4A7A5A6A18A13A10A23A22A24A27A33A32A', 'settles at gen 217 · 14 cells'],
     ['B39/S023', 'Seed', '4A9A19A11A10A16A23A34A', 'keeps spreading · 8 cells'],
     ['B346/S01458', 'Oscillator', '32A19A4A3A1A0A10A5A6A27A', 'period 2 · 10 cells'],
     ['B346/S01458', 'Seed', '0A7A8A14A15A21A', 'keeps spreading · 6 cells'],
   ],
   spectre: [
     ['B25/S357', 'Oscillator', '52A16A', 'period 2 · 2 cells'],
-    ['B25/S357', 'Methuselah', '0A1A3A4A5A7A9A14A15A16A17A18A22A24A25A28A', 'settles at generation 305 · 16 cells'],
+    ['B25/S357', 'Methuselah', '0A1A3A4A5A7A9A14A15A16A17A18A22A24A25A28A', 'settles at gen 305 · 16 cells'],
     ['B25/S357', 'Seed', '1A2A6A15A18A19A22A24A26A29A', 'keeps spreading · 10 cells'],
     ['B23/S036/C4', 'Seed', '3A6A10A13A14A18A19A23A', 'keeps spreading · 8 cells'],
   ],
   ammann: [
-    ['B356/S0345/C4', 'Methuselah', '6A12A15A10A22A20A16A24A37A36A', 'settles at generation 212 · 10 cells'],
+    ['B356/S0345/C4', 'Methuselah', '6A12A15A10A22A20A16A24A37A36A', 'settles at gen 212 · 10 cells'],
     ['B356/S0345/C4', 'Seed', '7A6A11A12A15A16A37A39A', 'keeps spreading · 8 cells'],
     ['B2v024v03/S0347', 'Oscillator', '35A39A', 'period 2 · 2 cells'],
-    [
-      'B2v024v03/S0347',
-      'Methuselah',
-      '2A4A0A5A11A14A10A18A22A20A23A19A24A37A39A',
-      'settles at generation 291 · 15 cells',
-    ],
+    ['B2v024v03/S0347', 'Methuselah', '2A4A0A5A11A14A10A18A22A20A23A19A24A37A39A', 'settles at gen 291 · 15 cells'],
     ['B2v024v03/S0347', 'Seed', '5A8A12A9A15A37A26A25A39A', 'keeps spreading · 9 cells'],
     ['B38/S013', 'Oscillator', '22A29A25A', 'period 2 · 3 cells'],
-    ['B38/S013', 'Methuselah', '2A7A5A3A6A9A10A17A21A16A19A24A37A36A', 'settles at generation 304 · 14 cells'],
+    ['B38/S013', 'Methuselah', '2A7A5A3A6A9A10A17A21A16A19A24A37A36A', 'settles at gen 304 · 14 cells'],
     ['B38/S013', 'Seed', '4A1A0A5A3A11A13A15A10A18A22A20A37A26A25A39A', 'keeps spreading · 16 cells'],
     ['B346/S01458', 'Oscillator', '7A0A5A15A3A6A10A', 'period 2 · 7 cells'],
     ['B346/S01458', 'Seed', '7A5A3A15A22A23A', 'keeps spreading · 6 cells'],
   ],
   rhombs12: [
     ['B39/S0238', 'Oscillator', '64A58A80A', 'period 2 · 3 cells'],
-    [
-      'B39/S0238',
-      'Methuselah',
-      '3A8A4A0A1A6A14A19A21A13A12A22A20A17A23A31A33A',
-      'settles at generation 357 · 17 cells',
-    ],
+    ['B39/S0238', 'Methuselah', '3A8A4A0A1A6A14A19A21A13A12A22A20A17A23A31A33A', 'settles at gen 357 · 17 cells'],
     ['B39/S0238', 'Seed', '5A11A6A12A23A18A26A31A35A33A', 'keeps spreading · 10 cells'],
     ['B39/S3457/C4', 'Oscillator', '44C41B26A17A28A14A5A', 'period 6 · 7 cells'],
     [
       'B39/S3457/C4',
       'Methuselah',
       '3A8A5A0A1A2A11A6A19A13A12A20A15A17A18A28A31A35A33A',
-      'settles at generation 210 · 19 cells',
+      'settles at gen 210 · 19 cells',
     ],
     ['B39/S3457/C4', 'Seed', '3A8A5A2A6A14A17A26A', 'keeps spreading · 8 cells'],
   ],
@@ -35808,7 +35594,7 @@ function lifePatch(r, centre = centreCells()) {
 }
 
 /* ---- 9.3 Loading a start ------------------------------------------------------------------ */
-// Replace the starting pattern of the current Life run and go back to generation 0. how: where it
+// Replace the starting pattern of the current Life run and go back to gen 0. how: where it
 // comes from, for the description — { radius, cells } (a zone filled with the number's first
 // digits), 'hunt', 'duel' or 'saved' (a link or a saved setup); null, the Start's own again (a surface's, see lifeReseed).
 // The link keeps the cells.
@@ -37069,7 +36855,7 @@ function showAll() {
     play(true);
     return;
   }
-  if (lifeTime()) return; // the Game of Life starts at generation 0 instead (Space-time: its layers all)
+  if (lifeTime()) return; // the Game of Life starts at gen 0 instead (Space-time: its layers all)
   if (walk.stacked && !stack) return; // (Space-time: once its cubes are made, see stackUp)
   advanceTo(firstShown());
   faceWalk();
@@ -38946,10 +38732,10 @@ function lifeCells(L) {
 }
 // a Game of Life played again from its start to step back (no rule backwards, see advanceTo): about 1.26 ns a cell and 0.05 ms
 // a generation whatever its size (its passes: 2^15 cells' worth), measured on WebGPU at 48 and 512 a side (WebGL's: 2.6 ns,
-// 0.53 ms); Step back greyed past 2^29 (about 0.7 s, as before: 15,000 generations at 48 a side, 500 at 2^20 cells)
+// 0.53 ms); Step back greyed past 2^29 (about 0.7 s, as before: 15,000 gens at 48 a side, 500 at 2^20 cells)
 const LIFE_PASSES = 2 ** 15,
   LIFE_REPLAY_MOST = 2 ** 29;
-// a Game of Life's way to generation g within it: forth from where it is, back round its loop, else again from its start
+// a Game of Life's way to gen g within it: forth from where it is, back round its loop, else again from its start
 const lifeWithin = (g) => {
   if (!lifeTime() || walk.life.margolus) return true;
   const gens = g >= stepShown ? g - stepShown : looping() && (g >= runLoop().T || loopBack()) ? 0 : g;
@@ -38957,7 +38743,7 @@ const lifeWithin = (g) => {
 };
 const LIFE_H = 16,
   LIFE_BATCH = 256; // (generations a read back: a hunt's; the game's, at most, as many as a frame asks)
-// k generations there (gen: the first one shown; back, its rule's inverse, see lifeBack): a batch read back once played, never at once. Asked, its batch
+// k gens there (gen: the first one shown; back, its rule's inverse, see lifeBack): a batch read back once played, never at once. Asked, its batch
 // starts and null comes back (lifeTo stops there, walk.lifeGoal kept: see tick); asked again once back, its sums, and its cells
 // adopted (L.alive, the cells shown: see gpuShow). One batch at a time; the cells written here sent again first (L.gpuOld)
 function lifeStepGPU(L, gen, back = false, k = 1) {
@@ -39444,7 +39230,7 @@ function lifeComputePass(E, enc, words, k, pipe, numbers, count, more = null) {
   c.dispatchWorkgroups(Math.min(w, 65535), Math.ceil(w / 65535));
   c.end();
 }
-// k generations of runs r0 … r1: their sums a column each, read back with run 0's states once all
+// k gens of runs r0 … r1: their sums a column each, read back with run 0's states once all
 // are played. Resolves to read(j, r, x), sum j of run r at column x, and the states
 async function gpuLifeSteps(E, { gen = 0, back = false, k = 1, r0 = 0, r1 = E.runs, negOf = null } = {}) {
   const { device, pipes } = GPU,
@@ -42543,15 +42329,14 @@ function updateStats() {
   if (row.firstElementChild !== $(first)) row.prepend($(first));
   if (row.lastElementChild !== $(last)) row.append($(last));
   $('jump10k').textContent = away() < 0 ? '−10k' : '+10k';
-  $('jump10k').title =
-    `10,000 generations ${away() < 0 ? 'further into the past' : 'ahead'} (E, while its end is not known)`;
+  $('jump10k').title = `10,000 gens ${away() < 0 ? 'further into the past' : 'ahead'} (E, while its end is not known)`;
   // (a Game of Life's step back: round its loop forth, at once; else played again from its start, greyed when too long)
   const tooFar = !lifeWithin(stepShown - 1);
   const backAtStart = stepShown <= runStart() && !loopBack() ? 'Already at the start.' : '';
   setTile($('back'), {
     greyed: tooFar ? 'So far from its start: played again from it, more than a second.' : backAtStart,
   });
-  // (Life, a reversible one: 10,000 generations ahead while its end is not known; known, its loop found: End in its place)
+  // (Life, a reversible one: 10,000 gens ahead while its end is not known; known, its loop found: End in its place)
   $('jump10k').hidden = !lifePlayer() || !!runLoop();
   setTile($('jump10k'), { greyed: busy ? 'Its run is not built yet.' : '' });
   // (a button its way's arrow, stopped or turning back at the slowest: that way's own; its rabbit at the fastest: none faster)
@@ -42632,7 +42417,7 @@ function updateStats() {
         far = Math.max(L.reached ?? 0, backSearch.life === L ? backSearch.gen : 0);
       $('barLoop').textContent = `not back by gen ${formatNumber(far)} · ≤ ${bigWords(B.log)}`;
       $('barLoop').title =
-        `A reversible rule: it comes back to its start, at the latest after ${bigWords(B.log)} generations (${B.keeps ? 'the ways its live cells can lie' : 'all its states'}, × its phases)`;
+        `A reversible rule: it comes back to its start, at the latest after ${bigWords(B.log)} gens (${B.keeps ? 'the ways its live cells can lie' : 'all its states'}, × its phases)`;
     }
     renderRanking(L); // (one colour: its gauges; a battle: the ranking's table)
     renderGauges(L);
@@ -43809,7 +43594,7 @@ $('lifeRule').addEventListener('change', () => {
     known = rulesOf('life').find((r) => parseRule(r.rule)?.text === typed.text);
   customOpen = !known;
   $('lifeRule').value = known?.rule ?? ruleBody(typed.text); // (as read: B35785766 is B35678)
-  if (VARIANTS[tabVariant()].life) compute(); // restart from generation 0; a new state count needs a new base
+  if (VARIANTS[tabVariant()].life) compute(); // restart from gen 0; a new state count needs a new base
 });
 // Save RLE: the generation shown as an RLE file, Golly's and LifeWiki's (its size and rule on top, rows of runs, 70
 // characters a line): two states as b and o; more as . A B … (alive, then each dying stage, Golly's Generations); in
@@ -43844,7 +43629,7 @@ function lifeRle() {
     y0 = sheet ? 0 : lowest(1) - (base === 'cairo' && (x0 / 2 + lowest(1)) & 1 ? 1 : 0); // (a sheet's cells where they are on it)
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
   return rleFile(
-    `generation ${stepShown}`,
+    `gen ${stepShown}`,
     !kind
       ? ['Its sheet unrolled, a square a cell']
       : kind === 'square' || base === 'hex'

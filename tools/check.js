@@ -288,7 +288,7 @@
     location.hash = link;
     await until(shown(w, () => walk.life && walk.life !== before && walk.variant === w && isInUse(parseHash())));
   };
-  // to generation g, its batches awaited (Life's on the card come back later, see lifeSettle)
+  // to gen g, its batches awaited (Life's on the card come back later, see lifeSettle)
   const goTo = async (g) => {
     advanceTo(g);
     await lifeSettle();
@@ -845,7 +845,7 @@
 
   // The deep crawl (a night's): every grid of Life and Rewind from its link, then on each: every rule of its menu and one of
   // your own (B36/S23; blocks: their menu's), each with How it works (and its Letters page); every colour (and Mixed); every zone of
-  // Hunt; its smallest size; 30 generations played. No error anywhere (a click's included), the link's variant the one shown.
+  // Hunt; its smallest size; 30 gens played. No error anywhere (a click's included), the link's variant the one shown.
   // only: those grids alone; from: the grid it starts at (after a crash: localStorage.tesseraDeep holds the one it was on, and its failures so far)
   async function deep(fail, from, only) {
     const wait = (ms) => new Promise((go) => setTimeout(go, ms)),
@@ -1358,7 +1358,7 @@
   }
 
   // Life's known results (its only engine the graphics card's: none here to compare with): a link's start played till it
-  // repeats, from generation T with period P (null: not checked); PATTERNS.md's records, and reversible rules' returns to their
+  // repeats, from gen T with period P (null: not checked); PATTERNS.md's records, and reversible rules' returns to their
   // start (from a seeded start: played, and Find its return's); a hunt's 8 best of all a zone's starts (the processor's
   // worker's, v0.1.1394)
   const KNOWN = [
@@ -1496,7 +1496,7 @@
       else if (bad) fail(`${link}: its start not symmetric (${bad} cells unlike their copies)`);
       else if (by.length > 1 && new Set(by).size > 1) fail(`${link}: its colours unequal (${by.join(', ')})`);
     }
-    // each symmetry a grid offers kept 60 generations on (a grid in a hexagon: about its own middle, v0.2.89): squares and the
+    // each symmetry a grid offers kept 60 gens on (a grid in a hexagon: about its own middle, v0.2.89): squares and the
     // grids in a hexagon all four, Florets no mirror (its tiles have none), hexagons' blocks none (their blocks not onto blocks)
     for (const [w, offers] of [
       ['lifeSquares', 'half rotate mirror kaleido'],

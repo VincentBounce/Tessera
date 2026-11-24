@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.719';
+const VERSION = '0.5.720';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14523,7 +14523,7 @@ function pinwheelSolidMesh(k, cells) {
 // its bricks round the tube: one, or on a torus of square section four, a face each (a quarter turn of its section one
 // brick on: see torusTwists)
 const pinwheelAcross = (k) =>
-  PINWHEEL_SHEETS[k].fold === 'torus' && !PINWHEEL_SHEETS[k].turned && TORUS_SHAPES[shapeOn('torus')][2].square ? 4 : 1;
+  PINWHEEL_SHEETS[k].fold === 'torus' && !PINWHEEL_SHEETS[k].turned && torusForm().square ? 4 : 1;
 const pinwheelAlong = (k) => {
   const F = PINWHEEL_SHEETS[k],
     along = F.turned ? 1 : 2; // (its side round the ring over the one round the tube, a brick's)
@@ -15467,7 +15467,9 @@ const TORUS_SHAPES = [
   ],
 ]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)
-const torusTube = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2].tube;
+// the torus's shape's form (see TORUS_SHAPES: its line, tube, section, corners, width's notch), its variant's
+const torusForm = (w = ringVariant()) => TORUS_SHAPES[shapeOn('torus', w)][2];
+const torusTube = (w = ringVariant()) => torusForm(w).tube;
 // the step a length is reached at along a curve, by its lengths' table (along: at each of its N steps, along[0] 0), between two
 // steps as a share of the one it falls in: a knot's (see knotFrame), a Klein bottle's (see kleinBottlePoint)
 const stepAt = (along, at) => {
@@ -15583,7 +15585,7 @@ function ringColumns(x, nv, step = 1, klein = false, ok, own) {
 }
 // a ring's corners, its shape's (see TORUS_SHAPES: a Triangle's 3), 1 a round one's or a bottle's: its length a whole count of
 // them (its sides alike: see ringColumns, torusDims; its teams' blocks, see teamBlocksFit)
-const ringCorners = (kind) => (kind?.startsWith('torus') ? (TORUS_SHAPES[shapeOn('torus')][2].corners ?? 1) : 1);
+const ringCorners = (kind) => (kind?.startsWith('torus') ? (torusForm().corners ?? 1) : 1);
 
 // A knot's line (see TORUS_SHAPES), x along it (−π to π, its middle at 0), placed as the straight tube lies: its middle at 0,
 // its tangent east, its side north (−y), its up up; each point its frame [P, T, S, U] (knotFrame's, turned and moved so)
@@ -15658,7 +15660,7 @@ function bentLine(knot, mu) {
 function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0, done = 1) {
   const b = Math.min(1, 3 * m),
     c = Math.max(0, (3 * m - 1) / 2); // tube bend (a third: rolled, as fast whatever comes after), then ring bend
-  const knot = formAt(form ?? TORUS_SHAPES[shapeOn('torus')][2], tube), // (form: its shape's, once for all its points; its line at its tube)
+  const knot = formAt(form ?? torusForm(), tube), // (form: its shape's, once for all its points; its line at its tube)
     quarters = Math.trunc((4 * twist) / nv), // (a square's section turned by whole quarters, the rest its cells slid round it)
     corners = knot.corners ?? 1,
     whole = knot.square ? [0, 1, -1, 2, -2].map((m) => quarters + 4 * m).find((r) => r % corners === 0) : 0, // (as many quarters at each of its line's turns: the same quarters once round, a full turn more or less, its corners alike)
@@ -17602,7 +17604,7 @@ function tileCornerPlaces(g) {
 // the points of a sheet's places in its form m (see sheetPoint), three numbers each
 function sheetPointsAt(g, places, m) {
   const P = new Float64Array((3 * places.length) / 2),
-    form = TORUS_SHAPES[shapeOn('torus')][2]; // (a torus's shape, once: see torusPoint)
+    form = torusForm(); // (a torus's shape, once: see torusPoint)
   for (let i = 0; i < places.length / 2; i++) P.set(sheetPoint(g, places[2 * i], places[2 * i + 1], m, form), 3 * i);
   return P;
 }
@@ -18481,14 +18483,14 @@ const torusTwist = (size, kind) => {
     if (PINWHEEL_SHEETS[kind]) return pinwheelAcross(kind) === 4 ? [0, 1, 2] : []; // (a pinwheel's: by bricks, a quarter turn each)
     if (!SURFACES[kind]?.perRow || !kind.startsWith('torus')) return []; // (a surface's: none on the plane)
     const cells = torusDims(kind, size)[0] / (SURFACES[kind].steps?.[0] ?? 1), // (its lattice cells round the tube)
-      step = TORUS_SHAPES[shapeOn('torus')][2].square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
+      step = torusForm().square ? cells / 4 : 1; // (a square section's by its quarter turns: see torusPoint)
     return Number.isInteger(step) ? Array.from({ length: Math.floor(cells / 2 / step) + 1 }, (_, q) => q * step) : [0];
   },
   // its twist where it takes one (none: no "+k" written, see withTwist)
   twistOf = (kind, size) => (torusTwists(kind, size).length ? torusTwist(size, kind) : undefined),
   // its twist when its size writes none: a square section's its middle one (a quarter turn: Penrose's), else none
   twistByDefault = (kind, size) => {
-    const twists = TORUS_SHAPES[shapeOn('torus')][2].square ? torusTwists(kind, size) : [];
+    const twists = torusForm().square ? torusTwists(kind, size) : [];
     return twists.length ? twists[twists.length >> 1] : 0;
   },
   twistedRow = (i, j, nu, k) => j - (k * i) / nu; // (a sheet point's row as its twist lays it: k rows on once round)
@@ -18546,7 +18548,7 @@ const widthSize = (kind, rows, width, twist) =>
 const WIDTH_SHARES = [1 / 2, 3 / 4, 1, 3 / 2, 2];
 // the widths' shares of its usual one, its usual at its shape's notch (the Triangle's the 1st: see TORUS_SHAPES), the 3rd else
 const widthShares = () => {
-  const at = WIDTH_SHARES[TORUS_SHAPES[shapeOn('torus')][2].notch ?? 2];
+  const at = WIDTH_SHARES[torusForm().notch ?? 2];
   return WIDTH_SHARES.map((s) => s / at);
 };
 function widthsOf(kind, rows, width) {
@@ -28723,7 +28725,7 @@ function teamBlocksFit(K, g, b) {
 // K colours' blocks, b round the tube, laid by its shape: a Triangle's as many on each side (see ringCorners), or one band a
 // face of its square section; only a preference (see torusBlocks), a fair cut another way allowed (a Duel's halves along it)
 const teamBlocksAligned = (K, g, b) => {
-  const { corners = 1, square } = g?.klein ? {} : TORUS_SHAPES[shapeOn('torus')][2];
+  const { corners = 1, square } = g?.klein ? {} : torusForm();
   return (K / b) % corners === 0 || (K === b && square && 4 % b === 0);
 };
 // Fair spots for k colours, that the figure's symmetries swap: a solid's faces, corners or edges'

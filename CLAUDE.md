@@ -183,6 +183,10 @@ touched shows (+0 if its code lines are as many).
 
 ## Away audits
 While the checks run unattended (a night, a meal), also audit what they cannot see, and fix each gap at its root:
+- **Every two days, the benchmarks** ([BENCHMARKS.md](BENCHMARKS.md)): `BROWSER_PORT=9447 node tools/bench.js` opens each case
+  cold and adds a dated row; a case 20 % slower than its row before is a regression, found by its profile (`node
+  tools/browser.js profile <tab> <its link> 12`: the functions by their own time) and fixed at its root (v0.5.762: a
+  torus's form asked of the menu at each of its 655,360 points, 1.65 s of 8).
 - **Each time away, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
   looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
   error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.

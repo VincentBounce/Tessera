@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.763';
+const VERSION = '0.5.764';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14639,6 +14639,7 @@ function pinwheelRingMesh(k, cells, twist = 0, along = pinwheelAlong(k)) {
       seamTwist: shift,
       bricks: [along, pinwheelAcross(k)],
       form: F.fold === 'torus' ? torusForm() : null, // (its shape's, once, see sheetPoint)
+      shape: F.fold === 'klein' ? shapeOn('klein') : null, // (a bottle's, once)
     }, // (asManyCells: see pinwheelSolidMesh; bricks: its colours' blocks, see teamBlocksFit)
     halves = Int32Array.from(
       F.fold === 'mobius' ? [...sheet.halves, ...sheet.halves.map((h) => h + 2 * sheet.halves.length)] : sheet.halves,
@@ -15782,36 +15783,37 @@ function torusPoint(i, j, nu, nv, m, tube = TORUS_TUBE, form = null, twist = 0, 
  * in the body (Paul Bourke's four pieces before v0.4.367, their seams a tile 3 times as long as its neighbour; one drawn
  * from a glass bottle's lines, its tiles a stretched tapestry, v0.4.370 to v0.4.377; the figure 8 before v0.4.14, see
  * DISCONTINUED.md). Flat (m = 0) as the torus's sheet. */
-function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0) {
-  if (kleinRolls()) {
+function kleinPoint(x, y, nu, nv, m, tube = TORUS_TUBE, up = 0, shape = shapeOn('klein')) {
+  // (shape: its mesh's, once, see sheetPoint; never asked of the menu for each point, 5.5 s of a bottle's load till v0.5.764)
+  if (kleinRolls(shape)) {
     // a rolled shape's: its section across (see KLEIN_SHAPES) rolled up as a strip's (see ringRoll), its mirror line from the
     // sheet's middle to Cairo's (up) as it closes
     const s = (y - up * m) / nv - 0.5;
-    return ringRoll((x / nu - 0.5) * 2 * Math.PI, kleinRolls()(s, m, tube), m);
+    return ringRoll((x / nu - 0.5) * 2 * Math.PI, kleinRolls(shape)(s, m, tube), m);
   }
   // (rolled into a straight tube as a torus is while turned round its axis, to ⅓; then its circles carried to the bottle)
-  if (m >= 1) return kleinOnBottle(x, y, nu, nv, up);
+  if (m >= 1) return kleinOnBottle(x, y, nu, nv, up, shape);
   if (m <= 1 / 3) return kleinStraightTube(x, y, nu, nv, tube, 3 * m);
-  const C = kleinCircle(x, y, nu, nv, tube, up);
+  const C = kleinCircle(x, y, nu, nv, tube, up, shape);
   return kleinOnCircle(C, C.from.F[0], m); // (its way out of its tube's centre: its frame's first)
 }
 // The sheet rolled into the straight tube by t (torusPoint's, its sheet's middle on top) while turned round its axis, east, by t
 // of a quarter turn: at t = 1 its middle south, as the bottle shows it (see kleinOnBottle), its circles only bent from there
 const kleinStraightTube = (x, y, nu, nv, tube, t) =>
-  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, t / 3, tube));
+  turnAbout([1, 0, 0], (t * Math.PI) / 2, torusPoint(x, y, nu, nv, t / 3, tube, TORUS_SHAPES[0][2])); // (a ring's tube, never the torus's shape picked)
 // a sheet point on the bottle: the sheet's ends on the circle it stands on (the bowl's lowest), past its own ends turned
 // over (u to π − u), round the tube from the sheet's mirror line (up: Cairo's half square, so that the bottle glues as its
 // sheet does), its sheet half a turn round the tube (its middle, its pictures, in front)
-function kleinOnBottle(x, y, nu, nv, up) {
+function kleinOnBottle(x, y, nu, nv, up, shape = shapeOn('klein')) {
   const f = ((y - up) / nv) * 2 * Math.PI,
-    w = x / nu + kleinBottle().bottom,
+    w = x / nu + kleinBottle(shape).bottom,
     k = Math.floor(w); // (its turns round the bottle, before its start or past its end: each turns it over)
-  return kleinBottlePoint(w - k, k % 2 ? -Math.PI / 2 - f : f + 1.5 * Math.PI);
+  return kleinBottlePoint(w - k, k % 2 ? -Math.PI / 2 - f : f + 1.5 * Math.PI, shape);
 }
 // A sheet point's circle round the tube, the straight tube's turned (m = ⅓, see kleinStraightTube) and the bottle's: each its middle, its
 // radius, its point's way from it, a quarter turn on and their normal (its frame), and the turn from one frame to the
 // other (axis, angle); its circle carried whole from the tube to the bottle as m goes from ⅓ to 1 (see kleinOnCircle)
-function kleinCircle(x, y, nu, nv, tube, up) {
+function kleinCircle(x, y, nu, nv, tube, up, shape = shapeOn('klein')) {
   const circle = (P) => {
     const c = P(0).map((v, d) => (v + P(nv / 2)[d]) / 2),
       a = sub(P(0), c),
@@ -15820,7 +15822,7 @@ function kleinCircle(x, y, nu, nv, tube, up) {
     return { c, r: Math.hypot(...a), F: [e1, e2, cross(e1, e2)] };
   };
   const from = circle((dy) => kleinStraightTube(x, y + dy, nu, nv, tube, 1)),
-    to = circle((dy) => kleinOnBottle(x, y + dy, nu, nv, up));
+    to = circle((dy) => kleinOnBottle(x, y + dy, nu, nv, up, shape));
   // (the turn from one frame to the other: its matrix, then its angle and axis; a half turn's axis from Q = 2 k kᵀ − I)
   const Q = [0, 1, 2].map((i) => [0, 1, 2].map((j) => [0, 1, 2].reduce((t, k) => t + to.F[k][i] * from.F[k][j], 0))),
     angle = Math.acos(Math.max(-1, Math.min(1, (Q[0][0] + Q[1][1] + Q[2][2] - 1) / 2))),
@@ -16008,7 +16010,7 @@ const kleinForm = (shape = shapeOn('klein')) => KLEIN_SHAPES[shape][2];
 const kleinShapeKey = (shape = shapeOn('klein')) =>
   `${shape}${kleinForm(shape).sizes ? ` ${Object.values(kleinForm(shape).sizes)}` : ''}`;
 // a bottle rolled up from its sheet, as a strip is: its section across (see KLEIN_SHAPES), the others none
-const kleinRolls = () => kleinForm().section;
+const kleinRolls = (shape = shapeOn('klein')) => kleinForm(shape).section;
 // A ring's shape, one way for the torus's and the Klein bottle's: its family's shapes (Shape's tabs, the link's
 // torusShape, kleinShape: its place, the first in none), the one picked in each, its sheet the family's whatever its
 // shape (a torus knot's longer, see torusTube); the mesh made for a variant's (see stripKey)
@@ -16061,8 +16063,8 @@ function kleinBottle(shape = shapeOn('klein')) {
 }
 // The bottle at s along it (0 to 1, from the bowl's mouth), u round it: standing, centred, 3 at its largest, turned half a turn round
 // the vertical: its neck's arch east
-function kleinBottlePoint(s, u) {
-  const { at: shapeAt, N, along, centre, scale } = kleinBottle(),
+function kleinBottlePoint(s, u, shape = shapeOn('klein')) {
+  const { at: shapeAt, N, along, centre, scale } = kleinBottle(shape),
     [x, y, z] = shapeAt((3 * stepAt(along, s * along[N])) / N, u);
   return [-(x - centre[0]) * scale, -(y - centre[1]) * scale, (z - centre[2]) * scale];
 }
@@ -16087,7 +16089,8 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
   const key = `kleinCairo${nv}x${nu}|${kleinShapeKey()}`; // (its shape, see KLEIN_SHAPES)
   if (meshCache[key]) return meshCache[key];
   const { tiles, places } = cairoSheet(nu, nv),
-    up = 0.5; // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
+    up = 0.5, // (its pentagons half a square up its sheet, as the torus's: their mirror line too, see id)
+    shape = shapeOn('klein'); // (its shape's, once: as its key's, see sheetPoint)
   const ids = new Map(),
     verts = [],
     tube = nv / nu;
@@ -16097,7 +16100,7 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
       key = `${x},${y}`;
     if (!ids.has(key)) {
       ids.set(key, verts.length / 3);
-      verts.push(...kleinPoint(x, y, nu, nv, 1, tube, up));
+      verts.push(...kleinPoint(x, y, nu, nv, 1, tube, up, shape));
     }
     return ids.get(key);
   };
@@ -16112,6 +16115,7 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     klein: true,
+    shape,
     cairo: true,
     nu,
     nv,
@@ -16686,10 +16690,12 @@ function kleinTilingMesh(kindK, size) {
     { kind, strip, turn, n, nv } = frame,
     sheet = foldSheet(kind, strip, nv, n),
     { L, W } = sheet,
-    { mesh, tiles } = foldMesh(frame, sheet, true, (x, y) => kleinPoint(x, y, L, W, 1, W / L));
+    shape = shapeOn('klein'), // (its shape's, once: as its key's, see sheetPoint)
+    { mesh, tiles } = foldMesh(frame, sheet, true, (x, y) => kleinPoint(x, y, L, W, 1, W / L, 0, shape));
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     klein: true,
+    shape,
     nu: L,
     nv: W,
     tube: W / L,
@@ -16859,7 +16865,7 @@ function mobiusFaces(sheet, L, W) {
 // tilingTorusMesh; never asked of the menu again for each point, 655,360 times 2.5 µs, v0.5.762)
 const sheetPoint = (g, i, j, m, form = g.form) => {
   if (g.mobius) return mobiusPoint(i, j, g.L, g.W, m);
-  if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0);
+  if (g.klein) return kleinPoint(i, j, g.nu, g.nv, m, tubeOf(g), g.cairo ? 0.5 : 0, g.shape);
   // (a twisted one rolled to 0.2, twisted to ⅓, the rest its bend's as a straight one's; see torusTwist)
   const twisted = Math.min(1, Math.max(0, (m - 0.2) / (1 / 3 - 0.2))),
     rolled = g.seamTwist && m < 1 / 3 ? Math.min((5 * m) / 3, 1 / 3) : m;
@@ -17680,12 +17686,12 @@ function shapeAt(g, m) {
     const { places, at } = tileCornerPlaces(g),
       np = places.length / 2,
       P = new Float64Array(3 * np);
-    if (g.klein && !kleinRolls() && m > 1 / 3 && m < 1) {
+    if (g.klein && !kleinRolls(g.shape) && m > 1 / 3 && m < 1) {
       // (a bottle's circles carried from its tube: a column's once, its centres, radii and turn the same all round it (see
       // kleinCircle), each point only its way out of its tube's centre: 7.9 s a first step on 370k points till v0.5.725)
       const columns = new Map(),
         circleOf = (x) =>
-          columns.get(x) ?? columns.set(x, kleinCircle(x, 0, g.nu, g.nv, tubeOf(g), g.cairo ? 0.5 : 0)).get(x),
+          columns.get(x) ?? columns.set(x, kleinCircle(x, 0, g.nu, g.nv, tubeOf(g), g.cairo ? 0.5 : 0, g.shape)).get(x),
         circles = (g.kleinCircles ??= Array.from({ length: np }, (_, p) => {
           const [x, y] = [places[2 * p], places[2 * p + 1]],
             C = circleOf(x);

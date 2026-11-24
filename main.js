@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.716';
+const VERSION = '0.5.717';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28700,7 +28700,10 @@ function torusBlocks(K, g = walk.surface) {
   if (g?.klein) return g.kindK ? kleinLength(g.kindK, g.size, K).blocks : best;
   for (let b = 1; b <= K; b++)
     if (K % b === 0) {
-      const e = (teamBlocksFit(K, g, b) ? 0 : 100) + Math.abs(Math.log(b / ((K / b) * torusTube())));
+      const e =
+        (teamBlocksFit(K, g, b) ? 0 : 100) +
+        (teamBlocksAligned(K, g, b) ? 0 : 10) +
+        Math.abs(Math.log(b / ((K / b) * torusTube()))); // (fair first, then by its shape's sides, then as square as can be)
       if (e < err) {
         err = e;
         best = [K / b, b];
@@ -28710,20 +28713,19 @@ function torusBlocks(K, g = walk.surface) {
 }
 // K colours' blocks, b round the tube, alike on torus g: its rows (a pinwheel ring's bricks both ways, its own tiles only in a
 // brick: see pinwheelRingMesh) divided by them, and its seam's twist shifting them by whole blocks (a band round the tube, b = 1,
-// onto itself at any twist); a Triangle's as many on each side (see ringCorners), or one band a face of its square section
+// onto itself at any twist): fair, each team's cells the next's moved (its shape's sides apart: see teamBlocksAligned)
 function teamBlocksFit(K, g, b) {
   if (!g?.nv) return true;
   const [along, across] = g.bricks ?? [K, g.nv],
-    twist = ((g.seamTwist ?? 0) * across) / g.nv, // (in its rows, its bricks)
-    a = K / b,
-    { corners = 1, square } = g.klein ? {} : TORUS_SHAPES[shapeOn('torus')][2];
-  return (
-    along % a === 0 &&
-    across % b === 0 &&
-    (b === 1 || twist % (across / b) === 0) &&
-    (a % corners === 0 || (a === 1 && square && 4 % b === 0))
-  );
+    twist = ((g.seamTwist ?? 0) * across) / g.nv; // (in its rows, its bricks)
+  return along % (K / b) === 0 && across % b === 0 && (b === 1 || twist % (across / b) === 0);
 }
+// K colours' blocks, b round the tube, laid by its shape: a Triangle's as many on each side (see ringCorners), or one band a
+// face of its square section; only a preference (see torusBlocks), a fair cut another way allowed (a Duel's halves along it)
+const teamBlocksAligned = (K, g, b) => {
+  const { corners = 1, square } = g?.klein ? {} : TORUS_SHAPES[shapeOn('torus')][2];
+  return (K / b) % corners === 0 || (K === b && square && 4 % b === 0);
+};
 // Fair spots for k colours, that the figure's symmetries swap: a solid's faces, corners or edges'
 // middles (the cube: 2 opposite faces, 3 round a corner, 4 round its belt, 6 faces, 8 corners, 12
 // edges…); on a torus, a lattice of k blocks (a × b, each dividing its side); a grid with dead edges,
@@ -28743,7 +28745,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
   }
   if (solidCounts(variant.surface)) return solidCounts(variant.surface).includes(k);
   if (g?.mobius || g?.globe || g?.rosette || g?.projective) return true; // a Möbius strip: in turn along it (see huntParts); a globe: its quarters (see teamsFair); a rosette surface: its lunes, or its discs (see rosetteParts)
-  if (g?.nu) return true; // a torus: its blocks (twisted: those its seam glues in line; a Triangle's by its sides or its faces: see teamBlocksFit) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
+  if (g?.nu) return true; // a torus: its blocks (twisted: those its seam glues in line, see teamBlocksFit) (see torusBlocks), its columns made for its colours (see ringColumns), its rows judged by teamsFair; not the torus in view's columns (before v0.3.94: Rhombitri at 5, 8 to 12 colours offered or not by the count picked)
   return false;
 }
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count

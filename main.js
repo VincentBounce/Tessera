@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.725';
+const VERSION = '0.5.726';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12793,10 +12793,7 @@ function cairoCorners(i, j, o) {
         [i - 0.5, j + 0.5 - b],
       ];
 }
-const cairoMiddle = (i, j, o) => {
-  const c = cairoCorners(i, j, o);
-  return [0, 1].map((a) => c.reduce((sum, p) => sum + p[a], 0) / 5);
-};
+const cairoMiddle = (i, j, o) => meanPoint(cairoCorners(i, j, o));
 const CAIRO_0 = cairoMiddle(0, 0, 0); // the start's pentagon, at the origin
 const cairoCentre = (i, j, o) => cairoMiddle(i, j, o).map((v, a) => (v - CAIRO_0[a]) * CAIRO);
 // back from a centre (x, y) to its pentagon: across a level side, its middle halfway along it
@@ -33815,7 +33812,7 @@ function patternPlace(i, K) {
 }
 // a triangle face's middle, as a direction; triangle face k's place: its corners turned so that AB is its side most level
 // (kites' not turned: q its level side, AB, BC or CA), its normal out (whichever way its corners run)
-const faceMid = (fc) => unit([0, 1, 2].map((a) => fc.corners.reduce((sum, c) => sum + c[a], 0)));
+const faceMid = (fc) => unit(meanPoint(fc.corners, 3));
 function triPlace(face) {
   const g = walk.surface,
     faces = g.triFaces ?? g.faces,

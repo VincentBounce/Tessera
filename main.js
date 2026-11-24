@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.755';
+const VERSION = '0.5.756';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28591,7 +28591,7 @@ const lifeMark = (variant) =>
       : variant.margolus
         ? (BLOCKS[blocksGrid(variant)] ?? STARS[blocksGrid(variant)]).mark
         : variant.plane
-          ? PLANE_MARKS[variant.plane]
+          ? PLANE_MARKS[baseOf(variant.plane)] // (its tiles', their rules: the pinwheel's triangle's the pinwheel's, see PLANE_BASES)
           : (SURFACE_CELLS[variant.surface] ?? '▲');
 // Life's colours, apart from its rule (which they do not change): 1, alive or dead (and a Generations
 // rule's dying stages), or 2 to 6 civilisations (k= in a link). The engine reads them as the rule's tail

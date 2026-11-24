@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.765';
+const VERSION = '0.5.766';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17280,13 +17280,19 @@ function kitesDartsOf(G) {
   );
   const rows = [...kites, ...darts];
   // the dodecahedron's 60 turns map the sphere onto itself: a row and its images one choice, a cover alike round every corner
-  const codes = new Map(G.points.map((p, i) => [pointCode(...unit(p)), i])),
+  // (each point's way once, not again at each turn; a half by its base, a number: the two halves of one rhombus on it, told
+  // apart by their apex; text keys before v0.5.766, 64 million of them at its largest: minutes)
+  const U = G.points.map(unit),
+    codes = new Map(U.map((p, i) => [pointCode(...p), i])),
     images = solidRotations(G.solid.corners.map(unit)).map((M) =>
-      G.points.map((p) => codes.get(pointCode(...M.map((r) => dot3(r, unit(p)))))),
+      U.map((p) => codes.get(pointCode(...matTimesPoint(M, p)))),
     ),
-    halfKey = (c, a, b, d) => `${c},${a},${Math.min(b, d)},${Math.max(b, d)}`,
-    halfAt = new Map(halves.map((h, i) => [halfKey(...h), i])),
-    halfImages = images.map((P) => halves.map(([c, a, b, d]) => halfAt.get(halfKey(c, P[a], P[b], P[d])))),
+    np = G.points.length,
+    baseKey = (b, d) => Math.min(b, d) * np + Math.max(b, d),
+    onBase = new Map();
+  halves.forEach(([, , b, d], i) => onBase.set(baseKey(b, d), [...(onBase.get(baseKey(b, d)) ?? []), i]));
+  const halfAt = (c, a, b, d) => onBase.get(baseKey(b, d))?.find((j) => halves[j][0] === c && halves[j][1] === a),
+    halfImages = images.map((P) => halves.map(([c, a, b, d]) => halfAt(c, P[a], P[b], P[d]))),
     rowAt = new Map(rows.map(([h], r) => [[...h].sort((x, y) => x - y).join(), r])),
     orbits = [],
     inOrbit = new Set();

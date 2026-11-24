@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.722';
+const VERSION = '0.5.723';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12615,7 +12615,7 @@ document.addEventListener('mouseover', (e) => {
       div.append(b, Object.assign(document.createElement('span'), { textContent: text }));
       return div;
     }; // (note: beside its title, fainter)
-  const allowed = greyedOf(greyed ?? el)?.paths && pathsWords(greyedOf(greyed ?? el).paths()); // (greyed: the shortest paths that allow it, see pathsTo)
+  const allowed = greyedOf(greyed)?.paths && pathsWords(greyedOf(greyed).paths()); // (the greyed one under it only: the shortest paths that allow it, see pathsTo; never a box's other greyed control, Twist's under Size's)
   const more = el?.tipMore?.(), // (a part of its own, made when shown: a shape's size, see tipMore)
     colours = el?.tipColours?.(); // (Explore's Tiles' colours used, made when shown: see coloursUsed)
   const told = [
@@ -18313,7 +18313,7 @@ function syncSizeStepper() {
   };
   if (SURFACES[kind]?.tiles && sel.selectedOptions[0]) label(f);
   else $('sizeLabel').textContent = sel.selectedOptions[0]?.text ?? '';
-  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['']));
+  sizeTips('size', ...(SURFACES[kind] && sel.selectedOptions[0] ? surfaceCard(kind, f) : ['', '']));
   // (its rows: a notch each, the one in use's whatever its width, what a notch leads to shown as it will be: see sizeRows,
   // ringSize; its width under it)
   const { options, at } = sizeRows();

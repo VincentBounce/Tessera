@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.790';
+const VERSION = '0.5.791';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43377,8 +43377,9 @@ stage.addEventListener(
 let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
-  drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.setPointerCapture(e.pointerId);
+  if (strokes(e)) return void (stroke = { from: [e.clientX, e.clientY], at: [e.clientX, e.clientY], done: new Set() }); // (Draw's Cell held: it paints, see strokeTo)
+  drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.classList.add('dragging');
 });
 stage.addEventListener('pointermove', (e) => {
@@ -43393,19 +43394,13 @@ stage.addEventListener('pointermove', (e) => {
   }
   if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {
     // Draw: the brush follows the pointer (at gen 0 only)
-    const r = stage.getBoundingClientRect();
-    const cell = planeCellAt(
-      walk.plane.kind,
-      walk.plane.W,
-      ...turnPoint(
-        [(e.clientX - r.left - view.ox) / view.scale, (e.clientY - r.top - view.oy) / view.scale],
-        -planeTurn(),
-      ),
-    );
+    const cell = cellUnder(e.clientX, e.clientY);
     if (String(cell) !== String(ghost)) {
       ghost = cell;
       drawGhost();
     }
+    if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4)
+      strokeTo(e.clientX, e.clientY); // (past a click's wobble)
   }
   if (!drag) return;
   const dx = e.clientX - drag.x,
@@ -43428,6 +43423,7 @@ stage.addEventListener('pointermove', (e) => {
 });
 const endDrag = () => {
   drag = null;
+  stroke = null;
   stage.classList.remove('dragging');
 };
 stage.addEventListener('pointerup', endDrag);
@@ -43456,6 +43452,34 @@ let drawing = false,
   drawFrom = null;
 const drawsHere = () => drawing && !drawAway() && !brush.view; // (a click draws: in Draw, at gen 0, a brush picked, not View)
 const drawAway = () => drawing && stepShown !== 0; // (Draw away from gen 0: its tools greyed, see renderDrawTools)
+// the plane's cell under a point of the page (the view's pan, zoom and turn undone), null past the grid
+const cellUnder = (x, y) => {
+  const r = stage.getBoundingClientRect();
+  return planeCellAt(
+    walk.plane.kind,
+    walk.plane.W,
+    ...turnPoint([(x - r.left - view.ox) / view.scale, (y - r.top - view.oy) / view.scale], -planeTurn()),
+  );
+};
+// Draw's Cell held and moved on the plane (the left button): a stroke, each cell it crosses painted once in the brush's
+// colour (the eraser: dead), along its way by a third of a cell (none skipped, however fast); a click still turns one
+// cell's state, the right button still pans
+let stroke = null;
+const strokes = (e) => drawsHere() && !!walk.plane && brush.id === 'cell' && e.button === 0;
+function strokeTo(x, y) {
+  const [x0, y0] = stroke.at,
+    steps = Math.ceil(Math.hypot(x - x0, y - y0) / (view.scale / 3));
+  for (let s = 0; s <= steps; s++) {
+    const c = cellUnder(x0 + ((x - x0) * s) / Math.max(steps, 1), y0 + ((y - y0) * s) / Math.max(steps, 1)),
+      k = c && planeKey(...firstCell(c));
+    if (!c || stroke.done.has(k)) continue;
+    if (!stroke.done.size) rememberDrawing(); // (one Undo a stroke)
+    stroke.done.add(k);
+    brushOn(k, 1);
+  }
+  stroke.at = [x, y];
+  planeReseed();
+}
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [
   ['planeDown', -1],
@@ -43777,14 +43801,9 @@ stage.addEventListener('pointerup', (e) => {
     lifeReseed();
     return;
   }
-  const r = stage.getBoundingClientRect();
-  const [wx, wy] = turnPoint(
-    [(e.clientX - r.left - view.ox) / view.scale, (e.clientY - r.top - view.oy) / view.scale],
-    walk.plane ? -planeTurn() : 0,
-  );
   if (walk.plane) {
     // Life: alive, then each dying state, back to dead; inside the grid only
-    const cell = planeCellAt(walk.plane.kind, walk.plane.W, wx, wy);
+    const cell = cellUnder(e.clientX, e.clientY);
     if (!cell) return;
     rememberDrawing();
     if (brush.id !== 'cell' || !brush.colour)

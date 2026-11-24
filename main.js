@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.759';
+const VERSION = '0.5.760';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43735,19 +43735,32 @@ function lifeRle() {
     base = kind && baseOf(kind),
     per = kind ? gridCells(base) : 1,
     cells = [];
-  const at = kind
-    ? (t) => {
+  // the grid whole on Golly's bounded grid, where it holds it (a sheet: its own; the plane's squares, its hexagons as
+  // stored, its rhombus): a surface's sheet a torus or a Klein bottle (a Möbius strip: none), the plane's its edges, a
+  // torus or walls (Golly's bounded plane, past them dead); else its pattern alone, on an infinite plane
+  const g = walk.surface,
+    edged = kind === 'square' || (kind === 'hex' && !shaped(kind)),
+    sheet = !kind
+      ? { ...pictureCells(), grid: g.mobius ? '' : g.klein ? 'K' : 'T' }
+      : edged && {
+          ...pictureCells(),
+          grid: planeTorus(kind) ? 'T' : 'P',
+          at: (t) => {
+            const [x, y] = walk.plane.xy(t);
+            return [x, base === 'hex' ? walk.plane.W - 1 - y : y]; // (hexagons mirrored top to bottom, see gollyRule)
+          },
+        };
+  const at = sheet
+    ? sheet.at
+    : (t) => {
         const [x, y] = tilingCellOf(kind, ...walk.plane.xy(t));
         return base === 'hex' ? [x, -y] : [x, y];
-      }
-    : pictureCells().at; // (its grid's cell; on hexagons mirrored, see gollyRule)
+      }; // (its grid's cell; on hexagons mirrored, see gollyRule)
   L.alive.forEach((v, t) => {
     if (v) cells.push([...at(t), v]);
   });
   if (!cells.length) return null;
-  const g = walk.surface,
-    sheet = !kind && { ...pictureCells(), grid: g.mobius ? '' : g.klein ? 'K' : 'T' }, // (Golly's bounded grid: none a Möbius strip)
-    lowest = (d) => cells.reduce((e, c) => Math.min(e, c[d]), Infinity),
+  const lowest = (d) => cells.reduce((e, c) => Math.min(e, c[d]), Infinity),
     x0 = sheet ? 0 : per * Math.floor(lowest(0) / per),
     y0 = sheet ? 0 : lowest(1) - (base === 'cairo' && (x0 / 2 + lowest(1)) & 1 ? 1 : 0); // (a sheet's cells where they are on it)
   const pop = new Map([[planeKey(0, 0), 0], ...cells.map(([x, y, v]) => [planeKey(x - x0, y - y0), v])]); // (a dead cell at its lattice cell's corner: the rows start there)
@@ -43862,7 +43875,7 @@ function rleRead(text) {
   if (head < 0) return null;
   const [named, bounds] = (lines[head].match(/rule\s*=\s*([^\s,]+(?:,\d+\*?)?)/i)?.[1] ?? 'B3/S23').split(':'),
     said = GOLLY_NAMES[named] ?? named,
-    grid = bounds?.match(/^[TK](\d+)\*?,(\d+)/i), // (Golly's bounded grid: its width and height)
+    grid = bounds?.match(/^[TKP](\d+)\*?,(\d+)/i), // (Golly's bounded grid, a torus, a Klein bottle or a plane: its width and height)
     pos = lines.find((line) => line.startsWith('#CXRLE'))?.match(/Pos=(-?\d+),(-?\d+)/),
     hex = /h$/i.test(said),
     golly = said.match(/^(\d*)\/(\d*)(?:\/(\d+))?h?$/i),

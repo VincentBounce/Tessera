@@ -1,8 +1,8 @@
 // Golly against the app: each case's generation 0 as Save RLE writes it (lifeRle), played N generations by Golly
 // (bgolly, the colour rules from this folder: see colours-rule.js) and by the app; both read back by the app's own reader
 // (rleRead) and compared cell by cell, colour and state too, from their live cells' corner (bgolly writes no place). The
-// plane's from a seed in the middle of a large one (Golly's plane has no edge: N short of the walls); a sheet's whole, on
-// Golly's bounded grid (:T, :K).
+// plane's from a seed in the middle of a large one, and a small one's soup past its edges (walls, Golly's bounded plane :P;
+// a torus, :T); a sheet's whole, on Golly's bounded grid (:T, :K).
 //   BROWSER_PORT=9451 node tools/golly/check.js [N]       (the hidden browser started: tools/browser.js start)
 const { execFileSync } = require('child_process'),
   fs = require('fs'),
@@ -31,6 +31,24 @@ const CASES = [
   ['squares, Immigration', `mode=life&shape=squares&gridSize=224&playRule=B3/S23&teams=2&${seed(2)}`],
   ['squares, QuadLife', `mode=life&shape=squares&gridSize=224&playRule=B3/S23&teams=4&${seed(4)}`],
   ['hexagons, B2/S34', `mode=life&shape=hex&gridSize=224&playRule=B2/S34&${seed(1)}`],
+  // the plane's edges, its soup past them in N gens: walls (Golly's bounded plane, :P) and a torus (:T), its squares and its
+  // hexagons as stored (its rhombus)
+  [
+    'squares walled, Life',
+    'mode=life&shape=squares&gridSize=24&gridWalls=1&playRule=B3/S23&popStart=random&popDraw=30.1',
+  ],
+  [
+    'squares torus, Life',
+    'mode=life&shape=squares&gridSize=24&gridWalls=0&playRule=B3/S23&popStart=random&popDraw=30.2',
+  ],
+  [
+    'hexagons rhombus walled, B2/S34',
+    'mode=life&shape=hex&gridSize=24&gridWalls=1&gridOutline=rhombus&playRule=B2/S34&popStart=random&popDraw=30.3',
+  ],
+  [
+    'hexagons rhombus torus, B2/S34',
+    'mode=life&shape=hex&gridSize=24&gridWalls=0&gridOutline=rhombus&playRule=B2/S34&popStart=random&popDraw=30.4',
+  ],
   ['torus, Life', 'mode=life&shape=torus&tiling=squares&gridSize=24&playRule=B3/S23&popStart=random&popDraw=30.1'],
   [
     'torus, Immigration',

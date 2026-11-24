@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.814';
+const VERSION = '0.5.815';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36477,7 +36477,8 @@ let linkHeld = location.hash;
 // menu clicked or let go: a size, a width, a twist, Shape): the link it leads to a new entry of the browser's history, its Back
 // and Forward going from change to change (see hashchange); anything else (a step, the view, a setup built) its own entry's
 let handChanged = false;
-const markHandChange = (e) => (handChanged ||= e.isTrusted && !!e.target.closest?.('[data-choice], .panel')); // (isTrusted: the page's own events, a link opened, none)
+const markHandChange = (e) =>
+  (handChanged ||= e.isTrusted && !!e.target.closest?.('[data-choice], .panel') && !e.target.closest('#startDraw')); // (isTrusted: the page's own events, a link opened, none; Draw's tools none: the drawing its own history, Undo and Redo's, see drawHistory)
 document.addEventListener('click', markHandChange, true);
 document.addEventListener('change', markHandChange, true);
 function syncLink() {
@@ -43912,8 +43913,9 @@ stage.addEventListener('pointerup', (e) => {
 // The keys: each a click on the first control shown and not greyed of its list (E: End, else Life's
 // green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's, else Draw's View while
 // a click draws), or its own action
-// (Space: Stop while it plays, else Play; F: the view fitted again);
-// its name written after its control's in its tooltip (see shortcutOf)
+// (Space: Stop while it plays, else Play; F: the view fitted again; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
+// its name written after its control's in its tooltip (see shortcutOf); a key with ⌘ or Ctrl by its name Mod+…
+const [MOD_KEY, SHIFT_KEY] = /Mac|iPhone|iPad/.test(navigator.platform) ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
 const KEYS = [
   [' ', 'Space', ['#play', '#stop'], () => playOrStop()],
   ['ArrowRight', '→', ['#step']],
@@ -43922,15 +43924,19 @@ const KEYS = [
   ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
   ['f', 'F', ['#autoFitTile'], recentre],
   ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open', '#drawView:not(.active)']],
+  ['Mod+z', `${MOD_KEY}Z`, ['#drawUndo']],
+  ['Mod+Shift+z', `${MOD_KEY}${SHIFT_KEY}Z`, ['#drawRedo']],
 ];
 // a control's key, its name (see KEYS), if it has one
 const shortcutOf = (el) => KEYS.find(([, , controls]) => controls.some((c) => el.matches(c)))?.[1];
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input[type=number], input[type=text], select, textarea')) return;
-  const found = KEYS.find(([key]) => key === e.key || key === e.key.toLowerCase());
+  const mod = e.metaKey || e.ctrlKey,
+    name = mod ? `Mod+${e.shiftKey ? 'Shift+' : ''}${e.key.toLowerCase()}` : e.key, // (⌘ or Ctrl: its name Mod+…, see KEYS)
+    found = KEYS.find(([key]) => key === name || (!mod && key === e.key.toLowerCase()));
   if (!found) return;
   const [key, , controls, action] = found;
-  if (key === ' ') e.preventDefault(); // (not the page scrolled)
+  if (key === ' ' || mod) e.preventDefault(); // (not the page scrolled, nor the browser's own Undo)
   if (action) return action();
   controls
     .flatMap((c) => [...document.querySelectorAll(c)])

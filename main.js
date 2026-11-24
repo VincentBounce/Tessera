@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.777';
+const VERSION = '0.5.778';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7985,11 +7985,11 @@ const ICONS = (() => {
       [4, 20],
     ],
     rhombus = [
-      [2, 17.2],
-      [14, 17.2],
-      [20, 6.8],
-      [8, 6.8],
-    ];
+      [2, 6.8],
+      [14, 6.8],
+      [20, 17.2],
+      [8, 17.2],
+    ]; // (leaning as the plane draws it: its top row to the left)
   // a square cut in 2 × 2 cells (Grid, a torus's squares), its 3 × 3 cut's lines (along the edges), in 3 × 3 cells, those of a
   // pattern filled, a row after another, o a cell filled (on cells, a glider, the hunt's Reach all and Ends ≥3/4)
   const halvesGrid = svgPath(pathOf(sq)) + svgPath('M12 4V20M4 12H20'),

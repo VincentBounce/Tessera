@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.807';
+const VERSION = '0.5.808';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12749,25 +12749,27 @@ document.addEventListener('mouseover', (e) => {
 function showZoom() {
   const z = view.scale / viewFor(bounds).scale,
     x = `×${z >= 9.95 ? Math.round(z) : z.toFixed(1).replace(/\.0$/, '')}`;
-  const lines = walk.is3d
-    ? [
-        [
-          [`Zoom ${x}`, 'wheel'],
-          ['Rotate', 'drag'],
-          ['Pan', 'right-drag or Shift+drag'],
-        ],
-        [
-          ['Center', 'double-click'],
-          [centersPattern() ? 'Centered pattern' : 'Default view', 'double-click again'],
-        ],
-      ]
-    : [
-        [
-          [`Zoom ${x}`, 'wheel'],
-          ['Pan', 'drag'],
-        ],
-        [['Auto-fit', 'double-click']],
-      ];
+  const draws = drawsHere(), // (Draw: Shift its own, the view still while it lays)
+    lines = walk.is3d
+      ? [
+          [
+            [`Zoom ${x}`, 'wheel'],
+            ['Rotate', 'drag'],
+            ['Pan', draws ? 'right-drag' : 'right-drag or Shift+drag'],
+          ],
+          [
+            ['Center', 'double-click'],
+            [centersPattern() ? 'Centered pattern' : 'Default view', 'double-click again'],
+          ],
+        ]
+      : [
+          [
+            [`Zoom ${x}`, 'wheel'],
+            ['Pan', 'drag'],
+          ],
+          [['Auto-fit', 'double-click']],
+        ];
+  if (draws) lines.push([['Draw, the view still', 'Shift+click']]);
   const key = JSON.stringify(lines);
   if ($('hint').dataset.key === key) return; // (each frame of a walk: its fit grows with it)
   $('hint').dataset.key = key;
@@ -27695,6 +27697,7 @@ function renderDrawTools() {
     why = "Away from gen 0: its start's cells are drawn there.";
   drawToolsAway = away;
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, see drawsHere)
+  showZoom(); // (its hint: Draw's Shift, see showZoom)
   drawGhost(); // (the brush under the pointer as a click draws now: the plane's; a surface's with its frame, see surfaceGhost)
   statsDirty = true;
   const grey = (b, own = false, ownWhy = '', on = b.classList.contains('active'), whyNot = null) =>
@@ -43441,6 +43444,7 @@ let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
   stage.setPointerCapture(e.pointerId);
+  if (drawsHere() && e.button === 0 && e.shiftKey && !strokes(e)) return; // (Draw with Shift: the view still, a click lays its pattern however the pointer moved, see the click below)
   if (strokes(e))
     return void (stroke = {
       from: [e.clientX, e.clientY],
@@ -43873,7 +43877,7 @@ stage.addEventListener('pointerdown', (e) => {
   drawFrom = drawsHere() && e.button === 0 ? [e.clientX, e.clientY] : null;
 }); // (its start's cells: at gen 0 only)
 stage.addEventListener('pointerup', (e) => {
-  if (!drawFrom || Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4) return;
+  if (!drawFrom || (!e.shiftKey && Math.hypot(e.clientX - drawFrom[0], e.clientY - drawFrom[1]) > 4)) return; // (moved: a drag of the view, but with Shift, the view still)
   if (walk.surface) {
     // a surface: the tile under the pointer (see pickedTile): a cell as the plane's, a pattern laid on its face (see
     // patternOnCell; none on a cell folded over an edge, see cellPlace)

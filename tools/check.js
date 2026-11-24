@@ -504,8 +504,13 @@
         ]),
     );
   // Links opened cold, each in a page of its own (an iframe): their walk built, its variant the link's, its battle or its symmetry
-  // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk)
+  // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk);
+  // a walk, an ant and Life on the plane first, no surface (v0.5.732 to v0.5.749: a walk on the plane, the page's own at its
+  // opening, built nothing, figureOf reading a surface it has none of, unseen by a check of surfaces' links only)
   const COLD_LINKS = [
+    [toHash({ ...variantWords('walkSquaresTurtleEdges'), walkNumberA: '1/112', maxSteps: 20000 }), {}],
+    [toHash({ ...variantWords('antSquaresCells'), maxSteps: 2000 }), {}],
+    [toHash({ ...variantWords('lifeSquares'), playRule: 'B3/S23' }), {}],
     [
       toHash({
         ...variantWords('walkKleinBottleHexTurtleEdges'),

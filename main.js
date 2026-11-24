@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.774';
+const VERSION = '0.5.775';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -33243,7 +33243,11 @@ const faceRuns = (K, g) => {
 // (see faceRuns); each [its key, its tab's words, its tooltip], as Teams shows them (see renderTeams: shown only, none a click)
 const ZONE_SHAPES = [
   ['angles', 'Angles', 'Each team a slice round the middle, as many cells each: a walled disc, a hexagon, a flower'],
-  ['quarters', 'Quarters', 'Each team a block of a walled rectangle, its columns by its rows: a Duel its halves, a Quartet its quarters'],
+  [
+    'quarters',
+    'Quarters',
+    'Each team a block of a walled rectangle, its columns by its rows: a Duel its halves, a Quartet its quarters',
+  ],
   ['lattice', 'Lattice', "Each team a block of a lattice on the plane's torus, its blocks copies of each other"],
   ['stack', 'Stack', 'Each team a band round the tube, the bands stacked along the ring'],
   ['square', '~1:1', 'Each team a block as square as it can be: so many round the ring, so many round the tube'],
@@ -34132,7 +34136,8 @@ function hexAxes(c0) {
 // cell holding a place there (any, not only a middle: cut off past the plane's or a sheet's edges), -1 none; ex, ey, n: the plane's x and y steps there and the face's outward normal (a sheet's: on it unrolled,
 // flat, seen from above), for its pictures' way (see iconWay); on: its face's cells; face: a triangle face's point by its
 // rows (i along AB, j along AC, see patternAt's icons)
-let boxMemo = null;
+let boxMemo = null,
+  middlesMemo = null;
 function patternFrame(i, K, place = patternPlace(i, K)) {
   // place: another face's (see cellPlace); none (no spots alike, see patternPlace): no frame, nothing laid
   if (!place) return null;
@@ -34179,17 +34184,31 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
       };
     // (its centre: a slice's spot; one colour's, the grid's very middle: a grid that never repeats, its circle's, a rosette
     // sphere's pole; in a hexagon, its centre of turns; else its frame's middle)
-    const partMean = (L) => {
-      const own = [...Array(n).keys()].filter((t) => L[t] === i);
-      return [0, 1].map((d) => own.reduce((sum, t) => sum + mid(t)[d], 0) / own.length);
-    }; // (its part's cells' middle: a rosette sphere's lune's north cells', a grid's piece's)
-    const lune = () => partMean(rosetteParts(g, K));
+    // (each part's cells' middle, all in one pass, once a grid and a cut: a rosette sphere's lunes' north cells', a grid's
+    // pieces'; asked by each colour's picture at each size tried, see iconLay)
+    const partMiddles = (cut, parts) => {
+      if (middlesMemo?.g === flat && middlesMemo.cut === cut) return middlesMemo.middles;
+      const L = parts(),
+        sums = [],
+        counts = [];
+      for (let t = 0; t < n; t++) {
+        const p = L[t];
+        if (p < 0) continue;
+        const m = mid(t);
+        sums[p] ??= [0, 0];
+        sums[p][0] += m[0];
+        sums[p][1] += m[1];
+        counts[p] = (counts[p] ?? 0) + 1;
+      }
+      return (middlesMemo = { g: flat, cut, middles: sums.map((sum, p) => sum.map((v) => v / counts[p])) }).middles;
+    };
+    const lune = () => partMiddles(`lunes ${K}`, () => rosetteParts(g, K))[i];
     const one = K === 1 || poleColours(g, K); // (each pole's colour: its disc as one colour's)
     const centre = () =>
       !one && !walk.plane
         ? lune()
         : !one && figureOf(K) === 'pieces'
-          ? partMean(FIGURE_PARTS.pieces.parts(K)) // (its piece's middle: the pinwheel's triangle's)
+          ? partMiddles(`pieces ${K}`, () => FIGURE_PARTS.pieces.parts(K))[i] // (its piece's middle: the pinwheel's triangle's)
           : !one && wallSlices(K)
             ? mid(planeSlices(K).spots[i])
             : !one

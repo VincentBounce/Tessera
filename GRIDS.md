@@ -85,7 +85,7 @@ Steps, each shipped and checked on its own:
 | Elementary | 1 | the plane of squares |
 
 Grids found by one mode only: Walk's 2D infinite (4) and its 3D lattices, [Cubes](http://localhost:8321/#mode=walk&shape=cubes&walkKind=turtle&on=edges) and
-[Diamond](http://localhost:8321/#mode=walk&shape=diamond&walkKind=polymer&on=edges); Life's 2D squares and 2D circles
+[Diamond](http://localhost:8321/#mode=walk&shape=diamond&walkKind=polymer&on=edges); Life's 2D boxed and 2D circles
 (none walked).
 
 <p align="center"><br>* * *</p>

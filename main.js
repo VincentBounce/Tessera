@@ -20,7 +20,7 @@
  *   4. A setup (Part 10) — number, variant, surface, rule, Life start — lives in the page link, in
  *      the Gallery and in its JSON files. Display choices are never part of it.
  *
- * Words: the plane is the menu's 2D (2D squares, 2D circles: walk.plane, plane…), a surface its 3D
+ * Words: the plane is the menu's 2D (2D boxed, 2D circles: walk.plane, plane…), a surface its 3D
  * (3D solids: a solid, a torus, a sphere…: walk.surface, surface…); flat means flattened (Shape's
  * Flat ── Inflated), never 2D; a walk in 3D space, not on a surface, is a lattice's (Walk › Lattice).
  *
@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.776';
+const VERSION = '0.5.777';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8432,7 +8432,7 @@ $('planeEdges').append(
     ),
   ),
 ); // (Stacks off on a torus)
-// Stacks (Space-time, in 3D: walls with it, left on when it goes off; a torus, Stacks off too), on squares: under Natural squares
+// Stacks (Space-time, in 3D: walls with it, left on when it goes off; a torus, Stacks off too), on squares: under Square boxes
 const spaceTimeTile = tile({
   pic: icon('stacks'),
   text: 'Stacks',
@@ -10427,7 +10427,7 @@ const MODE_TABS = [
 // (a sheet rolled up); the walks through a 3D lattice
 const SPACES = {
     '2D': ['2D infinite', 'grid', 'An endless plane, the walk going as far as its digits take it'],
-    '2D squares': ['2D squares', 'grid', 'A flat grid, its edges walls or wrapping round'],
+    '2D boxed': ['2D boxed', 'grid', 'A flat grid, its edges walls or wrapping round'],
     '2D circles': ['2D circles', 'ring12', 'Grids of rings round a middle, as flowers'],
     '3D solids': [
       '3D solids',
@@ -10482,8 +10482,8 @@ const SHAPE_GROUPS = [
   ['Flowers', (k) => !!ROSETTES[k] && !ROSETTES[k][2] && !conedFamily(k)],
   ...Object.entries(CONED).map(([fam, F]) => [`${F.name}s`, (k) => conedFamily(k) === fam]),
   ['Rings', (k) => !!ROSETTES[k]?.[2]],
-  ['Natural squares', (k) => gridTurns(k) % 4 === 0 || TILINGS[k]?.turns === 4],
-  ['Parallelograms', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? gridTurns(k))],
+  ['Square boxes', (k) => gridTurns(k) % 4 === 0 || TILINGS[k]?.turns === 4],
+  ['Parallelogram boxes', (k) => ![3, 6].includes(TILINGS[k]?.turns ?? gridTurns(k))],
   ['Rectangle torus · Walled hexagon', () => true],
 ];
 const shapeGroup = (kind) => SHAPE_GROUPS.find(([, is]) => is(kind))[0];
@@ -25881,7 +25881,7 @@ const PINWHEEL = discMemo((W) => {
   }));
   return discPatch(items, W, [r, r]); // (round its incircle's middle)
 });
-// The pinwheel in one of its triangles (Grid › 2D squares › Pinwheel): one big triangle, its legs 2L and L (L = √5ᵏ: its
+// The pinwheel in one of its triangles (Grid › 2D boxed › Pinwheel): one big triangle, its legs 2L and L (L = √5ᵏ: its
 // tiles' legs 2 and 1, a square unit each), cut k times, every tile a cell (5ᵏ of them), its three sides straight by
 // construction, no wall but them (see tilePatch); k its side's: the most with 5ᵏ ≤ W² (its W the least with 5ᵏ ≤ W², see
 // side), placed round its box's middle; its core the tile its incircle's middle lies in. Its own kind's, the pinwheel's tiles
@@ -26393,7 +26393,7 @@ const patchMiddle = (kind, W) => APERIODIC[kind].middle?.(W) ?? [(W - 1) / 2, (W
 for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces')
     n[1] = '3D solids'; // (the solids and the round surfaces, one space: its groups, see shapeGroupsOf)
-  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares'; // (a grid that never repeats, a disc's or the pinwheel's triangle, among the circles)
+  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D boxed'; // (a grid that never repeats, a disc's or the pinwheel's triangle, among the circles)
 // the plane cells lie on: the plane's own; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
 function cellsPlane() {

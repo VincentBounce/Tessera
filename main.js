@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.793';
+const VERSION = '0.5.794';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24013,7 +24013,15 @@ const DRAW_STEPS = [
 // then whether it lies 6 from the middle (for colours: a copy a colour) or at it
 // (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
 // come round a torus and meet the rest, the end later there)
-const BRUSH_CELL = ['cell', '', [], 'Cell', 'o!', 'one cell, again to change its state', '.....,.....,..o..'];
+const BRUSH_CELL = [
+  'cell',
+  '',
+  [],
+  'Paint (Shift+drag)',
+  'o!',
+  'one cell, again to change its state',
+  '.....,.....,..o..',
+];
 // Paste: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
 // (see pasteBrush), its grid then its file's (squares, or hexagons for an RLE in H), any rule; none read yet, its card alone
 const BRUSH_PASTED = [
@@ -43394,7 +43402,7 @@ stage.addEventListener('pointerdown', (e) => {
       at: [e.clientX, e.clientY],
       tile: pickedTile,
       done: new Set(),
-    }); // (Draw's Cell held: it paints, see strokeTo, strokeToTile)
+    }); // (Draw's Paint held: it paints, see strokeTo, strokeToTile)
   drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.classList.add('dragging');
 });
@@ -43479,7 +43487,7 @@ const cellUnder = (x, y) => {
     ...turnPoint([(x - r.left - view.ox) / view.scale, (y - r.top - view.oy) / view.scale], -planeTurn()),
   );
 };
-// Draw's Cell held and moved (the left button; on a surface with Shift, the left alone still turning the view): a stroke,
+// Draw's Paint held and moved (the left button; on a surface with Shift, the left alone still turning the view): a stroke,
 // each cell it crosses painted once in the brush's colour (the eraser: dead), none skipped however fast: on the plane along
 // its way by a third of a cell, on a surface from tile to tile by the shortest way (see strokeToTile); a click still turns
 // one cell's state, the right button still pans

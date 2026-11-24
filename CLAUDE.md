@@ -173,37 +173,37 @@ touched shows (+0 if its code lines are as many).
 - A choice among several (a tab group: the Battle rules' `br=`, …) is written in a link by its place in the group, in the order
   shown: 0 the first, and the first the default (written in no link). Never a number kept from an older order, never a
   default set apart from the order: to change the default, change the order.
-- Every night, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
+- Each time away, check this for every choice the links write as a number: its tabs' order, its numbers, its default.
 - **Links and JSON explicit**: a link and a Gallery JSON write every setting they hold, its default too (a torus's twist
   `+0`, `+6`): nothing left to a default that may change (2026-11-23: « on explicite tout ! »). Reading one, a setting it
   does not write still takes its default (older links). The fields still left out by default: to make explicit one by one
-  (night job 30).
+  (away job 30).
 
 <p align="center"><br>* * *</p>
 
-## Night audits
+## Away audits
 While the checks run unattended (a night, a meal), also audit what they cannot see, and fix each gap at its root:
-- **Every night, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
+- **Each time away, click everything, as a brute**: every visible control not greyed, on every mode, Display's switches and
   looks included (Blocks, Glass, Cut, Ocean, Perspective…), in both themes, then step, seek and click again: no console
   error, nothing drawn empty. The fuzz picks menus only: Display › Blocks threw from v0.4.21 to v0.4.503 unseen.
-- **Every night, the doubles Claude brought in**: Claude's context is too short to remember the routines a year of work
+- **Each time away, the doubles Claude brought in**: Claude's context is too short to remember the routines a year of work
   made, so it keeps writing a second one beside them. Read the day's commits (`git log --since=yesterday -p`) and for each
   function, table, test or count they added, grep main.js for its notion (its words, its numbers) and read what answers
   it already; two found: keep one, its callers moved to it, the other removed, in its own commit (v0.5.333:
   `faceAdjective` measured a face's diagonals where the solid's declaration knew it).
-- **Every night, code grown for nothing (« pourrissement »)**: read the day's commits whose solde grew for a move, a
+- **Each time away, code grown for nothing (« pourrissement »)**: read the day's commits whose solde grew for a move, a
   rename or a look (`python3 tools/lines.py vA vB` on each), and redo each with the construction already there, at the
   least cost: v0.5.559 moved Clear under Open and Export as a `tile({…})` with its click inside (+9, Prettier's 14 lines)
   where moving its `<button>` line in index.html cost 0. Then hunt the same everywhere, not only in the day's commits:
   every control built in JS (`tile(`, `card(`, `createElement('button')`) whose text, icon and title never change, that
   index.html could hold as it is (its listener kept apart in main.js), and every handler inlined into a maker's object
   that a plain listener would write shorter; each found, moved to its cheapest form, in its own commit, its solde given.
-- **Every night, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
+- **Each time away, dead code**: `python3 tools/deadcode.py` lists what the app declares and nothing alive reads (main.js's
   names, style.css's classes, ids and variables, and a key written twice in one object, as esbuild warns: ICONS' turtle,
   v0.4.840), each at its file:line, a helper's helper too in one run; each removed at
   once, its commit saying since when it was dead (`git log -S`). It found v0.4.793's 45 lines (projector, planeVisible,
   rowAction, .row-act) and .icon-btn, dead since v0.4.7.
-- **Every night, the greyed controls' first hover**: `tesseraCheck({ hovers: true })`, each greyed control on every
+- **Each time away, the greyed controls' first hover**: `tesseraCheck({ hovers: true })`, each greyed control on every
   mode hovered at the size shown and at its surface's largest, none over 100 ms (a whyNot never builds a whole figure:
   Hunt › Longest on a globe of 795,026 cells took 9.7 s till v0.4.787, see surfaceFrame).
 - **The controls and their code alike**: each control's state held as it shows (one choice among several, one value, never
@@ -212,32 +212,32 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   tab (Walk, Ant, Life, 2D and 3D).
 - **Every Custom rule**: Life's, each walk's, the ants', the turmite's, the worm's: valid and wrong rules, Enter, Escape,
   the link made, opened cold, the card it lands on.
-- **Every night, slow play and links' framing**: every walk mode (2D grid and cells, 3D solids and surfaces, Lattice) at
+- **Each time away, slow play and links' framing**: every walk mode (2D grid and cells, 3D solids and surfaces, Lattice) at
   0.1, 0.5, 1 and 6 steps a second, forth and back, from a fresh load: the line grows smoothly to its next point from step
   0, no fade on it, in Solo and in a battle (each walker's line), every look (Rainbow, Commands); each cell fades in from
   nothing over WALK_FADE_SECONDS, the start cell never; paused, all whole. A link opened at
   a step (`at=0`, a few steps, the end) framed as Begin or the step buttons frame that step (the start centred at 0).
-- **Every night, clean transitions, no debris**: while a walk is computed the tab (`tabVariant()`) already shows the
+- **Each time away, clean transitions, no debris**: while a walk is computed the tab (`tabVariant()`) already shows the
   next mode and the walk shown (`walk`, `walk.variant`) is still the old one: grep every read of `tabVariant()` (the judges take their mode in each call, no default) and check
   none is mixed with the walk shown (`walk.geo`, `walk.life`, `walk.plane`…): what describes the walk shown reads
   `walk.variant`, what sets up the next one reads the tab, a figure's colours read the mode of their own mesh; then the fuzz and
   the cold fuzz, switching tabs fast (before the walk is built), no error, nothing of the old walk left on screen.
-- **Every night, the tooltips' redundancies**: each tooltip and card read as it shows (the `#tip` box after a mouseover):
+- **Each time away, the tooltips' redundancies**: each tooltip and card read as it shows (the `#tip` box after a mouseover):
   nothing said twice, its bold name never again in its words, not even spelt otherwise (a loop's Golly table
   `Langtons-Loops` under its name Langton's loops, v0.4.382), nor its default or greyed state in the text.
-- **Every night, the names**: functions and variables read through for names unclear, misleading, too short or
+- **Each time away, the names**: functions and variables read through for names unclear, misleading, too short or
   inconsistent (one concept, one name, see Names), each renamed explicitly at its source, everywhere, in its own commit.
-- **Every night, the seams**: on every torus, Möbius strip and Klein bottle, flat (the plane's grids) and in 3D (the
+- **Each time away, the seams**: on every torus, Möbius strip and Klein bottle, flat (the plane's grids) and in 3D (the
   surfaces), and for every kind of rule (B/S, a flower's v, Hensel's, Callahan's, the loops'), each cell's neighbours and
   their kinds (by a side, by a corner only, in turn) the same next to a seam as in the middle, measured against the
   geometry wrapped; then a glider or a spaceship sent across each seam goes on as in the middle. One construction for both
   sides of a seam, never a second copy (v0.4.952: the plane's torus took a side across its seam for a corner only, its own
   copy of the surfaces' meshSide, and a Tetrakis glider died crossing it).
-- **Every night, the CSS against its own conventions**: style.css read rule by rule against what its comments set (a button's
+- **Each time away, the CSS against its own conventions**: style.css read rule by rule against what its comments set (a button's
   fill its `background-color`, never the `background` shorthand, which takes the hover's veil away; the short gap within a
   block, the long gap between blocks…), and every kind of button hovered with its hover forced (`CSS.forcePseudoState`):
   each shows its veil or its own hover (v0.5.550: no row tile, picked tile, picked card nor rule chip had one).
-- **Every night, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
+- **Each time away, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
   its kind, in words (`--text-color`, `--text-size`, `--page-background`, `--border-color`), never a bare `--text`, `--bg`,
   `--muted` or `--c` (v0.4.564: `--text-size` came beside a colour named `--text`): renamed at its definition and every
   `var(…)` and `getPropertyValue`/`setProperty` in style.css, main.js and index.html, in its own commit.

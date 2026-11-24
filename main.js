@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.787';
+const VERSION = '0.5.788';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12629,17 +12629,27 @@ const tipWords = (text) => {
     words.replace(/^./, (c) => c.toUpperCase()),
   ];
 };
-const showInTip = (text) => $('tip').replaceChildren(...tipWords(text));
-// an alert told in the tooltip's place a few seconds, its box red, a click closes it (an RLE that does not open, a file
-// refused, states flattened): "Name: words" as a tooltip's, never the browser's alert, which stops the page
-let alertTimer = null;
-const alertTip = (text) => {
-  $('alert').replaceChildren(...tipWords(text));
-  $('alert').hidden = false;
-  clearTimeout(alertTimer);
-  alertTimer = setTimeout(() => ($('alert').hidden = true), 5000);
+// the tooltip's words, its one writer (nodes, or html: a size's, see sizeTips): none while an alert is told there
+const setTip = (...nodes) => {
+  if (!$('tip').classList.contains('alert')) $('tip').replaceChildren(...nodes);
 };
-$('alert').addEventListener('click', () => ($('alert').hidden = true));
+const showInTip = (text) => setTip(...tipWords(text));
+// an alert told by the tooltip itself a few seconds, red (see #tip.alert), till then no tooltip over it; a click ends it (an
+// RLE that does not open, a file refused, states flattened): "Name: words" as a tooltip's, never the browser's alert, which
+// stops the page
+let alertTimer = null;
+const alertEnd = () => {
+  $('tip').classList.remove('alert');
+  setTip();
+};
+const alertTip = (text) => {
+  $('tip').classList.remove('alert');
+  showInTip(text);
+  $('tip').classList.add('alert');
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(alertEnd, 5000);
+};
+$('tip').addEventListener('click', alertEnd);
 // whether words open with a name, then a mark (One step back; …, Jump to the end, …): said once, in bold (see the tooltips)
 const opensWith = (words, name) => !!name && words.startsWith(name) && /^[:;,.]/.test(words.slice(name.length));
 // What it tells of the element under the mouse: the control (its words, its default, why it is greyed) and its words, each
@@ -12710,12 +12720,11 @@ document.addEventListener('mouseover', (e) => {
         ]
       : []),
   ]; // (a default that depends, told in full)
-  if (el?.dataset.tipHtml) {
-    $('tip').innerHTML = el.dataset.tipHtml;
-    $('tip').append(...told);
-  } // (a size's: its words in colour, see sizeTips; its state under them)
+  if (el?.dataset.tipHtml)
+    setTip(Object.assign(document.createElement('div'), { innerHTML: el.dataset.tipHtml }), ...told);
+  // (a size's: its words in colour, see sizeTips; its state under them)
   else
-    $('tip').replaceChildren(
+    setTip(
       ...(!tip && !rule
         ? told.length || title
           ? [bold(name), ...told]
@@ -18783,7 +18792,7 @@ const sizeTips = (row, total, text, why = '') => {
     grid = `<b class="tip-name">${shapeLabel(NAV[w][2])}</b>${variantWhere(w)}`;
   box.dataset.tip = text.replace(/\{[yroskbge]:([^}]*)\}/g, '$1');
   box.dataset.tipHtml = `${grid}<div class="tip-state"><div>${sizeCardHtml(total, text)}</div></div>${why ? `<div class="tip-state tip-default">${htmlText(why)}</div>` : ''}`; // (why: its length's, see ringWhy)
-  if (box.matches(':hover')) $('tip').innerHTML = box.dataset.tipHtml;
+  if (box.matches(':hover')) setTip(Object.assign(document.createElement('div'), { innerHTML: box.dataset.tipHtml }));
 };
 // a face by its corners (a solid's, a sector's count round its middle)
 const FACE_ADJECTIVES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal' };

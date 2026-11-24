@@ -44,7 +44,7 @@
   ); /* (the same whatever lies under it: a box over the sky too) */
   --motif-color: #bc8cff; /* a grid's motif, outlined while its size is hovered (see drawMotif), its words in the size's tooltip */
   --face-color: #e5484d; /* a solid's face round it */
-  --alert-background: #e5484d; /* a told alert's box (see alertTip): a tooltip's, red */
+  --alert-background: #e5484d; /* the tooltip telling an alert (see alertTip): red */
   --on-alert-color: #ffffff;
   --sector-color: #58a6ff; /* a face's sector round it (a dodecahedron's pentagon, 5 triangles) */
   --edge-cells-color: #e3b341; /* a Möbius strip's edge's cells, their neighbours not as in its middle (see edgeRibbons) */
@@ -2111,7 +2111,6 @@ button.active .bubble.active {
 }
 /* a tooltip, the view's hint: each in a box as the view's others (see .stage-box), its lines left aligned, the name on its own */
 #tip:not(:empty),
-#alert:not([hidden]),
 #hint:not([hidden]) {
   max-width: 420px;
   margin-left: auto;
@@ -2126,17 +2125,17 @@ button.active .bubble.active {
 #tip:empty {
   display: none;
 }
-/* an alert told a few seconds (an RLE that does not open, its states flattened: see alertTip), in the tooltip's place: its
-box, red; a click closes it */
-#alert:not([hidden]) + #tip {
-  display: none;
-}
-#alert:not([hidden]) {
+/* the tooltip telling an alert (see alertTip): its box red, the view's hint gone meanwhile (no box under it to move it); a
+click ends it */
+#tip.alert {
   pointer-events: auto;
   cursor: pointer;
   background: var(--alert-background);
   border-color: var(--alert-background);
   color: var(--on-alert-color);
+}
+#tip.alert ~ #hint {
+  display: none;
 }
 #hint:not([hidden]) {
   width: max-content;

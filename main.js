@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.754';
+const VERSION = '0.5.755';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -4016,14 +4016,16 @@ const latticeStep = (kind) => {
   return [m[0] - o[0], m[1] - o[1]];
 }; // a step along a row's grid cells (a slanted grid's: its rectangles)
 const tilingOf = (kind) => TILINGS[kind] ?? RECTS[kind];
-const baseOf = (kind) => RECTS[kind]?.base ?? kind;
+// a grid made of another's tiles in another outline (see PINWHEEL_TRIANGLE): its tiles' kind, their names, rules and patterns
+const PLANE_BASES = { pinwheelTriangle: 'pinwheel' };
+const baseOf = (kind) => RECTS[kind]?.base ?? PLANE_BASES[kind] ?? kind; // (a rectangle's grid, the pinwheel's triangle: the tiles they are made of)
 const planeKind = (kind, outline = outlineOf(kind)) =>
   STRAIGHT_RECTS.has(kind) && outline === 'square' ? `${kind}Rect` : kind; // (outline: a setup's, see outlineIn)  // the grid as it is built: a slanted one's, its straight sheet, a rectangle (its torus's laid flat), else as stored (a rhombus, a hexagon cut in it)
 // a grid's outline (shape: the one picked, else another's), as it can have it: a hexagon, a six-fold one's walled; a rhombus, a slanted
 // one's (its cells as stored); else a rectangle (a grid that never repeats: its disc)
 const outlineOf = (kind, shape = plane.shape, torus = planeTorus(kind)) =>
   APERIODIC[kind]
-    ? 'disc'
+    ? (APERIODIC[kind].outline ?? 'disc') // (the pinwheel's triangle: its own, see inDisc)
     : RECTS[kind]
       ? 'square'
       : shape === 'hex' && hexagonFits(kind) && !torus
@@ -9595,6 +9597,17 @@ const LIFE_GRIDS = [
     },
   ],
   [
+    'lifePinwheelTriangle',
+    '2D',
+    'Pinwheel triangle',
+    'pinwheelTriangle',
+    {
+      lattice: 'pinwheel',
+      plane: 'pinwheelTriangle',
+      where: "one of the pinwheel's right triangles, cut in 5 again and again (they never repeat, turned every way)",
+    },
+  ],
+  [
     'lifeSpectre',
     '2D',
     'Spectre',
@@ -10440,6 +10453,7 @@ const SHAPE_ICONS = {
   'Kites & darts': 'kitesDarts',
   Tübingen: 'tubingen',
   Pinwheel: 'pinwheel',
+  'Pinwheel triangle': 'pinwheel',
   Spectre: 'spectre',
   Ammann: 'ammann',
   'Rhombs 12': 'rhombs12',
@@ -23841,7 +23855,7 @@ function buildLife(seq, variant) {
 // (outline: the one its grid is built in, a setup's: its sides as many as that outline's grid allows, a hexagon's 2 across at least)
 const planeCells = (side, kind = VARIANTS[tabVariant()].plane, k = planeKind(kind), outline = outlineOf(kind)) => {
   const W = shaped(kind, outline) ? sideW(k, side) : planeW(k, side, undefined, outline);
-  return W * planeRow(k, W);
+  return APERIODIC[k]?.cells?.(W) ?? W * planeRow(k, W); // (the pinwheel's triangle's 5ᵏ)
 }; // a side's grid's cells, counted, not built (see cellsAsked)
 const planeSides = (
   kind,
@@ -25008,7 +25022,7 @@ const sideW = (kind, side) =>
   kind === 'cairo'
     ? 2 * Math.round(side / Math.SQRT2 / 2)
     : APERIODIC[kind]
-      ? Math.round((side * Math.sqrt(Math.PI)) / 2)
+      ? (APERIODIC[kind].side?.(side) ?? Math.round((side * Math.sqrt(Math.PI)) / 2)) // (its own: the pinwheel's triangle's)
       : Math.round(side / Math.sqrt(gridCells(kind) * (RECT_ASPECT[kind] ?? 1))); // (a rectangle's: W rows of W × its aspect motifs, see planeColumns)
 // blocks on a torus: the nearest size their sets fit round (else a cell in two blocks of a set at the seam: the rule broken)
 const planeW = (kind, side, variant = VARIANTS[tabVariant()], outline = outlineOf(kind)) =>
@@ -25103,6 +25117,13 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
   const edge = far(items[live - 1]) + 3,
     out = []; // (the items just beyond: the next ones by distance)
   for (let k = live; k < items.length && far(items[k]) < edge; k++) out.push(items[k]);
+  return { ...tilePatch(rows, out, W, mid, each), norm };
+}
+// A grid of tiles laid flat (rows, its cells; out, the tiles round them, its walls those touching a cell; each(item, f): f(x, y)
+// for each of its corners), placed as the squares' grid of side W, mid at its middle: its polygons, cells then walls (see
+// packedPolygons), its core (the items marked core: its middle's), its tiles' kinds and width; a disc's (see discPatch), one
+// tile cut again and again (the pinwheel's triangle: every tile a cell, no wall, see PINWHEEL_TRIANGLE)
+function tilePatch(rows, out, W, mid, each = flatEach) {
   const ids = (h) => {
     const r = [];
     each(h, (x, y) => r.push(pointKey(x, y)));
@@ -25142,7 +25163,6 @@ function discPatch(items, W, mid, norm = Math.hypot, each = flatEach) {
     coreIds,
     kinds: rows[0].kind === undefined ? null : Uint8Array.from(rows, (h) => h.kind), // (its tiles' kinds, where its tiling has several alike: see tileKinds)
     core: coreIds.map((t) => F.poly(t)),
-    norm,
     width: Math.sqrt(area / rows.length),
   }; // (n: its cells, then its walls; norm: its way to measure, its disc's; width: its cells', see cellWidth)
 }
@@ -25788,6 +25808,44 @@ const PINWHEEL = discMemo((W) => {
   }));
   return discPatch(items, W, [r, r]); // (round its incircle's middle)
 });
+// The pinwheel in one of its triangles (Grid › 2D squares › Pinwheel): one big triangle, its legs 2L and L (L = √5ᵏ: its
+// tiles' legs 2 and 1, a square unit each), cut k times, every tile a cell (5ᵏ of them), its three sides straight by
+// construction, no wall but them (see tilePatch); k its side's: the most with 5ᵏ ≤ W² (its W the least with 5ᵏ ≤ W², see
+// side), placed round its box's middle; its core the tile its incircle's middle lies in. Its own kind's, the pinwheel's tiles
+// (see PLANE_BASES); outline: a triangle, see outlineOf
+const pinwheelLevel = (W) => Math.floor(Math.log(W * W) / Math.log(5) + 1e-9);
+const PINWHEEL_TRIANGLE = Object.assign(
+  discMemo((W) => {
+    const k = pinwheelLevel(W),
+      L = 5 ** (k / 2),
+      r = (L * (3 - Math.sqrt(5))) / 2; // (its incircle's radius, its middle that far from both legs)
+    let tris = [
+      [
+        [0, 0],
+        [2 * L, 0],
+        [0, L],
+      ],
+    ]; // (its right angle's corner, its long leg's end, its short leg's)
+    for (let c = 0; c < k; c++) tris = tris.flatMap(pinwheelSplit);
+    const items = cornersOnSides(tris).map((p, i) => ({
+      p: p.flat(),
+      m: [0, 1].map((d) => (tris[i][0][d] + tris[i][1][d] + tris[i][2][d]) / 3),
+    }));
+    const inside = (T) =>
+      [0, 1, 2].every((a) => {
+        const [P, Q, R] = [T[a], T[(a + 1) % 3], T[(a + 2) % 3]],
+          side = (X) => (Q[0] - P[0]) * (X[1] - P[1]) - (Q[1] - P[1]) * (X[0] - P[0]);
+        return side([r, r]) * side(R) >= 0;
+      });
+    items[tris.findIndex(inside)].core = true;
+    return tilePatch(items, [], W, [L, L / 2]);
+  }),
+  {
+    outline: 'triangle',
+    side: (side) => Math.ceil(Math.sqrt(5 ** Math.max(3, Math.round(Math.log(side * side) / Math.log(5))))), // (its W: one a k)
+    cells: (W) => 5 ** pinwheelLevel(W),
+  },
+);
 /* De Bruijn's multigrids (1981): N families of lines a unit apart, their normals 180°/N apart, all moved by ½ (no three
  * meeting, the whole 2N-fold round the middle); each crossing of two a tile, its corners the sum of the lattice steps of
  * the lines it lies between (a rhombus, its angle the two families'). Ammann–Beenker's (Ammann, 1977; Beenker, 1982): 4,
@@ -26232,13 +26290,16 @@ const APERIODIC = {
   rhombs12: RHOMBS12,
   rhombs14: RHOMBS14,
   pinwheel: PINWHEEL,
+  pinwheelTriangle: PINWHEEL_TRIANGLE,
   ...Object.fromEntries(Object.entries(ROSETTES).map(([k, [, r]]) => [k, r])),
-}; // the grids that never repeat: a disc of them, walls round it, never a torus
+}; // the grids that never repeat: a disc of them, walls round it (outline: its own, the pinwheel's triangle's), never a torus
+// a grid in a disc: one that never repeats, with no outline of its own (the pinwheel's triangle's, see outlineOf)
+const inDisc = (kind) => !!APERIODIC[kind] && !APERIODIC[kind].outline;
 // the grids in their spaces (see SPACES): everyone's surfaces, sheets or solids; the automata's plane, round (these) or not
 for (const [w, n] of Object.entries(NAV))
   if (n[1] === 'Surfaces')
     n[1] = '3D solids'; // (the solids and the round surfaces, one space: its groups, see shapeGroupsOf)
-  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = APERIODIC[VARIANTS[w].plane] ? '2D circles' : '2D squares';
+  else if (n[1] === '2D' && VARIANTS[w].life) n[1] = inDisc(VARIANTS[w].plane) ? '2D circles' : '2D squares'; // (by its shape: a disc's round, the pinwheel's triangle straight)
 // the plane cells lie on: the plane's own; a rosette sphere's, its disc's (its north half's cells numbered as the plane's: a start
 // laid on it as on the plane, see rosetteSphereMesh)
 function cellsPlane() {
@@ -27119,6 +27180,7 @@ const PLANE_CELLS = {
   ring12: 'pentagons',
 };
 for (const [kind, t] of Object.entries(TILINGS)) PLANE_CELLS[kind] = t.cells;
+for (const [kind, base] of Object.entries(PLANE_BASES)) PLANE_CELLS[kind] = PLANE_CELLS[base]; // (its tiles', see PLANE_BASES)
 // the description's lead: how the cells start, on which grid
 // a zone of the hunt, a random start in it, in words
 function zoneWords(zone) {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.744';
+const VERSION = '0.5.745';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26852,8 +26852,8 @@ const loopFits = (rule, variant) => !!rule?.loopStates && (rule.loopTurns || !!v
 // step across a side to the tile beyond, its sides turned as they come (so it crosses a cube's edges as its faces); in K
 // lineages, each its colour (see parseLoops), the k-th turned by k quarter turns (the rule the same turned: its daughters
 // each their own ways, not copies of the others' moves; a table with no turns, all the right way up)
-// a colour's part's middle cell (see middleCells); a solid with no frame for it (a frame, a sponge): the cell facing the view
-// for one, else the part's cell nearest its middle
+// a colour's part's middle cell (see middleCells); a figure with no frame for it (a frame, a sponge, a globe, Boy's surface):
+// the cell facing the view for one, else the part's cell nearest its middle (a patch's centre there, see FIGURE_PARTS)
 function partMiddle(k, K) {
   const t = middleCells(k, K)[0];
   if (t !== undefined) return t;
@@ -32964,6 +32964,7 @@ const FIGURE_PARTS = {
   // and down, its hemispheres, its caps theirs; no patch (no frame to lay one on: its zones greyed, see huntFits)
   globe: {
     fits: () => true, // (each count its own, its bands all multiples of it, see globeMesh)
+    centre: (i, K) => [partMiddle(i, K)], // (no frame: its lune's or hemisphere's cell nearest its middle)
     parts: (K) => {
       const g = walk.surface,
         up = K === 2 && !duelAcross();
@@ -32981,6 +32982,7 @@ const FIGURE_PARTS = {
   // tile its own on the solid; no patch (no frame)
   projective: {
     fits: (K, { variant }) => oppositeAllowed(BOY_BASES[variant.surface], K),
+    centre: (i, K) => [partMiddle(i, K)], // (no frame: its part's cell nearest its middle)
     parts: (K) => {
       const g = walk.surface,
         base = BOY_BASES[VARIANTS[walk.variant].surface],
@@ -33036,7 +33038,8 @@ const faceRuns = (K, g) => {
     return Math.floor(along / run) % K;
   });
 };
-// a surface with no frame yet to lay a patch or a pattern on (see patternPlace): a globe, Boy's surface
+// a surface with no frame to lay a pattern by its face on (see patternPlace): a globe, Boy's surface (a tile's own heading
+// there, see tileHeading)
 const frameless = (g) => !!(g?.globe || g?.projective);
 // a walled figure's counts by its turns round its middle, C_n, and its mirrors, D_n: K a d dividing n, or 2d where it mirrors
 // (a slice between two mirrors, its cells on them no one's: see planeSlices); hexagons 1, 2, 3, 4, 6, 12, squares 1, 2, 4, 8,
@@ -33096,7 +33099,6 @@ function partPlaces(r, K, opposite, mixed) {
     for (let t = 0; t < n; t++) parts[own ? own[t] : 0]?.push(t);
     return parts;
   }
-  if (frameless(walk.surface)) return Array.from({ length: K }, () => []); // (no patch: no frame to lay one on)
   if (row.centre && K > 1) return Array.from({ length: K }, (_, i) => lifePatch(r, row.centre(i, K, opposite)));
   if (K === 1) return [lifePatch(r)];
   // (a rule whose colours meet only when they start side by side: on the plane's blocks, patches touching round the middle)
@@ -33275,7 +33277,7 @@ function huntFits() {
   hunt.fits = Object.fromEntries(
     Object.keys(HUNT_ZONES).map((zone) => {
       const r = zoneRadius(zone);
-      if (frameless(walk.surface) && zone !== 'full' && zone !== 'numbers') return [zone, false]; // (a globe, Boy's surface: the zones on its whole grid only, a soup or a number's digits; no frame yet to lay a patch or pattern on, see patternPlace)
+      if (frameless(walk.surface) && (isIcon(zone) || famousZone(zone))) return [zone, false]; // (a globe, Boy's surface: no frame to lay a picture or a pattern on by its face, see patternPlace; its patches round its parts' middles, see partMiddle)
       if (famousZone(zone))
         return [
           zone,
@@ -35536,7 +35538,7 @@ function middleCells(i = 0, K = 1) {
     return centreCells(spot ?? Array.from(g.cen.subarray(3 * frontCell(), 3 * frontCell() + 3)));
   }
   const F = patternFrame(i, K);
-  if (!F) return []; // (no place: no middle, see patternPlace)
+  if (!F) return frameless(g) && K === 1 ? [frontCell()] : []; // (no place: no middle, see patternPlace; a globe's, Boy's surface's one colour, the cell facing the view)
   const c = F.centre,
     far = new Float64Array(n).fill(Infinity);
   for (let t = 0; t < n; t++) if (start[t] < start[t + 1] && (F.on?.(t) ?? true)) far[t] = F.far(t, c);

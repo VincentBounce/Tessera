@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.735';
+const VERSION = '0.5.736';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15460,23 +15460,29 @@ const formAt = (form, tube) => {
   const byTube = formsAt.get(key);
   return byTube.get(tube) ?? byTube.set(tube, { ...form, curve: form.line(tube) }).get(tube);
 };
-// a torus knot's line: p times round the axis, q times round a tube of radius a about the circle of radius 2
-const torusKnot = (p, q, a) => (t) => [
-  (2 + a * Math.cos(q * t)) * Math.cos(p * t),
-  (2 + a * Math.cos(q * t)) * Math.sin(p * t),
-  a * Math.sin(q * t),
-];
+// a torus knot's line: p times round the axis, q times round a tube of radius a about the circle of radius 2; its middle
+// (the straight tube's, see knotFrame) at a crest of its weave, its tangent level there (q t = π / 2 past a turn): laid
+// by it, its axis falls true (at t = π, its middle before v0.5.736, it dived 45° through the tube: the knot tilted so)
+const torusKnot = (p, q, a) =>
+  Object.assign(
+    (t) => [
+      (2 + a * Math.cos(q * t)) * Math.cos(p * t),
+      (2 + a * Math.cos(q * t)) * Math.sin(p * t),
+      a * Math.sin(q * t),
+    ],
+    { middle: Math.PI + Math.PI / (2 * q) },
+  );
 const TORUS_SHAPES = [
   ['Ring', 'The torus: a ring, its tube round it', { tube: TORUS_TUBE }],
   [
     'Trefoil',
     'A tube round a trefoil knot: twice round the axis, three times round the tube',
-    { curve: torusKnot(2, 3, 0.8), tube: 0.16 },
+    { curve: torusKnot(2, 3, 0.8), tube: 0.16, standing: true },
   ],
   [
     'Cinquefoil',
     'A tube round a cinquefoil knot: twice round the axis, five times round the tube',
-    { curve: torusKnot(2, 5, 0.6), tube: 0.1 },
+    { curve: torusKnot(2, 5, 0.6), tube: 0.1, standing: true },
   ],
   [
     'Triangle',
@@ -15525,7 +15531,9 @@ function knotFrame(knot, x) {
   const { along } = knot,
     N = along.length - 1,
     scale = (2 * Math.PI) / along[N],
-    t = ((2 * Math.PI) / N) * stepAt(along, ((((x / (2 * Math.PI) + 0.5) % 1) + 1) % 1) * along[N]),
+    i = ((curve.middle ?? Math.PI) / (2 * Math.PI)) * N, // (its middle's step: its curve's own, else halfway round)
+    middle = (along[Math.floor(i)] + (i % 1) * (along[Math.ceil(i)] - along[Math.floor(i)])) / along[N], // (its share of its length)
+    t = ((2 * Math.PI) / N) * stepAt(along, ((((x / (2 * Math.PI) + middle) % 1) + 1) % 1) * along[N]),
     C = curve(t),
     T = unit(curve(t + 1e-5).map((v, d) => v - C[d])),
     N0 = unit([-T[1], T[0], 0]),

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.855';
+const VERSION = '0.5.856';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45478,7 +45478,7 @@ $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
 // its name and version; lit while it shows, as Gallery's); kept over the settings changed (its URL's rows follow them), closed by its
-// cross or its tab; Home there (Share link: the header's, see shareLink)
+// cross or its tab (Share link: the header's, see shareLink)
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
 const AUTHOR =
   '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>'; // (its author, as signed)
@@ -45545,20 +45545,7 @@ function credits(open) {
   });
   paintTimings();
   paintUrl();
-  $('ruleTuto').prepend(
-    tutTools({
-      words: [
-        [
-          'Home',
-          'Back to the start',
-          () => {
-            location.href = location.pathname;
-          },
-        ],
-      ],
-      close: () => credits(false),
-    }),
-  );
+  $('ruleTuto').prepend(tutTools({ close: () => credits(false) }));
 }
 $('appTab').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));

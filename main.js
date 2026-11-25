@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.869';
+const VERSION = '0.5.870';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23968,7 +23968,6 @@ function renderExplore() {
     exploreRule === 'hemispheres' ? 'Its 2 colours: its north and its south.' : '',
   );
   // (a colour alone, the others white: All, then a to e, each greyed where the grid shown has it not)
-  if (exploreLook.isolated > asked) exploreLook.isolated = 0;
   pillRow(
     $('exploreIsolate'),
     'Isolate',
@@ -24042,10 +24041,11 @@ function startLife(seq, rule, n, grid) {
   };
   if (explore) {
     // (Explore: each cell alive in its colour, see exploreLevels; once its grid is the walk's, for its middle)
-    const { level: seed, most } = exploreLevels(grid.nbr, n, grid, distanceFrom),
-      palette = exploreColours(seed).map((c, k) =>
-        exploreLook.isolated && k !== exploreLook.isolated - 1 ? '#FFFFFF' : c,
-      ); // (a colour isolated: the others white, see renderExplore)
+    const { level: seed, most } = exploreLevels(grid.nbr, n, grid, distanceFrom);
+    if (exploreLook.isolated > seed.reduce((m, l) => Math.max(m, l), 0)) exploreLook.isolated = 0; // (a colour isolated not used here: all of them)
+    const palette = exploreColours(seed).map((c, k) =>
+      exploreLook.isolated && k !== exploreLook.isolated - 1 ? '#FFFFFF' : c,
+    ); // (a colour isolated: the others white, see renderExplore)
     Object.assign(walk.life, { seed, palette, colours: palette.length, most }); // (most: its rule's colours here, see renderExplore)
   }
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n); // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)

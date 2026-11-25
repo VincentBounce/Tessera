@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.868';
+const VERSION = '0.5.869';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23670,7 +23670,7 @@ const EXPLORE_PALETTES = [
   ['Moss', ['#26332C', '#2C3A32', '#324138', '#38483E'], 'Dark greens of one hue, barely apart'],
   ['Plum', ['#30293A', '#372F42', '#3E354A', '#453B52'], 'Dark violets of one hue, barely apart'],
 ]; // (name, colours, words)
-const exploreLook = { rule: 'tiles', palette: 0, colours: LINK_DEFAULTS.exploreColours }, // (colours: so many of its rule's, 0 all of them, see exploreLevels)
+const exploreLook = { rule: 'tiles', palette: 0, colours: LINK_DEFAULTS.exploreColours, isolated: 0 }, // (colours: so many of its rule's, 0 all of them, see exploreLevels; isolated: the one shown alone, 1 its first, 0 all, a look kept from no link)
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
 // a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
 // most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
@@ -23967,6 +23967,23 @@ function renderExplore() {
   greyInput($('exploreColoursGauge').firstChild, $('exploreColoursGauge').closest('.pill-row'), ({ exploreRule }) =>
     exploreRule === 'hemispheres' ? 'Its 2 colours: its north and its south.' : '',
   );
+  // (a colour alone, the others white: All, then a to e, each greyed where the grid shown has it not)
+  if (exploreLook.isolated > asked) exploreLook.isolated = 0;
+  pillRow(
+    $('exploreIsolate'),
+    'Isolate',
+    'A colour alone, the others white',
+    [
+      ['All', 'Every colour'],
+      ...[...'abcde'].map((name, k) => [name, `Its colour ${k + 1}`, () => (k < asked ? '' : 'Not used here.')]),
+    ],
+    exploreLook.isolated,
+    0,
+    (k) => {
+      exploreLook.isolated = k;
+      compute();
+    },
+  );
   $('exploreRules').replaceChildren(
     ...EXPLORE_RULES.map(([key, name, detail]) =>
       card({
@@ -24026,7 +24043,9 @@ function startLife(seq, rule, n, grid) {
   if (explore) {
     // (Explore: each cell alive in its colour, see exploreLevels; once its grid is the walk's, for its middle)
     const { level: seed, most } = exploreLevels(grid.nbr, n, grid, distanceFrom),
-      palette = exploreColours(seed);
+      palette = exploreColours(seed).map((c, k) =>
+        exploreLook.isolated && k !== exploreLook.isolated - 1 ? '#FFFFFF' : c,
+      ); // (a colour isolated: the others white, see renderExplore)
     Object.assign(walk.life, { seed, palette, colours: palette.length, most }); // (most: its rule's colours here, see renderExplore)
   }
   if (walk.life.margolus?.flips) blockCells(walk.life.margolus, n); // (Critters, Tron: their cells in blocks, see GPU_LIFE's blockRule)

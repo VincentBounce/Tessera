@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.832';
+const VERSION = '0.5.833';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34287,7 +34287,7 @@ function cellPlace(t) {
   if (cellsPlane()) return { on: 'plane' };
   if (g.torus) return { on: 'sheet' };
   if (frameless(g)) return null; // (a globe, Boy's surface: no face, its tiles' own heading, see tileHeading; Boy's triangles no solid's)
-  if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
+  if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.perFace) };
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
     return triPlace(Math.floor((t - (g.triFirst ?? 0)) / g.perFace));
   if (g.hexagons) {

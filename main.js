@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.842';
+const VERSION = '0.5.843';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14016,6 +14016,24 @@ function newellNormal(C, o, k, out) {
 // Orient every tile counterclockwise, compute centres, outward normals and edge adjacency.
 // outwardRef(centre) gives a vector pointing outwards near a tile (default: from the solid's centre);
 // null keeps the tiles as listed (the Möbius strip has no outside)
+// each tile's heading by construction (see builtHeading), from its corners as its plane cell's are listed (listed[t], none:
+// null) and that cell's x of row 0 (x(t)): its edge 0 the one from its first corner to its second, its way round as finishMesh
+// kept its corners (1) or turned them (−1)
+function setHeadings(mesh, listed, x) {
+  const k = mesh.sides;
+  mesh.latticeX = typedOf(Int8Array, listed, (_, t) => x(t));
+  mesh.hand = new Int8Array(listed.length);
+  mesh.e0 = typedOf(Int8Array, listed, (c, t) => {
+    for (let e = 0; c && e < k; e++) {
+      const [a, b] = [mesh.poly[k * t + e], mesh.poly[k * t + ((e + 1) % k)]];
+      if (a === c[0] && b === c[1]) mesh.hand[t] = 1;
+      else if (a === c[1] && b === c[0]) mesh.hand[t] = -1;
+      else continue;
+      return e;
+    }
+    return -1;
+  });
+}
 function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
   const n = tiles.length;
   const poly = new Int32Array(sides * n),
@@ -14345,6 +14363,7 @@ function hullMesh(kind, f) {
     triFaces = faces.filter((fc) => fc.corners.length === 3);
   const { verts, add } = vertexStore(),
     tiles = [],
+    downs = [], // (a triangle's way in its face's grid, see flatPolyhedron)
     at = (A, B, C, i, j) => add(...facePoint(A, B, C, i / f, j / f));
   for (const {
     corners: [A, B, , D],
@@ -14359,12 +14378,16 @@ function hullMesh(kind, f) {
       for (let j = 0; i + j < f; j++) {
         const t1 = [at(A, B, C, i, j), at(A, B, C, i + 1, j), at(A, B, C, i, j + 1)];
         tiles.push([...t1, t1[2]]);
+        downs[tiles.length - 1] = false;
         if (i + j < f - 1) {
           const t2 = [at(A, B, C, i + 1, j), at(A, B, C, i + 1, j + 1), at(A, B, C, i, j + 1)];
           tiles.push([...t2, t2[2]]);
+          downs[tiles.length - 1] = true;
         }
       }
-  return (meshCache[key] = Object.assign(finishMesh(verts, tiles, 4, f), {
+  const mesh = finishMesh(verts, tiles, 4, f);
+  setHeadings(mesh, tiles, (t) => (downs[t] ? 1 : 0)); // (its squares as the plane's, its triangles as flatPolyhedron's)
+  return (meshCache[key] = Object.assign(mesh, {
     squareFaces,
     triFaces,
     perFace: f * f, // (a square's cells, a triangle's alike)
@@ -14966,13 +14989,10 @@ function flatPolyhedron(name, f, kites = false) {
   // each triangle's corners as its face's grid lists them (finishMesh may turn them round), and its way there (see hexSolidMesh)
   mesh.gridCorners = tris;
   mesh.downs = downs;
-  // each tile's heading by construction (see builtHeading): its face's grid the plane's triangles' (a ▲ (i, j), (i + 1, j),
-  // (i, j + 1) the plane's x 0, a ▼ x 1, its corners in their order: see latticeCorners; a kite, 3 a triangle, x 3 times
-  // that and its corner's, see kiteCorners), its edge 0 its first two corners', its way round as finishMesh kept or turned it
+  // each tile's heading (see setHeadings): its face's grid the plane's triangles' (a ▲ the plane's x 0, a ▼ x 1: see
+  // latticeCorners; a kite, 3 a triangle, x 3 times that and its corner's, see kiteCorners)
   const per = kites ? 3 : 1;
-  mesh.latticeX = typedOf(Int8Array, downs, (down, t) => per * (down ? 1 : 0) + (t % per));
-  mesh.hand = typedOf(Int8Array, tris, (c, t) => (mesh.poly[sides * t + 1] === c[1] ? 1 : -1));
-  mesh.e0 = typedOf(Int8Array, mesh.hand, (hand) => (hand === 1 ? 0 : sides - 1));
+  setHeadings(mesh, tris, (t) => per * (downs[t] ? 1 : 0) + (t % per));
   // each face as one big triangle, with its three families of grid lines, for cheap drawing
   mesh.faces = faces.map((face) => {
     const [A, B, C] = face.map((v) => P[v]);

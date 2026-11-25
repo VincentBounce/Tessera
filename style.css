@@ -1426,9 +1426,9 @@ button.active .bubble.active {
 .rule-build > :not([hidden]) {
   margin-bottom: 0;
 } /* (its parts shown spaced by its gap alone, whatever they are: the tabs, the frames, the states) */
-.rule-cards:has(+ .rule-build:not([hidden])) {
+.rule-cards:has(+ .rule-build:not([hidden]), + .pill-row:not([hidden])) {
   margin-bottom: var(--short-gap);
-} /* your own's block under them: all one (else a list's 10 px) */
+} /* their own block under them, your own's or Explore's Colours: all one (else a list's 10 px) */
 .stack .field {
   margin-bottom: var(--short-gap);
 } /* fields one under another, as close as cards (a battle's formulas) */

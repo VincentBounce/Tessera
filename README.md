@@ -269,7 +269,7 @@ A fraction's digits repeat, so its walk makes the same moves again and again: it
   - In 3D: drag to rotate (it keeps Auto-fit, stops Auto-rotate), Shift+drag to pan; double-click centres the view, and on a view already centred brings back the starting view (Auto-rotate off).
   - On the surfaces, a walk shown whole is faced at once; while it moves, the camera turns to keep the walker in view, with a small arrow lying on the surface for its heading.
 - **Drawing:** the walks, their cells, areas and surfaces are drawn by the graphics card (WebGPU, since v0.4.0; WebGL 2 before), and Life is played there too, so a walk of millions of steps still pans, zooms and turns smoothly. On a Mac, Chrome shows WebGPU with judder on an external screen; Safari there, or Chrome on the built-in screen, are smooth.
-- **Links:** the page link always holds the current setup (number, walk, surface, size, start, rule, Life start), never the display settings.
+- **Links:** a link holds a setup (number, walk, surface, size, start, rule, Life start), never the display settings: Share link copies the setup shown, and a link opened or pasted into the address bar opens it. The address bar itself stays the page's (its setup kept in the tab's history entry: a reload, Back and Forward keep it), so the browser's history never fills with links.
 
 Keyboard: `Space` play/pause · `→` one step · `R` restart · `E` jump to end · `F` centre (again: starting view)
 

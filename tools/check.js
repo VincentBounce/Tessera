@@ -706,7 +706,7 @@
             built = watch.built();
           if (ms > HOVER_BUDGET || built)
             fail(
-              `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''} (${location.hash})`,
+              `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''} (${setupHash()})`,
             ); // (its link: the setup to open it again at)
         }
       watch.stop();
@@ -734,7 +734,7 @@
   async function coldLike(fail, what) {
     const f = document.createElement('iframe');
     f.style.cssText = 'position:fixed;left:0;top:0;width:1200px;height:900px;opacity:0;pointer-events:none';
-    f.src = `${location.pathname}?cold=${Date.now()}${location.hash}`;
+    f.src = `${location.pathname}?cold=${Date.now()}${setupHash()}`;
     document.body.append(f);
     await new Promise((go) => f.addEventListener('load', go, { once: true }));
     await wait(1500);
@@ -751,7 +751,7 @@
     const diff = [...new Set([...Object.keys(a), ...Object.keys(b)])]
       .filter((k) => a[k] !== b[k])
       .map((k) => `${k}: «${a[k]}» here, «${b[k]}» cold`);
-    if (diff.length) fail(`${what} ${location.hash}: ${diff.join('; ')}`);
+    if (diff.length) fail(`${what} ${setupHash()}: ${diff.join('; ')}`);
   }
   async function fuzz(fail, count, seedv, cold = false, each = null) {
     const C = checker(fail);
@@ -820,9 +820,7 @@
       [
         1,
         () => {
-          const h = location.hash;
-          location.hash = '';
-          location.hash = h;
+          location.hash = setupHash(); // (the address bar the page's alone: the setup shown as a link come in)
           return 'link again';
         },
       ],
@@ -1668,16 +1666,12 @@
       for (const K of [2, 3, 5].filter((k) => offered[0].split(',').includes(`${k}`))) {
         location.hash = toHash({ ...variantWords(w), teams: K });
         if (!(await until(shown(w, () => lifeTeams === K && walk.life?.colours === K)))) {
-          fail(
-            `${w}: ${K} colours offered, ${lifeTeams} taken${walk.life ? '' : ', no grid built'} (${location.hash})`,
-          );
+          fail(`${w}: ${K} colours offered, ${lifeTeams} taken${walk.life ? '' : ', no grid built'} (${setupHash()})`);
           continue;
         }
         const sizes = huntParts(null, K).map((p) => p.length);
         if (new Set(sizes).size > 1)
-          fail(
-            `${w} in ${K} colours: its parts ${sizes.join(' / ')} (${walk.life.seed.length} cells, ${location.hash})`,
-          ); // (its link: the grid as it was, a size kept from the grid before when the link writes none)
+          fail(`${w} in ${K} colours: its parts ${sizes.join(' / ')} (${walk.life.seed.length} cells, ${setupHash()})`); // (its link: the grid as it was, a size kept from the grid before when the link writes none)
       }
       checked += 2;
     }
@@ -1761,6 +1755,8 @@
         location.hash = toHash({ ...variantWords(w), teams: K });
         await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
         if (lifeTeams !== K) continue; // (its count taken: partsEqual's to tell)
+        if (hullColours(VARIANTS[w].surface, K)?.unlike) continue; // (unlike by choice: the pyramid's Duel Up / Down, its Quintet, see hullColourings)
+        if (walk.surface.asManyCells) continue; // (the pinwheel solids: their parts as many cells, none alike face to face, v0.5.644; partsEqual's)
         const g = walk.surface,
           own = FIGURE_PARTS[figureOf(K)].parts(K),
           moves = [];

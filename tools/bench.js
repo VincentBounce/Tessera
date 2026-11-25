@@ -38,7 +38,7 @@ function openCold(link) {
       t = browser(
         'eval',
         tab,
-        `(async () => { for (let i = 0; i < ${CAP * 20}; i++) { await new Promise((r) => setTimeout(r, 50)); if (typeof walk !== 'undefined' && walk.variant && walk.variant === setupVariant(parseHash(location.hash)) && !busy && !waits.size) return performance.now(); } return null; })()`,
+        `(async () => { for (let i = 0; i < ${CAP * 20}; i++) { await new Promise((r) => setTimeout(r, 50)); if (typeof walk !== 'undefined' && walk.variant && walk.variant === setupVariant(parseHash(${JSON.stringify(link.slice(link.indexOf('#')))})) && !busy && !waits.size) return performance.now(); } return null; })()`,
       );
     } catch {
       execFileSync('sleep', ['1']); // (the page still loading, its context new: asked again)

@@ -17,8 +17,8 @@
  *      digit per tile of a surface as its starting state.
  *   3. The whole walk is built at once (arrays of positions, Part 5); the animation (Part 11)
  *      only reveals it step by step, so jumping anywhere is instant.
- *   4. A setup (Part 10) — number, variant, surface, rule, Life start — lives in the page link, in
- *      the Gallery and in its JSON files. Display choices are never part of it.
+ *   4. A setup (Part 10) — number, variant, surface, rule, Life start — lives in its link (Share link's, the tab's history
+ *      entry's), in the Gallery and in its JSON files. Display choices are never part of it.
  *
  * Words: the plane is the menu's 2D (2D boxed, 2D circles: walk.plane, plane…), a surface its 3D
  * (3D solids: a solid, a torus, a sphere…: walk.surface, surface…); flat means flattened (Shape's
@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.840';
+const VERSION = '0.5.841';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36493,8 +36493,8 @@ let builtWaiters = [];
 const whenBuilt = () => new Promise((ok) => builtWaiters.push(ok));
 
 /* ---- 10.3 The page link ------------------------------------------------------------------- */
-// The page link always holds the current setup (#mode=walk&shape=squares&walk=turtle&on=edges&x=pi&…), for bookmarks and
-// sharing. Readable links: x=(1+sqrt(5))/2 — formulas and rules keep / + ^ , : as they are
+// A link holds a setup (#mode=walk&shape=squares&walk=turtle&on=edges&x=pi&…), read as the page opens or pasted into its
+// address bar, written by Share link (see setupHash). Readable links: x=(1+sqrt(5))/2 — formulas and rules keep / + ^ , : as they are
 // A variant in a link: no name of its own, its parts as the menu says them (see NAV), each a word: variant (its tab: walk, life,
 // ant…), shape, tiling (a shape with tilings: a torus of hexagons), walk (a walk's kind: turtle, spiral…), on (edges or
 // cells); a setup holds its variant's key (w), the link its words. A word: its menu's name in one word, no accent
@@ -36573,26 +36573,27 @@ function parseHash(hash = location.hash) {
     return null;
   }
 }
-// The link is written when what it holds changes: a walk built (see buildWalk), a Life
-// start (setLifeSeed), a Gallery setup clicked; never over a link come from outside (typed, pasted) not read yet: the page's
-// own, the last it wrote or read (linkHeld), else its hashchange still to come (a window of a few ms, a Life's batch back
-// between the two: rare by hand, two check passes in three till v0.4.845)
-let linkHeld = location.hash;
+// The setup shown as a link's words (#…): Share link's, an RLE file's, the checks'; the address bar never holds it (each link
+// written there a row of the browser's history: 73,641 of them, 4 kB each, slowed Chrome's address bar till v0.5.841)
+const setupHash = () => `#${toHash(getSetup())}`;
+// The setup is kept in the browser's history entry (history.state: { link }, the address bar the page's alone) when what it
+// holds changes: a walk built (see buildWalk), a Life start (setLifeSeed), a Gallery setup clicked; a reload and a tab
+// restored open it again, Back and Forward go from one to the other (see popstate); never over a link come from outside
+// (typed, pasted) not read yet, its hash still in the address bar (see hashchange)
 // a hand's change of the setup (a choice of the menu's graph clicked, data-choice: an edge, see choicesAt; or any control of the
-// menu clicked or let go: a size, a width, a twist, Shape): the link it leads to a new entry of the browser's history, its Back
-// and Forward going from change to change (see hashchange); anything else (a step, the view, a setup built) its own entry's
+// menu clicked or let go: a size, a width, a twist, Shape): a new entry of the browser's history, its Back and Forward going
+// from change to change; anything else (a step, the view, a setup built, a cell drawn) its own entry's
 let handChanged = false;
 const markHandChange = (e) =>
   (handChanged ||= e.isTrusted && !!e.target.closest?.('[data-choice], .panel') && !e.target.closest('#startDraw')); // (isTrusted: the page's own events, a link opened, none; Draw's tools none: the drawing its own history, Undo and Redo's, see drawHistory)
 document.addEventListener('click', markHandChange, true);
 document.addEventListener('change', markHandChange, true);
 function syncLink() {
-  if (busy || pendingChampion || location.hash !== linkHeld) return; // not while a setup is still being built
-  const h = `#${toHash(getSetup())}`,
+  if (busy || pendingChampion || location.hash) return; // not while a setup is still being built, nor a link come in read
+  const link = toHash(getSetup()),
     pushed = handChanged;
   handChanged = false;
-  if (h !== location.hash) history[pushed ? 'pushState' : 'replaceState'](null, '', h);
-  linkHeld = location.hash;
+  if (link !== history.state?.link) history[pushed ? 'pushState' : 'replaceState']({ link }, '');
   syncSaveButton();
   paintUrl();
 }
@@ -44369,7 +44370,7 @@ function rleFile(when, notes, pop, rule, two, sheet = null) {
   return [
     `#N ${setupTitle(x)}, ${when}`,
     `#C ${setupWords(x)}`,
-    `#C Tessera: ${SITE}${location.hash}`,
+    `#C Tessera: ${SITE}${setupHash()}`,
     ...notes.map((n) => `#C ${n}`),
     ...(sheet ? [`#CXRLE Pos=${-Math.floor(sheet.w / 2)},${-Math.floor(sheet.h / 2)}`] : []),
     sheet
@@ -44413,10 +44414,9 @@ function copyFlash(b, text) {
     () => {},
   );
 }
-// Share link: the page link (the setup shown, see syncLink), copied
+// Share link: the page's link to the setup shown (see setupHash), copied
 function shareView(b) {
-  syncLink();
-  copyFlash(b, location.href);
+  copyFlash(b, `${location.origin}${location.pathname}${setupHash()}`);
 }
 // Draw it: the generation shown as the cells drawn, in Draw (there already: an edit, Undo's; else Draw opened with them, Undo
 // back to its blank page, as Draw's tab opens)
@@ -45376,10 +45376,15 @@ $('galleryFile').addEventListener('change', () => {
   if ($('galleryFile').files[0]) importGallery($('galleryFile').files[0]);
   $('galleryFile').value = '';
 });
-// a setup link pasted into this tab
+// a setup link pasted into this tab: read, the address bar the page's again (see syncLink)
 window.addEventListener('hashchange', () => {
-  linkHeld = location.hash;
   const s = parseHash();
+  history.replaceState(history.state, '', location.pathname + location.search);
+  if (s) applySetup(s);
+});
+// Back or Forward: the setup that entry keeps (see syncLink)
+window.addEventListener('popstate', (e) => {
+  const s = e.state?.link && parseHash(`#${e.state.link}`);
   if (s) applySetup(s);
 });
 
@@ -45500,9 +45505,10 @@ for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('
 play(false); // the Play button with its icon
 seedCurated();
 fillGalleryList();
-// the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup; otherwise the Walk tab,
-// as a click on it opens it (its defaults, its own link written)
-const linked = parseHash();
+// the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup, else this entry's (a
+// reload, a tab restored: see syncLink); otherwise the Walk tab, as a click on it opens it (its defaults, its setup kept)
+const linked = parseHash() ?? (history.state?.link ? parseHash(`#${history.state.link}`) : null);
+history.replaceState(history.state, '', location.pathname + location.search); // (the address bar the page's: see syncLink)
 gpuSetup()
   .catch((e) => {
     console.warn('WebGPU off:', e.message);

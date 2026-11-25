@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.860';
+const VERSION = '0.5.861';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11666,7 +11666,6 @@ function renderModePicker() {
         ...title,
         ...these.flatMap((sh) => {
           const again = sh === shape && !!VARIANTS[w].plane && !APERIODIC[VARIANTS[w].plane],
-            broken = tilesBroken(navPick(w, 2, sh)),
             b = button(
               `${icon(SHAPE_ICONS[sh])}<span>${shapeLabel(sh)}</span>`,
               sh === shape,
@@ -11678,8 +11677,7 @@ function renderModePicker() {
                 plane.torus = !plane.torus;
                 compute();
               },
-              [sh === shape ? variantWhere(w) : tilingsWords(navPick(w, 2, sh)), broken].filter(Boolean).join('\n'), // (the one shown: its grid, as its size's tooltip; another: its tilings; its mark's words)
-              { mark: !!broken },
+              sh === shape ? variantWhere(w) : tilingsWords(navPick(w, 2, sh)), // (the one shown: its grid, as its size's tooltip; another: its tilings)
             );
           b.dataset.choice = `shape:${sh}`; // (its choice's key, see choicesAt)
           const to = navPick(w, 2, sh),
@@ -11690,7 +11688,7 @@ function renderModePicker() {
           if (to === w) b.tipColours = coloursUsed;
           else if (surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
           if (again) {
-            setTile(b, { on: true, again, mark: !!broken });
+            setTile(b, { on: true, again });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
           } // (its words kept, then what a click does, as a card's: see card)
           return [b];
@@ -11767,16 +11765,10 @@ function renderModePicker() {
             $('variant').value = same(f);
             $('variant').dispatchEvent(new Event('change'));
           },
-          [
-            f === here && turns
-              ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}`
-              : variantWhere(same(f)),
-            tilesBroken(same(f)),
-          ]
-            .filter(Boolean)
-            .join('\n'),
+          f === here && turns
+            ? `${capitalised(F.tabs[tabOf(f, true)][4].slice(shape.length + 2))}: a click turns it${isTurned ? ' back' : ''}`
+            : variantWhere(same(f)),
           {
-            mark: !!tilesBroken(same(f)),
             again: f === here && turns,
             byDefault: f === F.tabs[0][0] ? 'yes' : '',
             turn: tilesTurn(shownSurface(VARIANTS[same(f)].surface, f === here && isTurned)),
@@ -23899,52 +23891,6 @@ const exploreColours = (levels, P = explorePalette()) => {
     k < P.length ? P[k] : faded(P[k % P.length], 0.5, P[(k + 1) % P.length]),
   );
 };
-// Explore's tilings whose Tiles break their pattern, at the size each opens at, each its colours there and its tiling's on
-// the plane (Explore's Tiles there; 0: the plane's own, DSatur's more than 3, its lattice cell not cloned): measured once by
-// a run (2026-11-17, v0.5.288: every Explore grid against its tiling on the plane, the same name in the menu), its tile's
-// mark (see tilesBroken). The plane and a sheet (a torus, a Möbius strip, a Klein bottle), coloured by their grid's
-// alternation (see alternationOf: every periodic grid's, a block of its lattice cells cloned), never broken; a surface else piece by piece (see
-// pieceByPiece): its colours more inside a piece (a face, a rosette sphere's half), DSatur's
-const TILES_BROKEN = {
-  exploreCubePitsSquares: [3, 2],
-  exploreCubeBumpsSquares: [3, 2],
-  exploreTetrahedronKites: [4, 3],
-  exploreOctahedronKites: [4, 3],
-  exploreDodecahedronTriangles: [3, 2],
-  exploreDodecahedronKites: [4, 3],
-  exploreDodecahedronHex: [4, 3],
-  exploreIcosahedronKites: [4, 3],
-  exploreStellaOctangulaKites: [4, 3],
-  exploreRosettesFlower6: [5, 4],
-  exploreRosettesFlower7: [5, 4],
-  exploreRosettesFlower8: [5, 3],
-  exploreRosettesFlower9: [5, 4],
-  exploreRosettesFlower11: [5, 4],
-  exploreRosettesFlower12: [4, 3],
-  exploreRosettesMirror5: [5, 4],
-  exploreRosettesMirror6: [5, 4],
-  exploreRosettesMirror7: [5, 4],
-  exploreRosettesMirror8: [5, 4],
-  exploreRosettesMirror9: [5, 4],
-  exploreRosettesMirror10: [5, 4],
-  exploreRosettesMirror12: [5, 4],
-  exploreRosettesHexa5: [5, 4],
-  exploreRosettesHexa6: [4, 3],
-  exploreRosettesHexa7: [5, 4],
-  exploreRosettesHexa8: [5, 4],
-  exploreRosettesHexa9: [4, 3],
-  exploreRosettesHexa10: [5, 4],
-  exploreRosettesHexa11: [5, 4],
-  exploreRosettesHexa12: [5, 3],
-  exploreRosettesRing12: [5, 4],
-};
-const tilesBroken = (w) => {
-  const [here, plane] = TILES_BROKEN[w] ?? [];
-  if (!here) return '';
-  return plane
-    ? `Tiles take ${here} colours here at the size it opens at, ${plane} on the plane: a colour more breaks its pattern`
-    : `Tiles take ${here} colours: DSatur's, its pattern broken`;
-}; // (Explore's only: its variants alone in the table)
 // each cell's kind of tile, by construction: its tiling's own tile where it has several with as many corners (protos: de
 // Bruijn's rhombi, Penrose's thick and thin, see discPatch), else its corners' count (corners: its grid's, see meshCorners)
 const tileKinds = (corners, protos = null) =>

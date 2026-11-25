@@ -2515,7 +2515,7 @@ button.mark::after {
   height: 9px;
   border-bottom-right-radius: 5px;
   background: linear-gradient(135deg, transparent 50%, var(--border-color) 50%);
-} /* a tile with a word more in its tooltip (setTile's mark: a count of colours whose battles can bring a colour back, the rule's ties; an Explore grid whose Tiles take a colour more than on the plane, see tilesBroken): a triangle in its corner, its tip the button's round, in its border's colour */
+} /* a count of colours whose battles can bring a colour back (the rule's ties, setTile's mark): a triangle in its corner, its tip the button's round, in its border's colour */
 button.mark:hover:not(:disabled)::after {
   background: linear-gradient(135deg, transparent 50%, var(--muted-text-color) 50%);
 }

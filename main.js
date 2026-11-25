@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.871';
+const VERSION = '0.5.872';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15667,6 +15667,11 @@ const TORUS_SHAPES = [
       arms: 'up', // (its line's plane upright: its arms raised up as it bends, see lineFlat)
       teams: { 3: 'faceRuns', 6: 'faceRuns' }, // (its colours' zones of its own, by their count: see faceRunsOn)
     },
+  ],
+  [
+    'Coil',
+    'A band of square section twice round the axis, once round its tube: a torus knot (2, 1), crossing nothing',
+    { curve: torusKnot(2, 1, 0.7), tube: 0.2, square: true, arms: 'down' },
   ],
 ]; // (curve: its line, any t round it, laid by its length, see knotFrame; none, the ring's circle; square: its tube's section; corners: its line's turns onto itself, see torusPoint)
 // a torus's usual tube at variant w, its shape's (its sheet's length round the ring: see ringColumns)

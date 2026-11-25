@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.828';
+const VERSION = '0.5.829';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34590,23 +34590,28 @@ function patternOnCell(F, cells, t, anchor = null) {
 // Dode sph's) takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the first shortest path
 // (breadth first, each tile's edges in order): round a corner a heading depends on its path, this one by convention
 function headingOn(g, F, t) {
-  const from = new Map([[t, -1]]),
-    queue = [t];
-  for (let i = 0; i < queue.length; i++) {
-    const u = queue[i],
-      h = framedHeading(g, F, u);
-    if (h) {
-      let heading = h;
-      for (let v = from.get(u); v >= 0 && heading; v = from.get(v)) heading = headingAcross(heading, v);
-      return heading;
+  const way = wayTo(
+    t,
+    (u) => framedHeading(g, F, u),
+    (u) => liveEdges(g, u).map((e) => g.nbr[g.sides * u + e]),
+  );
+  let heading = way && framedHeading(g, F, way[0]);
+  for (const v of way?.slice(1) ?? []) heading = headingAcross(heading, v);
+  return heading;
+}
+// the shortest way from tile t to the first tile end(u) holds (breadth first, each tile's neighbours nbrs(u) in order): its
+// tiles from that one back to t; null none (within `most` tiles reached)
+function wayTo(t, end, nbrs, most = Infinity) {
+  const from = new Map([[t, -1]]);
+  for (const u of from.keys()) {
+    if (end(u)) {
+      const way = [];
+      for (let v = u; v >= 0; v = from.get(v)) way.push(v);
+      return way;
     }
-    for (const e of liveEdges(g, u)) {
-      const v = g.nbr[g.sides * u + e];
-      if (from.has(v)) continue;
-      from.set(v, u);
-      queue.push(v);
-    }
-  }
+    if (from.size > most) break;
+    for (const v of nbrs(u)) if (!from.has(v)) from.set(v, u);
+  } // (a Map's keys walked as they are added)
   return null;
 }
 // a tile's heading by its face's frame F, else null: its cell under t's middle, its edges by its neighbours F lays by it,
@@ -43634,14 +43639,13 @@ function strokeTo(x, y) {
 // neighbour to neighbour (L.nbr), painted (a jump of more than 64 tiles: t alone)
 function strokeToTile(t) {
   const { start, list } = walk.life.nbr,
-    from = new Map([[stroke.tile, -1]]);
-  for (const u of from.keys()) {
-    if (u === t || from.size > 4096) break;
-    for (let j = start[u]; j < start[u + 1]; j++) if (!from.has(list[j])) from.set(list[j], u);
-  }
-  const way = [];
-  for (let u = from.has(t) ? t : -1; u >= 0 && way.length < 64; u = from.get(u)) way.push(u);
-  for (const u of way.length && way.length < 64 ? way : [t]) {
+    way = wayTo(
+      stroke.tile,
+      (u) => u === t,
+      (u) => list.slice(start[u], start[u + 1]),
+      4096,
+    );
+  for (const u of way?.length < 64 ? way : [t]) {
     if (stroke.done.has(u)) continue;
     if (!stroke.done.size) rememberDrawing(); // (one Undo a stroke)
     stroke.done.add(u);

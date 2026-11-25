@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.817';
+const VERSION = '0.5.818';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12967,17 +12967,20 @@ const cellXY = (k) => [Math.floor(k / 2 ** 22) - 2 ** 21, (k % 2 ** 22) - 2 ** 2
 // a pattern's cell drawn (its key in the population, its state v in the pattern): alive in the brush's colour, or dying of it
 // (see parseRule); the eraser: off
 function brushOn(k, v) {
-  const K = walk.life.colours;
-  if (brush.colour) population.set(k, K > 1 ? brush.colour + K * (v - 1) : v);
+  if (brush.colour) population.set(k, drawnCell(brush.colour, v - 1));
   else population.delete(k);
 }
 // a cell clicked (its key in the population): in the brush's colour, alive; already of it, its next stage, each dying state
-// then dead (one colour or many alike: colour k + K × stage s); a stroke paints alive, its states never turned (see strokeTo)
+// then dead; a stroke paints alive, its states never turned (see strokeTo)
 function toggleDrawn(k) {
-  const K = walk.life.colours,
-    v = population.get(k) ?? 0,
-    s = Math.floor((v - 1) / K) + 1, // (its next stage)
-    c = !v || ((v - 1) % K) + 1 !== brush.colour ? brush.colour : s < walk.life.C - 1 ? brush.colour + K * s : 0;
+  const v = population.get(k) ?? 0,
+    [colour, stage] = drawnParts(v),
+    c =
+      !v || colour !== brush.colour
+        ? drawnCell(brush.colour, 0)
+        : stage + 1 < walk.life.C - 1
+          ? drawnCell(colour, stage + 1)
+          : 0;
   if (c) population.set(k, c);
   else population.delete(k);
 }
@@ -23356,10 +23359,23 @@ const civColours = (K, C) => [
 
 // the base the number is written in for Life: K + 1, a digit a cell, 0 dead, k alive in colour k (a start has live cells only)
 
-// a cell drawn (its state c in the population: colour k + K × stage s) as a state of K colours and C states: its own, else
-// its colour's last stage the rule has (a stage past it its last, as a brush's, see brushCells; Life's two states: alive; a
-// colour of another count of colours as one of these), as the plane's and a surface's starts take it
-const drawnState = (c, K, C) => ((c - 1) % K) + 1 + K * Math.min(Math.floor((c - 1) / K), C - 2);
+// A cell's state, two ways, each coded and read back in one place: the engine's (see parseRule), colour k (1 … K) at stage s
+// (0 alive, then each dying stage) as k + K × s, one byte, its meaning K's; a drawing's (the population, its Undo, Draw's
+// brushes), k + 16 × s whatever the teams (12 at most), never stale as K changes (a Duel's red dying cell read yellow in Trio
+// till v0.5.818): the link's popCells in the engine's, with its own teams, coded as written and read back as read
+const engineState = (k, s, K = walk.life.colours) => k + K * s,
+  engineParts = (c, K = walk.life.colours) => [((c - 1) % K) + 1, Math.floor((c - 1) / K)],
+  drawnCell = (k, s) => k + 16 * s,
+  drawnParts = (c) => [c % 16, Math.floor(c / 16)];
+// a drawing in the engine's states of K colours (a link's popCells, see getSetup), and back (see setupFrom)
+const drawnInEngine = (pop, K) => new Map([...pop].map(([key, c]) => [key, drawnState(c, K, Infinity)])),
+  drawnFromEngine = (pop, K) => new Map([...pop].map(([key, c]) => [key, drawnCell(...engineParts(c, K))]));
+// a cell drawn as a state of K colours and C states: its colour, else one of these (a colour past K); its stage, else its
+// colour's last the rule has (Life's two states: alive; as a brush's, see brushCells), as the plane's and a surface's starts take it
+const drawnState = (c, K, C) => {
+  const [k, s] = drawnParts(c);
+  return engineState(((k - 1) % K) + 1, Math.min(s, C - 2), K);
+};
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)
 function surfaceSeed(seq, n, K, C) {
@@ -23407,7 +23423,7 @@ const lifeParts = () =>
       : walk.life.colours - (walk.life.newcomer ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's, as the walk was built)
 // colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
 // start's teams fewer with Newcomer, its states the same
-const colourState = (i, v) => (walk.life.colours > 1 ? i + 1 + walk.life.colours * (v - 1) : v);
+const colourState = (i, v) => engineState(i + 1, v - 1);
 function startColours(seed) {
   if (walk.life.palette) return; // (Explore's: its colours, see exploreLevels)
   if (walk.life.loops) {
@@ -23441,7 +23457,7 @@ function symmetricStart(seed) {
         .sort((a, b) => a - b)
         .map((c) => seed[c])
         .find(Boolean) ?? 0;
-    seed[t] = !v || !own ? v : own[t] ? colourState(own[t] - 1, Math.floor((v - 1) / walk.life.colours) + 1) : 0;
+    seed[t] = !v || !own ? v : own[t] ? engineState(own[t], engineParts(v)[1]) : 0;
   }
 }
 const firstCopy = (t, sym = startSymmetry()) => Math.min(...startCopies(t, sym));
@@ -27463,7 +27479,8 @@ function startFromSetup(s) {
   } else plane.start = ['draw', 'text', ...ELEMENTARY_STARTS].includes(kind) ? kind : 'random';
   if (kind === 'text') plane.text = String(popOf(s)).slice(5) || APP_TITLE;
   plane.font = readSetting(s, 'popFont', (f) => TEXT_FONTS[f]); // (Text's font, tf=)
-  population = plane.start === 'draw' ? populationOf(s.popCells) : population;
+  population =
+    plane.start === 'draw' ? drawnFromEngine(populationOf(s.popCells), Number(readSetting(s, 'teams'))) : population; // (its teams', as written, see getSetup)
   forgetDrawing(); // (another start)
 }
 // the grid's size, its edges and its start, as the controls say (the patterns and the turns of a
@@ -35714,9 +35731,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
   if (poleColours(walk.surface, K))
     return [0, 1].map((i) =>
       centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) =>
-        cs.map((v, j) =>
-          j % 2 ? colourState(i, Math.floor((v - 1) / walk.life.colours) + 1) : v + i * walk.surface.south,
-        ),
+        cs.map((v, j) => (j % 2 ? engineState(i + 1, engineParts(v)[1]) : v + i * walk.surface.south)),
       ),
     );
   if (K > 1 && n % K) return out;
@@ -36248,7 +36263,8 @@ function getSetup() {
     s.gridOutline = plane.shape; // (the outline asked: hex, square, rhombus; each grid's as it can have it, see outlineOf)
     s.popStacked = spaceTimeOn() ? 1 : 0; // (Space-time)
   }
-  if (life && plane.start === 'draw' && population.size) s.popCells = populationRle(population); // (a surface's: its tiles, see populationKey)
+  if (life && plane.start === 'draw' && population.size)
+    s.popCells = populationRle(drawnInEngine(population, lifeTeams)); // (a surface's: its tiles, see populationKey; in the engine's states of its teams, s.teams, see drawnInEngine)
   if (life && !variant.loops)
     Object.assign(
       s,
@@ -43642,7 +43658,7 @@ function cellsShown() {
         : mod(stepShown, L.margolus.turns.length)
       : 0;
   if (off) seekTo(stepShown - off);
-  return new Map([...L.alive].flatMap((c, t) => (c ? [[populationKey(t), L.margolus ? 1 : c]] : [])));
+  return drawnFromEngine(new Map([...L.alive].flatMap((c, t) => (c ? [[populationKey(t), L.margolus ? 1 : c]] : []))));
 }
 // Text's fonts, one choice: a tab group of tiles, Aa in each (see TEXT_FONTS)
 $('textFonts').append(
@@ -44423,7 +44439,10 @@ function layCells({ cells, w, h }, control) {
     cellAt = new Map(kind ? [] : Array.from({ length: walk.surface.n }, (_, t) => [room.at(t).join(), t])); // (a sheet's cell at a place)
   rememberDrawing();
   population = new Map(
-    cells.map(([x, y, v]) => [kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)), v]),
+    cells.map(([x, y, v]) => [
+      kind ? planeKey(x0 + x, y0 + y) : populationKey(cellAt.get(`${x0 + x},${y0 + y}`)),
+      drawnCell(...engineParts(v)),
+    ]), // (the file's states the engine's, its setup's teams)
   );
   if (!kind) return lifeReseed(); // (a sheet: its size kept)
   cellsAsked = planeCells(side);

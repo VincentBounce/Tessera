@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.845';
+const VERSION = '0.5.846';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34673,10 +34673,10 @@ function patternOnCell(F, cells, t, anchor = null) {
 }
 // A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
-// patternFrom). F's, its face's frame's (see framedHeading; a solid of hexagons' by its mesh, see builtHeading); a tile F
-// cannot frame (a solid's corner) takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the
-// first shortest path (breadth first, each tile's edges in order): round a corner a heading depends on its path, this one
-// by convention
+// patternFrom). A mesh's by construction where it has them (see builtHeading); a solid's cells cut again (Tetrakis,
+// Triangles: see HULL_CUTS), none: F's, its face's frame's (see framedHeading); a tile F cannot frame (a solid's corner)
+// takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the first shortest path (breadth
+// first, each tile's edges in order): round a corner a heading depends on its path, this one by convention
 function headingOn(g, F, t) {
   const way = wayTo(
     t,

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.870';
+const VERSION = '0.5.871';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8102,7 +8102,7 @@ const ICONS = (() => {
       '<circle cx="12" cy="12" r="9"/>' +
       svgPath('M3 12A9 2.8 0 0 0 21 12A9 9 0 0 1 3 12Z', 'f') +
       svgPath('M3 12A9 2.8 0 0 0 21 12'), // (its south, under its equator)
-    'explore-lunes': svgPath('M12 3C16 7 16 17 12 21A9 9 0 0 0 12 3Z'), // (a lune, pole to pole)
+    'explore-lunes': svgPath('M15.5 3.7A9 9 0 1 0 15.5 20.3A8.66 8.66 0 0 1 15.5 3.7Z'), // (a crescent: the circle of 9 round (12, 12) less the one round (18, 12) through its tips)
     // walk variants
     grid: halvesGrid,
     compass: svgPath('M12 3V21M3 12H21') + svgPath('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.827';
+const VERSION = '0.5.828';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34586,9 +34586,32 @@ function patternOnCell(F, cells, t, anchor = null) {
 }
 // A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
-// patternFrom). F's, its face's frame's (see patternFrame): its cell under t's middle, its edges by its neighbours F lays by
-// it, two at least (a solid's corner's tile, one: its neighbour's heading carried to it, see headingAcross)
-function headingOn(g, F, t, asked = new Set()) {
+// patternFrom). F's, its face's frame's (see framedHeading); a tile F cannot frame (a solid's corner, a bulging face: the
+// Dode sph's) takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the first shortest path
+// (breadth first, each tile's edges in order): round a corner a heading depends on its path, this one by convention
+function headingOn(g, F, t) {
+  const from = new Map([[t, -1]]),
+    queue = [t];
+  for (let i = 0; i < queue.length; i++) {
+    const u = queue[i],
+      h = framedHeading(g, F, u);
+    if (h) {
+      let heading = h;
+      for (let v = from.get(u); v >= 0 && heading; v = from.get(v)) heading = headingAcross(heading, v);
+      return heading;
+    }
+    for (const e of liveEdges(g, u)) {
+      const v = g.nbr[g.sides * u + e];
+      if (from.has(v)) continue;
+      from.set(v, u);
+      queue.push(v);
+    }
+  }
+  return null;
+}
+// a tile's heading by its face's frame F, else null: its cell under t's middle, its edges by its neighbours F lays by it,
+// two at least
+function framedHeading(g, F, t) {
   const kind = patternKind(),
     k = g.sides,
     edges = liveEdges(g, t),
@@ -34599,16 +34622,13 @@ function headingOn(g, F, t, asked = new Set()) {
         ? planeCorners(kind, ...cell).flatMap((_, j) => {
             const c = planeAcross(kind, cell, j)?.[0],
               e = c ? edges.findIndex((f) => g.nbr[k * t + f] === F.cellAt(F.at(cellMiddle(kind, ...c)))) : -1;
-            return e < 0 ? [] : [[j, e, g.nbr[k * t + edges[e]]]];
+            return e < 0 ? [] : [[j, e]];
           })
         : [];
-  if (found.length > 1) {
-    const [[j0, e0], [j1, e1]] = found,
-      hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
-    return { g, t, cell, e0: edges[mod(e0 - hand * j0, edges.length)], hand };
-  }
-  asked.add(t); // (a tile asked once: two tiles each finding only the other, no end before v0.5.807, the Dode sph's)
-  return found.length && !asked.has(found[0][2]) ? headingAcross(headingOn(g, F, found[0][2], asked), t) : null;
+  if (found.length < 2) return null;
+  const [[j0, e0], [j1, e1]] = found,
+    hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
+  return { g, t, cell, e0: edges[mod(e0 - hand * j0, edges.length)], hand };
 }
 // a tile's edges with a tile across, as a walk on cells counts them (see surfaceStep)
 const liveEdges = (g, u) => [...Array(g.sides).keys()].filter((e) => g.nbr[g.sides * u + e] >= 0);

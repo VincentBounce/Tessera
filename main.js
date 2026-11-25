@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.851';
+const VERSION = '0.5.852';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34260,7 +34260,8 @@ const patternKind = () => {
   );
 }; // (a hull solid's: its first colour's face's, a square or a triangle; Draw's brush's there)
 // a solid of squares and triangles shown, its faces both (an irregular polyhedron's, not a cut's tiling): Draw's brushes of both
-const hullFaced = () => !!walk.surface && !walk.surface.tiling && !!hullSolidOf(VARIANTS[walk.variant].surface);
+const hullFaced = () =>
+  !!walk.surface && !walk.surface.tiling && !walk.surface.uncut && !!hullSolidOf(VARIANTS[walk.variant].surface); // (a cut's: uncut, see HULL_CUTS)
 // a face's level way (its normal n: across it, square to the world's up; a face looking straight up or down, east) and the
 // way down it, as a marble rolls (a face looking straight up or down: south)
 const levelOf = (n) => {

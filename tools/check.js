@@ -1720,11 +1720,14 @@
       for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
         location.hash = toHash({ ...variantWords(w), ...walls, teams: K });
         await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
-        const sizes = huntParts(null, K).map((p) => p.length);
-        if (lifeTeams !== K) fail(`${named}: ${K} colours offered, ${lifeTeams} taken`);
-        else if (Math.max(...sizes) - Math.min(...sizes) > slack)
-          fail(`${named} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
         checked++;
+        if (lifeTeams !== K) {
+          fail(`${named}: ${K} colours offered, ${lifeTeams} taken`);
+          continue;
+        } // (its parts asked of the K built only: K's of a grid built with other teams, none, a throw till v0.5.850)
+        const sizes = huntParts(null, K).map((p) => p.length);
+        if (Math.max(...sizes) - Math.min(...sizes) > slack)
+          fail(`${named} in ${K} colours: ${Math.min(...sizes)} to ${Math.max(...sizes)} cells a colour`);
       }
     }
     cellsAsked = keepAsked; // (the size picked by hand, back)

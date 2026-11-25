@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.854';
+const VERSION = '0.5.855';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44455,12 +44455,12 @@ function copyFlash(b, text) {
   navigator.clipboard.writeText(text).then(
     () => {
       const was = b.innerHTML,
-        width = b.style.width;
-      b.style.width = `${b.offsetWidth}px`; // (Copied in its place, not a word of its own size)
-      ((svg = b.querySelector('svg')),
-        (words = [b, ...b.querySelectorAll('*')].flatMap((n) =>
+        width = b.style.width,
+        svg = b.querySelector('svg'),
+        words = [b, ...b.querySelectorAll('*')].flatMap((n) =>
           [...n.childNodes].filter((c) => c.nodeType === 3 && c.textContent.trim()),
-        )));
+        );
+      b.style.width = `${b.offsetWidth}px`; // (Copied in its place, not a word of its own size)
       if (svg) svg.outerHTML = icon('check');
       else if (words.length) b.insertAdjacentHTML('afterbegin', `${icon('check')} `);
       words.forEach((w, i) => {

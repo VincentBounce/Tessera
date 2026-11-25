@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.822';
+const VERSION = '0.5.823';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23841,27 +23841,20 @@ function renderExplore() {
     compute();
   };
   // (Distance's colours under its card, a notched slider always there, greyed for another rule: see DISTANCE_COLOURS)
-  const field = Object.assign(document.createElement('div'), {
-      className: 'notch-field',
-      title: "Distance's colours: so many of the palette's, a ring each in turn",
-    }),
-    gauge = Object.assign(document.createElement('span'), { className: 'size-gauge' }),
-    words = Object.assign(document.createElement('span'), { className: 'notch-words' }),
-    said = (k) => (words.textContent = `${DISTANCE_COLOURS[k]} colours`);
-  field.append(gauge, words);
   sizeGauge(
-    gauge,
+    $('distanceGauge'),
     DISTANCE_COLOURS.length,
     DISTANCE_COLOURS.indexOf(exploreLook.colours),
-    said,
+    () => {},
     (k) => {
       exploreLook.colours = DISTANCE_COLOURS[k];
       compute();
     },
     DISTANCE_COLOURS.indexOf(LINK_DEFAULTS.distanceColours),
   );
-  said(DISTANCE_COLOURS.indexOf(exploreLook.colours));
-  greyInput(gauge.querySelector('input'), field, () => (exploreLook.rule === 'distance' ? '' : 'Only with Distance.'));
+  greyInput($('distanceGauge').firstChild, $('distanceRow'), () =>
+    exploreLook.rule === 'distance' ? '' : 'Only with Distance.',
+  );
   $('exploreRules').replaceChildren(
     ...EXPLORE_RULES.flatMap(([key, name, detail]) => [
       card({
@@ -23872,7 +23865,7 @@ function renderExplore() {
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
       }),
-      ...(key === 'distance' ? [field] : []),
+      ...(key === 'distance' ? [$('distanceRow')] : []),
     ]),
   ); // (cards, as the rules of Life: their pictures to come)
   $('explorePalettes').replaceChildren(

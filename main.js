@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.876';
+const VERSION = '0.5.877';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8407,6 +8407,9 @@ const ICONS = (() => {
       svgPath('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
     import: svgPath('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
     export: svgPath('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
+    save:
+      svgPath('M5 3H16L21 8V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3Z') +
+      svgPath('M7.5 3V8H15V3M7 21V14H17V21'), // (a floppy: its shutter, its label)
     undo: svgPath('M9 14L4 9L9 4') + svgPath('M4 9H15A5 5 0 0 1 15 19H11'),
     redo: svgPath('M15 14L20 9L15 4') + svgPath('M20 9H9A5 5 0 0 0 9 19H13'), // (Undo's, mirrored)
     eye: svgPath('M2.5 12Q12 3.5 21.5 12Q12 20.5 2.5 12Z') + '<circle cx="12" cy="12" r="3"/>',
@@ -45424,7 +45427,7 @@ $('galleryOpenTiles').replaceChildren(
 $('galleryShareTiles').replaceChildren(
   tile({
     id: 'gallerySaveLink',
-    pic: icon('link'),
+    pic: icon('save'),
     text: 'Save link',
     title: 'Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
     click: saveLink,

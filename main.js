@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.818';
+const VERSION = '0.5.819';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23368,13 +23368,15 @@ const engineState = (k, s, K = walk.life.colours) => k + K * s,
   drawnCell = (k, s) => k + 16 * s,
   drawnParts = (c) => [c % 16, Math.floor(c / 16)];
 // a drawing in the engine's states of K colours (a link's popCells, see getSetup), and back (see setupFrom)
-const drawnInEngine = (pop, K) => new Map([...pop].map(([key, c]) => [key, drawnState(c, K, Infinity)])),
+const drawnInEngine = (pop, K) =>
+    new Map([...pop].flatMap(([key, c]) => (drawnState(c, K, Infinity) ? [[key, drawnState(c, K, Infinity)]] : []))), // (its cells played only)
   drawnFromEngine = (pop, K) => new Map([...pop].map(([key, c]) => [key, drawnCell(...engineParts(c, K))]));
-// a cell drawn as a state of K colours and C states: its colour, else one of these (a colour past K); its stage, else its
-// colour's last the rule has (Life's two states: alive; as a brush's, see brushCells), as the plane's and a surface's starts take it
+// a cell drawn as a state of K colours and C states: its colour, none (0, not played) past K, kept in the drawing (more teams
+// again: back as drawn; never another colour's, a count's own mapping each till v0.5.819); its stage, else its colour's last
+// the rule has (Life's two states: alive; as a brush's, see brushCells), as the plane's and a surface's starts take it
 const drawnState = (c, K, C) => {
   const [k, s] = drawnParts(c);
-  return engineState(((k - 1) % K) + 1, Math.min(s, C - 2), K);
+  return k > K ? 0 : engineState(k, Math.min(s, C - 2), K);
 };
 // A surface's start, as the Start says: its digits (one digit a cell in base K + 1: 0 dead, k alive in colour k), or a soup as dense as said, from its seed (in colours, each live cell's colour
 // drawn too)

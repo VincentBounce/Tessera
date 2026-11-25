@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.859';
+const VERSION = '0.5.860';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23792,9 +23792,10 @@ const tilesPalette = () =>
   null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 // Display › Grid's ground outside Explore (Blush, Mist…): Distance's rings in 2 colours on the spheres whose rings go round
-// them (rosettes, the globe, the icosahedron's: bands), else Tiles; never Explore's own rule (its look: see exploreLevels)
+// them (rosettes, the globe, the icosahedron's: bands) and the cube's pits and bumps (round each), else Tiles; never
+// Explore's own rule (its look: see exploreLevels)
 const groundLook = (w) =>
-  ['rosettes', 'globe', 'icosahedron'].includes(variantWords(w).shape)
+  ['rosettes', 'globe', 'icosahedron', 'cubePits', 'cubeBumps'].includes(variantWords(w).shape)
     ? { rule: 'distance', colours: 2 }
     : { rule: 'tiles' };
 let groundMemo = {};

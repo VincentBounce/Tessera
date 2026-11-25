@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.864';
+const VERSION = '0.5.865';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8008,17 +8008,20 @@ const ICONS = (() => {
             `<rect class="f" x="${hundredths(4 + x * 5.33)}" y="${hundredths(4 + y * 5.33)}" width="5.33" height="5.33"/>`,
         )
         .join('');
-  const cube = (fillTop) =>
-    svgPath(pathOf(hex)) +
-    [1, 3, 5].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
-    (fillTop ? svgPath(pathOf([[12, 12], hex[5], hex[0], hex[1]]), 'f') : '');
+  // the cube seen from a corner: its 3 faces seen, k 1 its right, 3 its left, 5 its top (the hexagon's corners from its
+  // top's), face filled the one filled (none: -1)
+  const cubeFace = (k) => [[12, 12], hex[k], hex[(k + 1) % 6], hex[(k + 2) % 6]],
+    cube = (filled = -1) =>
+      svgPath(pathOf(hex)) +
+      [1, 3, 5].map((k) => svgPath(segmentPath([12, 12], hex[k]))).join('') +
+      (filled < 0 ? '' : svgPath(pathOf(cubeFace(filled)), 'f'));
   // the carved cubes, as the cube: on each face seen, its middle third (P) a hole (filled), a pit (its rim), a bump (its top out of
   // it), or a grid of thirds round a hole (the sponge)
   const carved = (each) =>
-    cube(false) +
+    cube() +
     [1, 3, 5]
       .map((k) => {
-        const F = [[12, 12], hex[k], hex[(k + 1) % 6], hex[(k + 2) % 6]],
+        const F = cubeFace(k),
           m = [0, 1].map((d) => F.reduce((t, p) => t + p[d], 0) / 4);
         const P = F.map((p) => p.map((v, d) => m[d] + (v - m[d]) / 3)),
           v = hex[(k + 4) % 6].map((x) => (x - 12) / 6); // (v: half a block into the cube)
@@ -8094,8 +8097,7 @@ const ICONS = (() => {
       svgPath('M3.5 11H9.5L6.5 5.5Z', 'f') +
       '<rect x="13" y="5.5" width="6.5" height="6.5" rx="0.6"/>' +
       svgPath('M12 13.1L15.38 15.05V18.95L12 20.9L8.62 18.95V15.05Z', 'f'), // (a colour a shape)
-    'explore-sides':
-      svgPath('M12 3L3.5 19H20.5Z') + svgPath('M12 3L13.5 13.5L3.5 19Z', 'f') + svgPath('M13.5 13.5L20.5 19'), // (a face of a solid)
+    'explore-sides': cube(3), // (a face of a solid, its left)
     'explore-hemispheres':
       '<circle cx="12" cy="12" r="9"/>' +
       svgPath('M3 12A9 2.8 0 0 0 21 12A9 9 0 0 1 3 12Z', 'f') +
@@ -8165,7 +8167,7 @@ const ICONS = (() => {
           svgPath(segmentPath([12, 12], [(p[0] + hex[(i + 1) % 6][0]) / 2, (p[1] + hex[(i + 1) % 6][1]) / 2])),
         )
         .join(''), // a hexagon cut in 6 kites
-    cube: cube(false),
+    cube: cube(),
     stacks: (() => {
       // Stacks: the cube seen from above (cube's), a brick wall on its left face (Walls with it), layers on its
       // right (its generations), on its top 5 live cells here and there (its last one)
@@ -8176,7 +8178,7 @@ const ICONS = (() => {
       const line = (f, u0, v0, u1, v1) => svgPath(segmentPath(f(u0, v0), f(u1, v1))),
         cell = (u, v, s = 1 / 6) => svgPath(pathOf([T(u, v), T(u + s, v), T(u + s, v + s), T(u, v + s)]), 'f');
       return (
-        cube(false) +
+        cube() +
         [1 / 3, 2 / 3].map((v) => line(L, 0, v, 1, v)).join('') +
         [
           [0.5, 0, 1 / 3],
@@ -8198,7 +8200,7 @@ const ICONS = (() => {
           .join('')
       );
     })(),
-    cubeFilled: cube(true),
+    cubeFilled: cube(5),
     torus,
     boy: [-90, 30, 150]
       .map((a) => {

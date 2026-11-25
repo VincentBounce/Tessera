@@ -27,8 +27,9 @@ mesh memory squeezed onto one line to show −6.)
 <p align="center"><br>* * *</p>
 
 ## Bundles
-The user always makes the app's single-file versions with the script `_Make Tessera.html.command` in the folder
-`Tessera resources` beside the repo (double-click). It runs `tools/bundle.py` twice and makes two HTML files there:
+The user makes the app's single-file versions with two scripts in the folder `Tessera resources` beside the repo
+(double-click), each running `tools/bundle.py` once and showing its file there in the Finder: `_Make Tessera HTML5
+compressed.command` and `_Make Tessera HTML5 plain💚.command` (`--plain`):
 - `Tessera v<version> compressed.html`: no comment anywhere: not in the scripts (main.js, emoji.js, punks.js,
   pixelarticons.js: `//`, `/* */`), the page's inline script (the theme's), the loader, style.css (`/* */`, minified by
   esbuild too) or

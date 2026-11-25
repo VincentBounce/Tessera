@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.852';
+const VERSION = '0.5.853';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6541,7 +6541,7 @@ const DISPLAY_BY_TAB = {
 // a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
 // the tiles' marks read them (see defaultOf, defaultMark)
 // Each shape's view at first, by the menu's name, in every mode: inflated, its Shape (Flat 0 ── Inflated 1: the balls and
-// the sheets rolled up round, the two spheres (Ico sph, Dode sph), the rhombic solids half way; the others flat); perspective, Perspective on (the cubes,
+// the sheets rolled up round, Ico sph; Dode sph and the rhombic solids half way; the others flat); perspective, Perspective on (the cubes,
 // the torus and the Möbius strip, the 3D lattices; the others off)
 const SHAPE_DEFAULTS = {
   Cube: { perspective: true },
@@ -6553,7 +6553,7 @@ const SHAPE_DEFAULTS = {
   Diamond: { perspective: true },
   Globe: { inflated: 1 },
   Sphere: { inflated: 1 },
-  Dodecahedron: { inflated: 1 },
+  Dodecahedron: { inflated: 0.5 },
   Rosettes: { inflated: 1 },
   Torus: { inflated: 1, perspective: true },
   'Möbius strip': { inflated: 1, perspective: true },

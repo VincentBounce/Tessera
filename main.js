@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.820';
+const VERSION = '0.5.821';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -35723,10 +35723,14 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
     out = Array.from({ length: K }, () => []);
   // (a rosette sphere's two colours: one colour's, the same at each pole, see poleColours)
   if (poleColours(walk.surface, K))
-    return [0, 1].map((i) =>
-      centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) =>
-        cs.map((v, j) => (j % 2 ? engineState(i + 1, engineParts(v)[1]) : v + i * walk.surface.south)),
-      ),
+    return [0, 1].map(
+      (i) =>
+        centredChoices(kind, 1, rule, mine, any, centred)[0].map((cs) =>
+          patternNamed(
+            cs.map((v, j) => (j % 2 ? engineState(i + 1, engineParts(v)[1]) : v + i * walk.surface.south)),
+            cs.name,
+          ),
+        ), // (its name kept: a link's choice by it, see choiceWord)
     );
   if (K > 1 && n % K) return out;
   const figs = DRAW_PATTERNS.filter(

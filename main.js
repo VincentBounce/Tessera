@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.846';
+const VERSION = '0.5.847';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14034,6 +14034,8 @@ function setHeadings(mesh, listed, cell = () => [0, 0]) {
     return -1;
   });
 }
+// the corner of mesh g's tile t its heading makes its plane cell's corner p (see setHeadings)
+const headingCorner = (g, t, p) => g.poly[g.sides * t + mod(g.hand[t] === 1 ? g.e0[t] + p : g.e0[t] + 1 - p, g.sides)];
 function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
   const n = tiles.length;
   const poly = new Int32Array(sides * n),
@@ -14162,11 +14164,17 @@ const cutFaces = (g, per) =>
 function halvesOf(key, g) {
   if (meshCache[key]) return meshCache[key];
   const far = (a, b) => Math.hypot(...[0, 1, 2].map((d) => g.verts[3 * a + d] - g.verts[3 * b + d])),
-    tiles = [];
+    tiles = [],
+    listed = [],
+    downs = []; // (each triangle's: ▲, its plane x 0, or ▼, 1)
   for (let t = 0; t < g.n; t++) {
-    const [a, b, c, d] = g.poly.subarray(4 * t, 4 * t + 4);
+    const [a, b, c, d] = g.poly.subarray(4 * t, 4 * t + 4),
+      cut = far(a, c) <= far(b, d) ? [a, c] : [b, d],
+      // (its plane square turned so that its cut joins its corners 1 and 3, as the plane's triangles' ▲ and ▼ do: see
+      // latticeCorners)
+      P = (p) => headingCorner(g, t, p + (cut.includes(headingCorner(g, t, 1)) ? 0 : 1));
     tiles.push(
-      ...(far(a, c) <= far(b, d)
+      ...(cut[0] === a
         ? [
             [a, b, c],
             [a, c, d],
@@ -14176,25 +14184,50 @@ function halvesOf(key, g) {
             [b, d, a],
           ]),
     );
+    for (const tri of tiles.slice(-2)) {
+      downs.push(tri.includes(P(0)) ? 0 : 1);
+      listed.push(downs.at(-1) ? [P(1), P(2), P(3)] : [P(0), P(1), P(3)]);
+    }
   }
-  return (meshCache[key] = Object.assign(finishMesh(Array.from(g.verts), tiles, 3, g.size, null), {
+  const mesh = finishMesh(Array.from(g.verts), tiles, 3, g.size, null);
+  setHeadings(mesh, listed, (u) => [downs[u], 0]);
+  return (meshCache[key] = Object.assign(mesh, {
     uncut: g,
     per: 2,
     ...cutFaces(g, 2),
   }));
 }
+// the Tetrakis motif's triangles by their square's corners (see latticeCorners; −1 its middle), and the one on each side j of
+// it (from corner j to j + 1)
+const TETRAKIS_CORNERS = TILINGS.tetrakis.polys.map((P) =>
+    P.map(([x, y]) => latticeCorners('square', 0, 0).findIndex(([a, b]) => a === x && b === y)),
+  ),
+  TETRAKIS_ON_SIDE = [0, 1, 2, 3].map((j) =>
+    TETRAKIS_CORNERS.findIndex((C) => C.includes(j) && C.includes((j + 1) % 4)),
+  );
 function tetrakisOf(key, g) {
   if (meshCache[key]) return meshCache[key];
   const verts = Array.from(g.verts),
-    tiles = [];
+    tiles = [],
+    listed = [],
+    cells = [];
   for (let t = 0; t < g.n; t++) {
     const c = Array.from(g.poly.subarray(4 * t, 4 * t + 4)),
       mid = verts.length / 3;
     verts.push(g.cen[3 * t], g.cen[3 * t + 1], g.cen[3 * t + 2]);
-    for (let q = 0; q < 4; q++) tiles.push([c[q], c[(q + 1) % 4], mid]);
+    for (let q = 0; q < 4; q++) {
+      tiles.push([c[q], c[(q + 1) % 4], mid]);
+      // (its plane cell: the Tetrakis motif's triangle on its square's side j, its corners theirs: see TILINGS.tetrakis)
+      const j = mod(g.hand[t] === 1 ? q - g.e0[t] : g.e0[t] - q, 4),
+        k = TETRAKIS_ON_SIDE[j];
+      cells.push(k);
+      listed.push(TETRAKIS_CORNERS[k].map((p) => (p < 0 ? mid : headingCorner(g, t, p))));
+    }
   }
+  const mesh = finishMesh(verts, tiles, 3, g.size, null);
+  setHeadings(mesh, listed, (u) => [cells[u], 0]);
   return (meshCache[key] = Object.assign(
-    finishMesh(verts, tiles, 3, g.size, null),
+    mesh,
     { uncut: g, per: 4, ...cutFaces(g, 4) },
     g.perFace && { perFace: 4 * g.perFace },
   )); // (as listed: its squares' turn; triangle t of square t >> 2; the cube's: a face's 4 times as many)
@@ -28443,23 +28476,21 @@ function brushTilesAt(t) {
   if (hullFaced() && place?.on !== p[1]) return null; // (a solid of squares and triangles: a pattern on a face of its kind only)
   if (APERIODIC[patternKind()])
     return place ? brushLaid(patternOnCell(patternFrame(0, 1, place), brushCells(), t)) : null;
-  brushHeading = brushHeadingAt(t, place);
+  brushHeading = brushHeadingAt(t);
   return brushHeading ? brushLaid(patternFrom(brushHeading, brushCells())) : null;
 }
 // the brush's cells laid at their tiles (-1: none there), with their states
 function brushLaid(at) {
   return brushCells().flatMap(([, , v], k) => (at[k] >= 0 ? [[at[k], v]] : []));
 }
-// the brush's heading on tile t (see headingOn): carried from the tile it was on to t, a neighbour, as the pointer moves (its
-// pattern turned on as it goes over a solid's edge or a seam, not as each face's frame has it); else, a jump, t's face's
+// the brush's heading on tile t (see headingHere): carried from the tile it was on to t, a neighbour, as the pointer moves
+// (its pattern turned on as it goes over a solid's edge or a seam, not as each tile's own has it); else, a jump, t's own
 let brushHeading = null;
-const brushHeadingAt = (t, place) =>
+const brushHeadingAt = (t) =>
   (brushHeading?.g === walk.surface && (brushHeading.t === t ? brushHeading : headingAcross(brushHeading, t))) ||
-  headingHere(place && patternFrame(0, 1, place), t);
-// tile t's heading: its mesh's (see builtHeading), else by its face's frame F (see headingOn), else, a surface with no frame,
-// its own (see tileHeading)
-const headingHere = (F, t) =>
-  walk.surface.e0 ? builtHeading(walk.surface, t) : F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t);
+  headingHere(t);
+// tile t's heading: its mesh's (see builtHeading), else, a surface with no frame, its own (see tileHeading)
+const headingHere = (t) => (walk.surface.e0 ? builtHeading(walk.surface, t) : tileHeading(walk.surface, t));
 // a tile's heading its mesh knows by construction (a solid of triangles', kites' or hexagons', see flatPolyhedron and
 // hexSolidMesh: its plane cell, headingCells; [0, 0] where all its cells alike), else null
 const builtHeading = (g, t) =>
@@ -34660,12 +34691,12 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
 // a pattern laid by its tile's heading (a lattice tiling's on a surface), not moved by whole steps (the plane's own cells, a
 // tiling that never repeats): its shape then to be checked, see keepsShape
 const byHeading = (kind) => !APERIODIC[kind] && !cellsPlane();
-// a pattern laid from cell t as t's face's frame F places it (see cellPlace, patternFrame): on a surface by t's heading (see
-// headingOn), else its cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none):
+// a pattern laid from cell t: on a surface by t's heading (see headingHere), else, as its face's frame F places it (see
+// cellPlace, patternFrame), its cells (on the plane, [x, y, …]) moved by whole steps (see translations), each its cell there (−1 none):
 // the plane's own cells (the plane, a disc, a rosette sphere's), or a tiling that never repeats; Anywhere's
 function patternOnCell(F, cells, t, anchor = null) {
   const kind = patternKind();
-  if (byHeading(kind)) return patternFrom(headingHere(F, t), cells, anchor); // (F none: a surface with no frame, its tile's own; anchor: see patternFrom)
+  if (byHeading(kind)) return patternFrom(headingHere(t), cells, anchor); // (anchor: see patternFrom)
   const ms = cells.map(([x, y]) => cellMiddle(kind, x, y)),
     p = F.from(F.place(t)),
     d = latticeNear(kind, [p[0] - ms[0][0], p[1] - ms[0][1]]);
@@ -34673,20 +34704,8 @@ function patternOnCell(F, cells, t, anchor = null) {
 }
 // A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
-// patternFrom). A mesh's by construction where it has them (see builtHeading); a solid's cells cut again (Tetrakis,
-// Triangles: see HULL_CUTS), none: F's, its face's frame's (see framedHeading); a tile F cannot frame (a solid's corner)
-// takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the first shortest path (breadth
-// first, each tile's edges in order): round a corner a heading depends on its path, this one by convention
-function headingOn(g, F, t) {
-  const way = wayTo(
-    t,
-    (u) => framedHeading(g, F, u),
-    (u) => liveEdges(g, u).map((e) => g.nbr[g.sides * u + e]),
-  );
-  let heading = way && framedHeading(g, F, way[0]);
-  for (const v of way?.slice(1) ?? []) heading = headingAcross(heading, v);
-  return heading;
-}
+// patternFrom). Known by construction, its mesh's (see setHeadings, builtHeading); a surface with no frame, its tile's own
+// (see tileHeading)
 // the shortest way from tile t to the first tile end(u) holds (breadth first, each tile's neighbours nbrs(u) in order): its
 // tiles from that one back to t; null none (within `most` tiles reached)
 function wayTo(t, end, nbrs, most = Infinity) {
@@ -34701,27 +34720,6 @@ function wayTo(t, end, nbrs, most = Infinity) {
     for (const v of nbrs(u)) if (!from.has(v)) from.set(v, u);
   } // (a Map's keys walked as they are added)
   return null;
-}
-// a tile's heading by its face's frame F, else null: its cell under t's middle, its edges by its neighbours F lays by it,
-// two at least
-function framedHeading(g, F, t) {
-  const kind = patternKind(),
-    k = g.sides,
-    edges = liveEdges(g, t),
-    cell = planeCellAt(kind, 1, ...F.from(F.place(t)), 'free'),
-    // (a heading only on a tile as many sides as its cell: a mixed solid's triangle never a square's)
-    found =
-      cell && planeCorners(kind, ...cell).length === edges.length
-        ? planeCorners(kind, ...cell).flatMap((_, j) => {
-            const c = planeAcross(kind, cell, j)?.[0],
-              e = c ? edges.findIndex((f) => g.nbr[k * t + f] === F.cellAt(F.at(cellMiddle(kind, ...c)))) : -1;
-            return e < 0 ? [] : [[j, e]];
-          })
-        : [];
-  if (found.length < 2) return null;
-  const [[j0, e0], [j1, e1]] = found,
-    hand = mod(e1 - e0, edges.length) === mod(j1 - j0, edges.length) ? 1 : -1;
-  return { g, t, cell, e0: edges[mod(e0 - hand * j0, edges.length)], hand };
 }
 // a tile's edges with a tile across, as a walk on cells counts them (see surfaceStep)
 const liveEdges = (g, u) => [...Array(g.sides).keys()].filter((e) => g.nbr[g.sides * u + e] >= 0);
@@ -34741,7 +34739,7 @@ function headingAcross(h, v) {
     turned = g.poly[k * v + a] === g.poly[k * t + edges[e]] ? -hand : hand;
   return { g, t: v, cell: across[0], e0: back[mod(back.indexOf(a) - turned * across[1], back.length)], hand: turned };
 }
-// a pattern laid from heading h (see headingOn): moved by whole steps (see translations) to lie its anchor (its first cell's
+// a pattern laid from heading h (see headingHere): moved by whole steps (see translations) to lie its anchor (its first cell's
 // middle, else a plane point: its box's middle, centred) by h's cell,
 // each of its cells walked to from h's tile as on the plane (see planePaths), a walk on cells's own steps (see surfaceStep:
 // over a solid's edges and a sheet's seams); a step off the cells of its kind or onto a tile already taken (past a solid's

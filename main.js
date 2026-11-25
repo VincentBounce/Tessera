@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.867';
+const VERSION = '0.5.868';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11118,6 +11118,7 @@ const variantsUnder = (...place) => Object.keys(NAV).filter((u) => place.every((
 // one in use first
 const setupNow = () => ({
   w: tabVariant(),
+  exploreRule: exploreLook.rule, // (Explore's colouring: its link's, see choicesAt)
   size: null,
   lifeTeams,
   teams: walkTeams,
@@ -11226,6 +11227,9 @@ function choicesAt(s, reads = null) {
   const set = (key, field, v, why, words) => {
     if (s[field] !== v && !why) out.push([key, { ...s, [field]: v }, words]);
   }; // (a choice greyed there: no click)
+  if (VARIANTS[w].explore && wants('exploreRule'))
+    for (const [key, name] of EXPLORE_RULES)
+      set(`exploreRule:${key}`, 'exploreRule', key, exploreRuleWhyNot(key, w), name); // (its colourings' cards)
   if (battleVariant(w)) {
     if (s.teams > 1 && wants('battleRule'))
       BATTLE_RULES.forEach(([kind, name], p) =>
@@ -23944,8 +23948,8 @@ function renderExplore() {
     if (key === 'rule') applyDefaults('exploreRule'); // (its grid: see DISPLAY_DEFAULTS)
     compute();
   };
-  // (its colours under its cards, a notched slider: 2 to its rule's most on the grid shown, its last all of them (0), fewer
-  // taken in turn, see exploreLevels; none to take off, 2 already, hidden)
+  // (its colours under its cards, a notched slider always there: 2 to its rule's most on the grid shown, its last all of them
+  // (0), fewer taken in turn, see exploreLevels; Hemispheres' 2 by its rule, greyed)
   const most = walk.life?.most ?? explorePalette().length, // (the grid shown's, once built: see buildLife; before, its palette's)
     asked = exploreLook.colours ? Math.min(exploreLook.colours, most) : most;
   sizeGauge(
@@ -23958,6 +23962,10 @@ function renderExplore() {
       compute();
     },
     most - 2,
+    true,
+  );
+  greyInput($('exploreColoursGauge').firstChild, $('exploreColoursGauge').closest('.pill-row'), ({ exploreRule }) =>
+    exploreRule === 'hemispheres' ? 'Its 2 colours: its north and its south.' : '',
   );
   $('exploreRules').replaceChildren(
     ...EXPLORE_RULES.map(([key, name, detail]) =>

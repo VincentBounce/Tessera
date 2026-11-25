@@ -278,6 +278,8 @@
     for (let t = 0; t < 100 && !(ok() && !waits.size); t++) await wait(100);
     return ok(); // (whether it came, in 10 s at most)
   };
+  // the link the page wrote last (its tab's history entry's, see syncLink; the address bar the page's alone)
+  const linkWritten = () => parseHash(`#${history.state?.link ?? ''}`);
   const shown =
     (w, more = () => true) =>
     () =>
@@ -288,7 +290,12 @@
     const before = walk.life,
       w = setupVariant(parseHash(link));
     location.hash = link;
-    await until(shown(w, () => walk.life && walk.life !== before && walk.variant === w && isInUse(parseHash())));
+    await until(
+      shown(
+        w,
+        () => walk.life && walk.life !== before && walk.variant === w && !!linkWritten() && isInUse(linkWritten()),
+      ),
+    );
   };
   // to gen g, its batches awaited (Life's on the card come back later, see lifeSettle)
   const goTo = async (g) => {
@@ -351,7 +358,7 @@
       for (let t = 0; waits.size && t < 600; t++) await wait(100); // (its digits or its build still on their way: the link follows the walk once built, see buildWalk)
       c.checked++;
       const w = $('variant').value,
-        hashW = parseHash() && setupVariant(parseHash()),
+        hashW = linkWritten() && setupVariant(linkWritten()),
         said = [
           ...$('sizeLabel')
             .innerText.split('\n')
@@ -1284,7 +1291,7 @@
         !(
           walk.battle?.player?.K === K &&
           $('variant').value === w &&
-          parseHash()?.battleRule === linkWord(BATTLE_RULES[snake][1])
+          linkWritten()?.battleRule === linkWord(BATTLE_RULES[snake][1])
         );
         t++
       )

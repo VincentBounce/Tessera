@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.875';
+const VERSION = '0.5.876';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36840,7 +36840,7 @@ function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
-  for (const id of ['galleryImport', 'galleryShare'])
+  for (const id of ['galleryImport', 'gallerySaveLink'])
     setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
   syncSaveButton(); // (its Star tile too)
   setTile($('galleryDelete'), {
@@ -44101,7 +44101,8 @@ stage.addEventListener('pointerup', (e) => {
 // a click draws), or its own action
 // (Space: Stop while it plays, else Play; F: the view fitted again; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
 // its name written after its control's in its tooltip (see shortcutOf); a key with ⌘ or Ctrl by its name Mod+…
-const [MOD_KEY, SHIFT_KEY] = /Mac|iPhone|iPad/.test(navigator.platform) ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
+const onMac = /Mac|iPhone|iPad/.test(navigator.platform),
+  [MOD_KEY, SHIFT_KEY] = onMac ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
 const KEYS = [
   [' ', 'Space', ['#play', '#stop'], () => playOrStop()],
   ['ArrowRight', '→', ['#step']],
@@ -44487,8 +44488,21 @@ function copyFlash(b, text) {
   );
 }
 // Share link: the page's link to the setup shown (see setupHash), copied
+const pageLink = () => `${location.origin}${location.pathname}${setupHash()}`;
 function shareView(b) {
-  copyFlash(b, `${location.origin}${location.pathname}${setupHash()}`);
+  copyFlash(b, pageLink());
+}
+// Save link: that link as a file its system opens in the browser, named as the setup: a Mac's .webloc, else a Windows .url
+function saveLink() {
+  const link = pageLink();
+  saveBlob(
+    new Blob([
+      onMac
+        ? `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>URL</key><string>${htmlText(link)}</string></dict></plist>\n`
+        : `[InternetShortcut]\r\nURL=${link}\r\n`,
+    ]),
+    `${setupTitle({ setup: getSetup() })}.${onMac ? 'webloc' : 'url'}`,
+  );
 }
 $('shareLink').addEventListener('click', (e) => shareView(e.currentTarget)); // (the header's, left of the length)
 // Draw it: the generation shown as the cells drawn, in Draw (there already: an edit, Undo's; else Draw opened with them, Undo
@@ -45409,11 +45423,11 @@ $('galleryOpenTiles').replaceChildren(
 );
 $('galleryShareTiles').replaceChildren(
   tile({
-    id: 'galleryShare',
+    id: 'gallerySaveLink',
     pic: icon('link'),
-    text: 'Share link',
-    title: 'Copy the link to what is shown',
-    click: () => shareView($('galleryShare')),
+    text: 'Save link',
+    title: 'Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
+    click: saveLink,
   }),
 );
 $('galleryStarTiles').replaceChildren(

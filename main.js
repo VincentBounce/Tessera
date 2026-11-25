@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.815';
+const VERSION = '0.5.816';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11976,7 +11976,10 @@ function compute() {
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
   $('lifeStartRow').hidden = !variant.life;
-  setTile($('saveRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)  // its start: Hunt, Draw (the plane only), Digits
+  setTile($('saveRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)
+  setTile($('drawIt'), {
+    whyNot: ({ w }) => (VARIANTS[w].life && !VARIANTS[w].elementary ? '' : 'Only in Life, where Draw draws.'),
+  }); // its start: Hunt, Draw (the plane only), Digits
   if (variant.life)
     plane.start = variant.elementary
       ? ELEMENTARY_STARTS.includes(plane.start)
@@ -24016,7 +24019,7 @@ const plane = {
 const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 // the drawing's history: the cells drawn before each edit (Draw picked: the generation shown then, its first; a click, Clear,
-// Draw from current state, Paste RLE, Open), Undo's, and those undone, Redo's
+// Draw it, Paste RLE, Open), Undo's, and those undone, Redo's
 // (each as a link writes them, see populationRle: a few bytes, a soup imported too); a start of another kind forgets it
 let drawHistory = { past: [], future: [] };
 const rememberDrawing = () => {
@@ -27727,11 +27730,6 @@ function renderDrawTools() {
 
   for (const [id, , , , from, , why] of DRAW_STEPS) grey($(id), !drawHistory[from].length, why);
   setTile($('startCells'), { greyed: population.size ? '' : 'No cell is drawn.' }); // (at any generation: back to gen 0)
-  // Draw from current state: the generation shown (away from gen 0), else the one before Draw, its name saying which
-  $('drawFromCurrent').lastChild.textContent = `Draw from ${away ? 'current state' : 'previous setup'}`;
-  setTile($('drawFromCurrent'), {
-    greyed: !away && !drawHistory.past.length ? 'No generation was shown before Draw.' : '',
-  });
 }
 // a disc pattern's card: its picture (see discIcon; made as it first shows, not 535 at the start)
 function discCard(b, p) {
@@ -43394,12 +43392,6 @@ $('activity').addEventListener('pointermove', (e) => {
   $('activity').classList.toggle('out', g !== null && !lifeWithin(g));
 });
 $('back').addEventListener('click', () => seekTo(stepShown - 1));
-$('drawFromCurrent').addEventListener('click', () => {
-  const cells = drawAway() ? cellsShown() : populationOf(drawHistory.past[0]); // (see renderDrawTools)
-  rememberDrawing();
-  population = cells;
-  lifeReseed();
-});
 $('colourMode').addEventListener('change', () => {
   needsFull = true;
   renderColourButtons();
@@ -43631,7 +43623,7 @@ for (const b of $('lifeStartTabs').querySelectorAll('button')) {
     if (plane.start === b.dataset.start) return;
     forgetDrawing();
     if (b.dataset.start === 'draw' && walk.life) {
-      population = cellsShown(); // (the generation in view, its first edit's: Undo or Draw from current state brings it back)
+      population = cellsShown(); // (the generation in view, its first edit's: Undo brings it back)
       rememberDrawing();
       population = new Map(); // (a blank page to draw on)
     }
@@ -44302,6 +44294,21 @@ function shareView(b) {
   syncLink();
   copyFlash(b, location.href);
 }
+// Draw it: the generation shown as the cells drawn, in Draw (there already: an edit, Undo's; else Draw opened with them, Undo
+// back to its blank page, as Draw's tab opens)
+$('drawIt').addEventListener('click', () => {
+  const cells = cellsShown(),
+    opened = plane.start !== 'draw';
+  if (opened) {
+    forgetDrawing();
+    population = new Map();
+    plane.start = 'draw';
+  }
+  rememberDrawing();
+  population = cells;
+  if (opened) compute();
+  else lifeReseed();
+});
 $('saveRle').addEventListener('click', () => {
   const text = lifeRle();
   if (text)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.844';
+const VERSION = '0.5.845';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14017,11 +14017,11 @@ function newellNormal(C, o, k, out) {
 // outwardRef(centre) gives a vector pointing outwards near a tile (default: from the solid's centre);
 // null keeps the tiles as listed (the Möbius strip has no outside)
 // each tile's heading by construction (see builtHeading), from its corners as its plane cell's are listed (listed[t], none:
-// null) and that cell's x of row 0 (x(t); none, 0: all its cells alike, a solid's squares): its edge 0 the one from its first corner to its second, its way round as finishMesh
+// null) and that cell (cell(t); none, [0, 0]: all its cells alike, a solid's squares): its edge 0 the one from its first corner to its second, its way round as finishMesh
 // kept its corners (1) or turned them (−1)
-function setHeadings(mesh, listed, x = () => 0) {
+function setHeadings(mesh, listed, cell = () => [0, 0]) {
   const k = mesh.sides;
-  mesh.latticeX = typedOf(Int8Array, listed, (_, t) => x(t));
+  mesh.headingCells = Int32Array.from(listed.flatMap((_, t) => cell(t)));
   mesh.hand = new Int8Array(listed.length);
   mesh.e0 = typedOf(Int8Array, listed, (c, t) => {
     for (let e = 0; c && e < k; e++) {
@@ -14389,7 +14389,7 @@ function hullMesh(kind, f) {
         }
       }
   const mesh = finishMesh(verts, tiles, 4, f);
-  setHeadings(mesh, tiles, (t) => (downs[t] ? 1 : 0)); // (its squares as the plane's, its triangles as flatPolyhedron's)
+  setHeadings(mesh, tiles, (t) => [downs[t] ? 1 : 0, 0]); // (its squares as the plane's, its triangles as flatPolyhedron's)
   return (meshCache[key] = Object.assign(mesh, {
     squareFaces,
     triFaces,
@@ -14995,7 +14995,7 @@ function flatPolyhedron(name, f, kites = false) {
   // each tile's heading (see setHeadings): its face's grid the plane's triangles' (a ▲ the plane's x 0, a ▼ x 1: see
   // latticeCorners; a kite, 3 a triangle, x 3 times that and its corner's, see kiteCorners)
   const per = kites ? 3 : 1;
-  setHeadings(mesh, tris, (t) => per * (downs[t] ? 1 : 0) + (t % per));
+  setHeadings(mesh, tris, (t) => [per * (downs[t] ? 1 : 0) + (t % per), 0]);
   // each face as one big triangle, with its three families of grid lines, for cheap drawing
   mesh.faces = faces.map((face) => {
     const [A, B, C] = face.map((v) => P[v]);
@@ -16245,6 +16245,11 @@ function kleinCairoMesh(nv, nu = kleinCairoColumns(nv)) {
       nv,
       null,
     ); // one-sided: as listed, turned over (as the torus's sheet: facing the view, flat)
+  setHeadings(
+    mesh,
+    tiles.map((t) => t.map(([x, y]) => id(x, y))),
+    (t) => places[t],
+  ); // (its tiles listed as their plane cells)
   return (meshCache[key] = Object.assign(mesh, {
     torus: true,
     klein: true,
@@ -16299,8 +16304,11 @@ function torusCairoMesh(nv, nu, twist = 0, turned = false) {
     { tiles, places, sides } = cairoSheet(nu, nv, turned),
     cell = turned ? 1 : 2, // (its lattice cell round the tube, in its sheet's rows: see torusTwists)
     form = torusForm(); // (its shape's, once: as its key's, see sheetPoint)
-  const ids = tiles.map((c) => c.map(([i, j]) => add(...torusPoint(i, j, nu, nv, 1, tube, form, cell * twist))));
-  return (meshCache[key] = Object.assign(finishTorus(verts, ids, 5, nu, nv, tiles.flat(2)), {
+  const ids = tiles.map((c) => c.map(([i, j]) => add(...torusPoint(i, j, nu, nv, 1, tube, form, cell * twist)))),
+    listed = ids.map((c) => [...c]), // (its tiles listed as their plane cells, before finishTorus turns some round)
+    mesh = finishTorus(verts, ids, 5, nu, nv, tiles.flat(2));
+  setHeadings(mesh, listed, (t) => places[t]);
+  return (meshCache[key] = Object.assign(mesh, {
     form,
     tube,
     cairo: true,
@@ -16804,17 +16812,21 @@ function foldMesh({ step, by, n, nv }, sheet, twist, point, shift = 0) {
     }
     return ids.get(i * nv * Q + j);
   };
-  const tiles = sheet.tiles.map(turnOver);
-  return {
-    mesh: finishMesh(
+  const tiles = sheet.tiles.map(turnOver),
+    mesh = finishMesh(
       verts,
       tiles.map((t) => t.map(id)),
       sheet.sides,
       nv,
       null,
-    ),
-    tiles,
-  };
+    );
+  if (sheet.cellPlaces)
+    setHeadings(
+      mesh,
+      sheet.tiles.map((t) => t.map(id)),
+      (t) => sheet.cellPlaces[t],
+    ); // (its tiles listed as their plane cells, see tilingStrip)
+  return { mesh, tiles };
 }
 function kleinTilingMesh(kindK, size) {
   const key = `${kindK}${size}|${ringColours(ringVariant())}|${kleinShapeKey()}`; // (its length its colours': see kleinLength; its shape, see KLEIN_SHAPES)
@@ -16917,6 +16929,12 @@ function mobiusMesh(kind, size) {
     k = sheet[0].length,
     { verts, tiles, uv, edge: onEdgeTiles } = mobiusFaces(sheet, L, W);
   const mesh = finishMesh(verts, tiles, k, nv, null); // as listed: a back faces the other way
+  if (cellPlaces)
+    setHeadings(
+      mesh,
+      tiles.map((c, t) => (t < sheet.length ? turnOver(c) : c)),
+      (t) => cellPlaces[t % sheet.length],
+    ); // (its tiles listed as their plane cells: its front's turned over, see mobiusFaces)
   // (its edge's cells, both faces': those with a corner on it, where its edges cut its tiles; marked, see edgeRibbons)
   const edge = MOBIUS_ALONG[kind].edgeCuts ? onEdgeTiles : [];
   return (meshCache[key] = Object.assign(mesh, {
@@ -28443,9 +28461,17 @@ const brushHeadingAt = (t, place) =>
 const headingHere = (F, t) =>
   walk.surface.e0 ? builtHeading(walk.surface, t) : F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t);
 // a tile's heading its mesh knows by construction (a solid of triangles', kites' or hexagons', see flatPolyhedron and
-// hexSolidMesh: its plane cell x of row 0, latticeX, 0 where all its cells alike), else null
+// hexSolidMesh: its plane cell, headingCells; [0, 0] where all its cells alike), else null
 const builtHeading = (g, t) =>
-  g.e0[t] < 0 ? null : { g, t, cell: [g.latticeX?.[t] ?? 0, 0], e0: g.e0[t], hand: g.hand[t] };
+  g.e0[t] < 0
+    ? null
+    : {
+        g,
+        t,
+        cell: g.headingCells ? [g.headingCells[2 * t], g.headingCells[2 * t + 1]] : [0, 0],
+        e0: g.e0[t],
+        hand: g.hand[t],
+      };
 // a tile's own heading, where its surface has no frame (a globe, Boy's surface: see frameless): a plane cell as many sides,
 // its first edge that cell's edge 0; a pattern laid from it as a cell is, turned as the tile lies (see patternFrom)
 const tileHeading = (g, t) => {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.882';
+const VERSION = '0.5.883';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24123,11 +24123,7 @@ function buildLife(seq, variant) {
   restart();
   if (walk.shape) applyShape();
   stopHunt(); // (a new surface, rule or colours: the starts found were another game's, see lifeHuntKey)
-  renderTeams(); // the blocks a figure fits, now that it is built
-  if (VARIANTS[walk.variant].explore) renderExplore(); // (its Colours' notches: its rule's colours on this grid)
-  renderPlaneRow(); // (its starts: Text where a picture can be laid)
-  renderRuleSection(); // (what it shows of the grid, now that it is built: its page's blocks, their max period here; a share rule's counts)
-  showStacks();
+  renderBuilt();
 }
 
 /* Life on the plane: a grid of squares, of hexagons or of triangles (a rhombus of them, as on paper),
@@ -27346,9 +27342,15 @@ function buildLifePlane(seq) {
   updateHint();
   restart();
   stopHunt(); // (a new grid, rule or colours: the starts found were another game's, see lifeHuntKey)
-  renderTeams(); // the blocks a figure fits, and its size's words (its colours fitted), now that it is built
-  renderPlaneRow();
-  renderRuleSection(); // (what it shows of the grid, now that it is built: its page's blocks, their max period here; a share rule's counts)
+  renderBuilt();
+}
+// the menu's parts that read the grid built, the plane's and a surface's alike (Explore's Colours and Isolate on the plane
+// drawn before its grid till v0.5.883: their counts the grid's before)
+function renderBuilt() {
+  renderTeams(); // the blocks a figure fits, and its size's words (its colours fitted)
+  if (VARIANTS[walk.variant].explore) renderExplore(); // (its Colours' notches and Isolate's colours: its rule's colours on this grid)
+  renderPlaneRow(); // (its starts: Text where a picture can be laid)
+  renderRuleSection(); // (what it shows of the grid: its page's blocks, their max period here; a share rule's counts)
   showStacks();
 }
 // Space-time's cubes (see the Stacks tile beside Walls), a view of the game: Life on squares from its start, played on the card for its

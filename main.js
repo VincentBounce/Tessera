@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.836';
+const VERSION = '0.5.837';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36297,9 +36297,9 @@ function getSetup() {
   if (ringFamily(w)) s[`${ringFamily(w)}Shape`] = shapeOn(ringFamily(w), w); // (its place in its family's shapes, the first 0)
   if (life) s.playRule = ruleBody($('lifeRule').value);
   if (life) s.teams = teamsPlayed(w); // (Solo's 1 too)
+  if (walkTeamsHere(w)) s.teams = walkTeams; // (a walk's on a surface, Solo's 1 too; a battle's numbers below)
   if (battleOn()) {
-    // (a walk's Duel or Trio, as Life's: its teams; B's number, C's)
-    s.teams = walkTeams;
+    // (a walk's Duel or Trio, as Life's: B's number, C's)
     RIVALS.slice(0, walkTeams - 1).forEach((id) => {
       s[`walkNumber${id.slice(-1)}`] = formulaOf($(id).value).text ?? $(id).value;
     }); // (xb, xc…)

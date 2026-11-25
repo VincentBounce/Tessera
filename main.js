@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.816';
+const VERSION = '0.5.817';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -24015,8 +24015,8 @@ const plane = {
 }; // (seedRadius: Seed's patches' radius, see SEED_RADII; number: Formula's, see numberSeed; picks: Famous's and Anywhere's patterns, a colour each, as a link writes them, see choiceWord)  // a soup of its own each visit (a link keeps its seed)
 // Draw's brush: a cell or a pattern (squares only), turned by quarter turns and mirrored, in a colour
 // (0: the eraser)
-// view: View on, a click draws nothing (at first: a click draws once a brush is picked; see drawsHere), its brush kept
-const brush = { id: 'cell', view: true, turn: 0, flip: false, colour: 1 };
+// view: View on, a click draws nothing, its brush kept (see drawsHere); at first off, Paint in hand
+const brush = { id: 'cell', view: false, turn: 0, flip: false, colour: 1 };
 let ghost = null; // the cell under the pointer while drawing, where the brush would go
 // the drawing's history: the cells drawn before each edit (Draw picked: the generation shown then, its first; a click, Clear,
 // Draw it, Paste RLE, Open), Undo's, and those undone, Redo's

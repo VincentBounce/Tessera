@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.863';
+const VERSION = '0.5.864';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8084,6 +8084,23 @@ const ICONS = (() => {
       .map(([o, i]) => svgPath(segmentPath(icoOut[o], icoIn[i])))
       .join('');
   return {
+    // Explore's colourings (its rule cards, see EXPLORE_RULES)
+    'explore-tiles': halvesGrid + svgPath('M5 5H12V12H5ZM12 12H19V19H12Z', 'f'), // (two cells side by side, two colours)
+    'explore-distance':
+      svgPath('M12 2.8L19.97 7.4V16.6L12 21.2L4.03 16.6V7.4Z') +
+      svgPath('M12 6.4L16.85 9.2V14.8L12 17.6L7.15 14.8V9.2Z') +
+      svgPath('M12 9.8L13.91 10.9V13.1L12 14.2L10.09 13.1V10.9Z', 'f'), // (rings round the middle)
+    'explore-kind':
+      svgPath('M3.5 11H9.5L6.5 5.5Z', 'f') +
+      '<rect x="13" y="5.5" width="6.5" height="6.5" rx="0.6"/>' +
+      svgPath('M12 13.1L15.38 15.05V18.95L12 20.9L8.62 18.95V15.05Z', 'f'), // (a colour a shape)
+    'explore-sides':
+      svgPath('M12 3L3.5 19H20.5Z') + svgPath('M12 3L13.5 13.5L3.5 19Z', 'f') + svgPath('M13.5 13.5L20.5 19'), // (a face of a solid)
+    'explore-hemispheres':
+      '<circle cx="12" cy="12" r="9"/>' +
+      svgPath('M3 12A9 2.8 0 0 0 21 12A9 9 0 0 1 3 12Z', 'f') +
+      svgPath('M3 12A9 2.8 0 0 0 21 12'), // (its south, under its equator)
+    'explore-lunes': svgPath('M12 3C16 7 16 17 12 21A9 9 0 0 0 12 3Z'), // (a lune, pole to pole)
     // walk variants
     grid: halvesGrid,
     compass: svgPath('M12 3V21M3 12H21') + svgPath('M9 6L12 3L15 6M9 18L12 21L15 18M6 9L3 12L6 15M18 9L21 12L18 15'),
@@ -23938,6 +23955,7 @@ function renderExplore() {
   $('exploreRules').replaceChildren(
     ...EXPLORE_RULES.flatMap(([key, name, detail]) => [
       card({
+        pic: icon(`explore-${key}`),
         name,
         detail,
         on: exploreLook.rule === key,
@@ -23947,7 +23965,7 @@ function renderExplore() {
       }),
       ...(key === 'distance' ? [$('distanceRow')] : []),
     ]),
-  ); // (cards, as the rules of Life: their pictures to come)
+  ); // (cards, as the rules of Life, each its picture: see ICONS' explore-…)
   $('explorePalettes').replaceChildren(
     tileGroup(
       EXPLORE_PALETTES.map(([name, colours, words], i) =>

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.843';
+const VERSION = '0.5.844';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14017,9 +14017,9 @@ function newellNormal(C, o, k, out) {
 // outwardRef(centre) gives a vector pointing outwards near a tile (default: from the solid's centre);
 // null keeps the tiles as listed (the Möbius strip has no outside)
 // each tile's heading by construction (see builtHeading), from its corners as its plane cell's are listed (listed[t], none:
-// null) and that cell's x of row 0 (x(t)): its edge 0 the one from its first corner to its second, its way round as finishMesh
+// null) and that cell's x of row 0 (x(t); none, 0: all its cells alike, a solid's squares): its edge 0 the one from its first corner to its second, its way round as finishMesh
 // kept its corners (1) or turned them (−1)
-function setHeadings(mesh, listed, x) {
+function setHeadings(mesh, listed, x = () => 0) {
   const k = mesh.sides;
   mesh.latticeX = typedOf(Int8Array, listed, (_, t) => x(t));
   mesh.hand = new Int8Array(listed.length);
@@ -14138,6 +14138,7 @@ function walkCubeSquaresTurtleCells(n) {
     }
   }
   const mesh = finishMesh(verts, quads, 4, n);
+  setHeadings(mesh, quads); // (its squares listed as the plane's, see latticeCorners)
   // each face as one big square, with its grid lines, for cheap drawing
   mesh.faces = CUBE_FRAMES.map(([N, U, W]) => {
     const pt = (a, b) => [0, 1, 2].map((d) => N[d] + U[d] * a + W[d] * b);
@@ -14248,6 +14249,7 @@ function cubePits(n, up = false) {
     return m.map((v, d) => (d === b ? -v : 0));
   };
   const mesh = finishMesh(verts, quads, 4, n, up ? (m) => m : out); // (a bump's tiles all face away from the middle)
+  setHeadings(mesh, quads); // (its squares listed as the plane's, see latticeCorners)
   mesh.concave = true;
   mesh.floors = Int32Array.from(floors); // face f's floor tile (r, c): floors[f a² + r a + c]
   mesh.onFloor = new Set(floors); // (a tile on a floor: Patterns there only, see cellPlace)
@@ -14316,6 +14318,7 @@ function mengerMesh(L, m = 1) {
     return [0, 1, 2].map((k) => (k === d ? (kept(...q) ? 1 : -1) : 0));
   };
   const mesh = finishMesh(verts, quads, 4, L, out);
+  setHeadings(mesh, quads); // (its squares listed as the plane's, see latticeCorners)
   mesh.concave = true;
   mesh.holed = true; // (no face a grid of squares: no frame to lay a pattern on, see cubeRoom)
   mesh.cubic = true; // (the cube's turns: 3 colours, 2 opposite faces each)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.862';
+const VERSION = '0.5.863';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23785,12 +23785,22 @@ const tilesPalette = () =>
   null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
 // Display › Grid's ground outside Explore (Blush, Mist…): Distance's rings in 2 colours on the spheres whose rings go round
-// them (rosettes, the globe, the icosahedron's: bands) and the cube's pits and bumps (round each), else Tiles; never
-// Explore's own rule (its look: see exploreLevels)
-const groundLook = (w) =>
-  ['rosettes', 'globe', 'icosahedron', 'cubePits', 'cubeBumps'].includes(variantWords(w).shape)
-    ? { rule: 'distance', colours: 2 }
-    : { rule: 'tiles' };
+// them (rosettes, the globe, the icosahedron's: bands), the cube's pits and bumps (round each) and the 2D circles, but those
+// whose Tiles the user keeps (Hexa 3k, Flower 4k, Hats, Spectre, Pinwheel and its triangle); else Tiles; never Explore's own
+// rule (its look: see exploreLevels)
+const DISTANCE_GROUNDS = ['rosettes', 'globe', 'icosahedron', 'cubePits', 'cubeBumps'],
+  TILES_CIRCLES = ['hats', 'spectre', 'pinwheel', 'pinwheelTriangle'];
+const groundLook = (w) => {
+  const { shape } = variantWords(w),
+    [, family, n] = shape.match(/^(hexa|flower)(\d+)$/) ?? [], // (a rosette by its family and its turns)
+    tiles =
+      NAV[w][1] === '2D circles'
+        ? family
+          ? n % { hexa: 3, flower: 4 }[family] === 0
+          : TILES_CIRCLES.includes(shape)
+        : !DISTANCE_GROUNDS.includes(shape);
+  return tiles ? { rule: 'tiles' } : { rule: 'distance', colours: 2 };
+};
 let groundMemo = {};
 function groundColours() {
   if (!tilesOn() || !(walk.plane || walk.surface)) return null;

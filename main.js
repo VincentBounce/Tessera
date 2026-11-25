@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.819';
+const VERSION = '0.5.820';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12973,14 +12973,9 @@ function brushOn(k, v) {
 // a cell clicked (its key in the population): in the brush's colour, alive; already of it, its next stage, each dying state
 // then dead; a stroke paints alive, its states never turned (see strokeTo)
 function toggleDrawn(k) {
-  const v = population.get(k) ?? 0,
-    [colour, stage] = drawnParts(v),
-    c =
-      !v || colour !== brush.colour
-        ? drawnCell(brush.colour, 0)
-        : stage + 1 < walk.life.C - 1
-          ? drawnCell(colour, stage + 1)
-          : 0;
+  const [colour, stage] = drawnParts(population.get(k) ?? 0),
+    next = colour === brush.colour ? stage + 1 : 0, // (another colour's, or none: alive)
+    c = next < walk.life.C - 1 ? drawnCell(brush.colour, next) : 0;
   if (c) population.set(k, c);
   else population.delete(k);
 }
@@ -23369,7 +23364,7 @@ const engineState = (k, s, K = walk.life.colours) => k + K * s,
   drawnParts = (c) => [c % 16, Math.floor(c / 16)];
 // a drawing in the engine's states of K colours (a link's popCells, see getSetup), and back (see setupFrom)
 const drawnInEngine = (pop, K) =>
-    new Map([...pop].flatMap(([key, c]) => (drawnState(c, K, Infinity) ? [[key, drawnState(c, K, Infinity)]] : []))), // (its cells played only)
+    new Map([...pop].map(([key, c]) => [key, drawnState(c, K, Infinity)]).filter(([, v]) => v)), // (its cells played only)
   drawnFromEngine = (pop, K) => new Map([...pop].map(([key, c]) => [key, drawnCell(...engineParts(c, K))]));
 // a cell drawn as a state of K colours and C states: its colour, none (0, not played) past K, kept in the drawing (more teams
 // again: back as drawn; never another colour's, a count's own mapping each till v0.5.819); its stage, else its colour's last
@@ -23423,9 +23418,6 @@ const lifeParts = () =>
     : !playsLife(walk.variant) || walk.life.loops
       ? 1 // (Explore: its colours its tiles' looks; a loop rule: its colours its states, drawn; no teams, see teamsPlayed)
       : walk.life.colours - (walk.life.newcomer ? 1 : 0); // (any sheet's mesh a torus's; Newcomer: the teams below's, as the walk was built)
-// colour i's (from 0) cell at stage v (1 alive, then its dying states), as the colours alive count them (see parseRule): a
-// start's teams fewer with Newcomer, its states the same
-const colourState = (i, v) => engineState(i + 1, v - 1);
 function startColours(seed) {
   if (walk.life.palette) return; // (Explore's: its colours, see exploreLevels)
   if (walk.life.loops) {
@@ -35741,7 +35733,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
     (p) => p[1] === kind && discPattern(p) && (!centred || p[7] === K > 1) && (mine || p[2].includes(rule)),
   );
   const D = discCells(kind),
-    laid = (cells, a, i) => D.laid(cells, a)?.flatMap(([t, v]) => [t, colourState(i, v)]); // (in colour i's states)
+    laid = (cells, a, i) => D.laid(cells, a)?.flatMap(([t, v]) => [t, engineState(i + 1, v - 1)]); // (in colour i's states)
   const lay = (cells, a, i) => {
     const cs = laid(cells, a, i);
     return cs && Int32Array.from(cs);
@@ -35883,7 +35875,7 @@ function laidChoices(centred, any = false) {
         for (let k = 0; k < cells.length; k++) {
           const c = at[k];
           if (c < 0 || !here.has(c)) return null;
-          cs.push(c, colourState(i, cells[k][2]));
+          cs.push(c, engineState(i + 1, cells[k][2] - 1));
         }
         return patternNamed(Int32Array.from(cs), name);
       };
@@ -35913,7 +35905,9 @@ function laidChoices(centred, any = false) {
     )
     .filter((per) => per.every((cs) => cs.length));
   return Array.from({ length: K }, (_, i) =>
-    laid.map((per) => patternNamed(Int32Array.from(per[i].flatMap(([t, v]) => [t, colourState(i, v)])), per.name)),
+    laid.map((per) =>
+      patternNamed(Int32Array.from(per[i].flatMap(([t, v]) => [t, engineState(i + 1, v - 1)])), per.name),
+    ),
   );
 }
 

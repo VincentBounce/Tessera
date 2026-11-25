@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.833';
+const VERSION = '0.5.834';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34338,7 +34338,7 @@ function squaresFace(f) {
   const g = walk.surface,
     S = g.uncut ?? g,
     a = S.floors ? S.floorSize : S.size;
-  const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * (S.perFace ?? a * a) + r * a + c);
+  const square = (r, c) => (S.floors ? S.floors[f * a * a + r * a + c] : f * S.perFace + r * a + c);
   return { a, square, at: (r, c) => Array.from(S.cen.subarray(3 * square(r, c), 3 * square(r, c) + 3)) };
 }
 // its frame round c0: its middle C, its normal n, a cell's step s, the plane's x along u (its rows: the most level of its 6

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.823';
+const VERSION = '0.5.824';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6226,7 +6226,7 @@ const LINK_DEFAULTS = {
   popFont: 'sans',
   exploreRule: () => EXPLORE_RULES[0][0],
   explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
-  distanceColours: 4,
+  distanceColours: null, // (none: the shape's and the palette's, see distanceColours)
   playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
 };
 
@@ -23513,8 +23513,17 @@ function fitLifeTeams(variant) {
   fillGridSizes(kind, variant.initial);
 }
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
-// Distance's colours, a notch each: so many of its palette's (its 5th, Abyss's and Embers', none then), 4 by default
-const DISTANCE_COLOURS = [2, 3, 4];
+// Distance's colours, a notch each: so many of its palette's (its 5th, Abyss's and Embers', none then); by default 2 for a
+// palette of one hue on a sphere whose rings go round it (rosettes, the globe, the icosahedron's: bands), else 4; picked
+// (the slider, a link), its own for that figure and palette only (another, its own default again)
+const DISTANCE_COLOURS = [2, 3, 4],
+  distanceFor = (w) => `${w}|${exploreLook.palette}`,
+  distanceDefault = (w) =>
+    EXPLORE_PALETTES[exploreLook.palette][3] && ['rosettes', 'globe', 'icosahedron'].includes(variantWords(w).shape)
+      ? 2
+      : 4,
+  distanceColours = (w) =>
+    exploreLook.colours?.for === distanceFor(w) ? exploreLook.colours.count : distanceDefault(w);
 const EXPLORE_RULES = [
   ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
   [
@@ -23540,16 +23549,16 @@ const EXPLORE_PALETTES = [
   ['Stained glass', ['#8B1E3F', '#3C153B', '#F2A541', '#1B998B'], 'Wine, plum, amber and jade'],
   ['Abyss', ['#0B132B', '#1C2541', '#3A506B', '#5BC0BE', '#C6F1EE'], 'From night blue to sea foam'],
   ['Embers', ['#2B0F0E', '#7A1F1A', '#D1495B', '#F79256', '#FCE38A'], 'From soot to flame'],
-  ['Blush', ['#F6E6E1', '#F0DCD5', '#EAD1C9', '#E3C6BD'], 'Faded pinks of one hue, barely apart'],
-  ['Mist', ['#E6EDF3', '#DCE5EE', '#D1DDE8', '#C6D4E2'], 'Faded blues of one hue, barely apart'],
-  ['Celadon', ['#E4F0E9', '#D9E9E0', '#CDE2D6', '#C2DACC'], 'Faded greens of one hue, barely apart'],
-  ['Lilac', ['#EEE7F3', '#E5DCEE', '#DCD1E8', '#D2C6E2'], 'Faded violets of one hue, barely apart'],
-  ['Garnet', ['#3A2A2D', '#43303A', '#4C3639', '#553C40'], 'Dark pinks of one hue, barely apart'],
-  ['Slate', ['#26303B', '#2C3743', '#323E4B', '#384553'], 'Dark blues of one hue, barely apart'],
-  ['Moss', ['#26332C', '#2C3A32', '#324138', '#38483E'], 'Dark greens of one hue, barely apart'],
-  ['Plum', ['#30293A', '#372F42', '#3E354A', '#453B52'], 'Dark violets of one hue, barely apart'],
-]; // (name, colours, words)
-const exploreLook = { rule: 'tiles', palette: 0, colours: LINK_DEFAULTS.distanceColours }, // (colours: Distance's, its rings' in turn, of its palette's, see DISTANCE_COLOURS)
+  ['Blush', ['#F6E6E1', '#F0DCD5', '#EAD1C9', '#E3C6BD'], 'Faded pinks of one hue, barely apart', true],
+  ['Mist', ['#E6EDF3', '#DCE5EE', '#D1DDE8', '#C6D4E2'], 'Faded blues of one hue, barely apart', true],
+  ['Celadon', ['#E4F0E9', '#D9E9E0', '#CDE2D6', '#C2DACC'], 'Faded greens of one hue, barely apart', true],
+  ['Lilac', ['#EEE7F3', '#E5DCEE', '#DCD1E8', '#D2C6E2'], 'Faded violets of one hue, barely apart', true],
+  ['Garnet', ['#3A2A2D', '#43303A', '#4C3639', '#553C40'], 'Dark pinks of one hue, barely apart', true],
+  ['Slate', ['#26303B', '#2C3743', '#323E4B', '#384553'], 'Dark blues of one hue, barely apart', true],
+  ['Moss', ['#26332C', '#2C3A32', '#324138', '#38483E'], 'Dark greens of one hue, barely apart', true],
+  ['Plum', ['#30293A', '#372F42', '#3E354A', '#453B52'], 'Dark violets of one hue, barely apart', true],
+]; // (name, colours, words; of one hue: Distance's 2 colours by default on a sphere, see distanceColours)
+const exploreLook = { rule: 'tiles', palette: 0, colours: null }, // (colours: Distance's as picked, for its figure and palette, see distanceColours)
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
 // a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
 // most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
@@ -23693,7 +23702,7 @@ function groundColours() {
     n = P ? P.n : g.n, // (its cells, then the plane's walls)
     of = walk.life ?? P ?? g,
     palette = tilesPalette(),
-    key = `${exploreLook.rule}|${palette}|${exploreLook.colours}`;
+    key = `${exploreLook.rule}|${palette}|${distanceColours(walk.variant)}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
     // (the plane's walls coloured with its cells, as tiles of its grid: each brick in the gold of its colour, see WALL_GOLDS)
     const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
@@ -23763,7 +23772,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes 
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % Math.min(P, exploreLook.colours)); // (a ring a step, so many of the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
+    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % Math.min(P, distanceColours(walk.variant))); // (a ring a step, so many of the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
     return level;
   }
   return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)
@@ -23844,13 +23853,13 @@ function renderExplore() {
   sizeGauge(
     $('distanceGauge'),
     DISTANCE_COLOURS.length,
-    DISTANCE_COLOURS.indexOf(exploreLook.colours),
+    DISTANCE_COLOURS.indexOf(distanceColours(tabVariant())),
     () => {},
     (k) => {
-      exploreLook.colours = DISTANCE_COLOURS[k];
+      exploreLook.colours = { count: DISTANCE_COLOURS[k], for: distanceFor(tabVariant()) };
       compute();
     },
-    DISTANCE_COLOURS.indexOf(LINK_DEFAULTS.distanceColours),
+    DISTANCE_COLOURS.indexOf(distanceDefault(tabVariant())),
   );
   greyInput($('distanceGauge').firstChild, $('distanceRow'), () =>
     exploreLook.rule === 'distance' ? '' : 'Only with Distance.',
@@ -36295,7 +36304,7 @@ function getSetup() {
   if (variant.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
   if (variant.explore) s.exploreRule = exploreLook.rule;
   if (variant.explore) s.explorePalette = linkWord(EXPLORE_PALETTES[exploreLook.palette][0]); // (by its name: abyss)
-  if (variant.explore) s.distanceColours = exploreLook.colours;
+  if (variant.explore) s.distanceColours = distanceColours(tabVariant());
   if (championCode) s.popFound = championCode;
   if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
   s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
@@ -36325,11 +36334,12 @@ function applySetup(s) {
   battleStartsWay = readSetting(s, 'battleStarts', (way) => STARTS_WAYS.some(([w]) => w === way));
   battleSeed = Number(s.battleDraw) || 1;
   exploreLook.rule = readSetting(s, 'exploreRule', (r) => EXPLORE_RULES.some(([key]) => key === r));
-  exploreLook.colours = Number(readSetting(s, 'distanceColours', (c) => DISTANCE_COLOURS.includes(Number(c))));
   exploreLook.palette = Math.max(
     0,
     EXPLORE_PALETTES.findIndex(([name]) => linkWord(name) === readSetting(s, 'explorePalette')),
   ); // (none: the first)
+  const distance = Number(readSetting(s, 'distanceColours', (c) => DISTANCE_COLOURS.includes(Number(c)))); // (none written: its default)
+  exploreLook.colours = distance ? { count: distance, for: distanceFor(setupVariant(s)) } : null; // (for its figure and palette)
   battleOrder = s.battleOrder ? [...String(s.battleOrder)].map((c) => c.charCodeAt(0) - 97) : null; // (so=acb: see startsOrder)
   RIVALS.forEach((id, j) => {
     $(id).value = s[`walkNumber${id.slice(-1)}`] ?? RIVAL_FIRSTS[j];

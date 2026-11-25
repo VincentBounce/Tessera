@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.858';
+const VERSION = '0.5.859';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36141,6 +36141,8 @@ function middleCells(i = 0, K = 1) {
     n = start.length - 1;
   if (K === 1 && !walk.plane && g.faceMids?.length < g.faces?.length)
     return centreCells(g.faceMids[g.cellFaces[frontCell()]]); // (a face of several triangles, a dodecahedron's pentagon: its middle)
+  const shape = K === 1 && walk.plane && planeShape(walk.plane.kind, walk.plane.W);
+  if (shape) return [...Array(shape.rings[0][1]).keys()]; // (a hexagon's: its first ring, the cells round its middle, a cell's middle or a point between cells; its cells' first, see planeShape, planeGrid)
   if (APERIODIC[patternKind()] && !cellsPlane() && !g.disc) {
     // (cells with no lattice on a surface, the Penrose sphere's: those nearest the colour's spot, or the cell in front)
     const spot = K > 1 ? patchSpots(VARIANTS[walk.variant].surface, K)?.[i] : null;

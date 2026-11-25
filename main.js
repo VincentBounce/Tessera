@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.857';
+const VERSION = '0.5.858';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11009,7 +11009,7 @@ function renderAntRow() {
   const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'),
     lead = startHead.nextElementSibling === $('startWays') ? $('startWays') : startHead;
   if (lead.nextElementSibling !== $('startRow')) lead.after($('startRow'));
-  drawing = !!m.life && plane.start === 'draw' && !spaceTimeOn(); // Life draws in its Draw start, on the plane or a surface (not in Space-time)
+  drawing = playsLife(w) && plane.start === 'draw' && !spaceTimeOn(); // Life draws in its Draw start, on the plane or a surface (not in Space-time, nor Explore: its Start Life's, kept)
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, as renderDrawTools keeps it)
   // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
   if (!customRow.isConnected) $('walkRuleSection').append(customRow);

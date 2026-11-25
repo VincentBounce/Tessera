@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.838';
+const VERSION = '0.5.839';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40309,12 +40309,15 @@ struct Pick { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) id:
   var o: Pick; o.id = id; o.cutv = dot(pos, u.cutN); o.p = pos; o.n = nrm; let s = toScreen(pos); o.s = s.xy; o.pos = clipOf(s, 0.0); return o;
 }
 struct Picked { @location(0) id: u32, @location(1) score: f32 }
-@fragment fn pickF(i: Pick) -> Picked {
+fn picked(i: Pick) -> Picked {
   if (u.cut == 1 && i.cutv > 0.0) { discard; }
   var o: Picked; o.id = i.id + 1u;
   o.score = dot(i.n, u.V) + dot(i.p, u.V) / u.extent - 0.2 * length(i.s - u.screen * 0.5) / min(u.screen.x, u.screen.y);
   return o;
 }
+@fragment fn pickF(i: Pick) -> Picked { return picked(i); }
+// a tile the motif never lies on (see gpuPick): its number, its score below any (never the motif's, see GPU_PICK)
+@fragment fn pickOffF(i: Pick) -> Picked { var o = picked(i); o.score = -100.0; return o; }
 // the grid: the tile edges, pulled a little towards the viewer; an edge whose two tiles both face away not drawn, pixel by pixel
 struct Edge { @builtin(position) pos: vec4f, @location(0) facing: f32, @location(1) cutv: f32 }
 @vertex fn edgeV(@location(0) pos: vec3f, @location(1) n1: vec3f, @location(2) n2: vec3f) -> Edge {
@@ -41001,19 +41004,22 @@ function gpuSurface(paint, path) {
         tileOf = (q) => Math.floor(fan[3 * q] / k); // (its triangle q's tile: its first corner's, k a tile)
       gpuBuffer('fan', fan, GPUBufferUsage.INDEX);
       D.fanCount = fan.length;
-      // the motif's pick: the same triangles but its corners' cells' (its cells of other sides, a solid of hexagons': never
-      // its motif, see gpuPick) and, on a sheet, those of a motif cut by its edge or its seam (a strip's, a bottle's:
-      // its lattice cell's tiles fewer than its motif's), while it has a whole one
+      // the pick's triangles, every tile's (the pointer's, see gpuPick), the motif's first: then its corners' cells (its cells
+      // of other sides, a solid of hexagons': never its motif) and, on a sheet, those of a motif cut by its edge or its seam (a
+      // strip's, a bottle's: its lattice cell's tiles fewer than its motif's), while it has a whole one, drawn as no motif's
       const cut = (t) =>
           (g.torus || g.klein) && latticeCellTiles(g).get(latticeCellOf(g, t)).length < latticeCellSize(g),
-        whole = Array.from({ length: fan.length / 3 }, (_, q) => q).filter(
-          (q) => !corners.has(tileOf(q)) && !cut(tileOf(q)),
-        ),
-        pickFan = Uint32Array.from(
-          whole.length ? whole.flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]]) : fan,
-        );
-      gpuBuffer('pickFan', pickFan, GPUBufferUsage.INDEX);
-      D.pickFanCount = pickFan.length;
+        triangles = Array.from({ length: fan.length / 3 }, (_, q) => q),
+        whole = triangles.filter((q) => !corners.has(tileOf(q)) && !cut(tileOf(q))),
+        motifs = whole.length ? new Set(whole) : null,
+        order = motifs ? [...whole, ...triangles.filter((q) => !motifs.has(q))] : triangles;
+      gpuBuffer(
+        'pickFan',
+        Uint32Array.from(order.flatMap((q) => [fan[3 * q], fan[3 * q + 1], fan[3 * q + 2]])),
+        GPUBufferUsage.INDEX,
+      );
+      D.pickFanCount = fan.length;
+      D.motifFanCount = motifs ? 3 * whole.length : fan.length;
       D.keys.fanOf = g;
     }
     if (D.keys.topo !== `${n}|${k}`) {
@@ -41304,10 +41310,12 @@ const GPU_PICK = `
 @group(0) @binding(0) var ids: texture_2d<u32>;
 @group(0) @binding(1) var scores: texture_2d<f32>;
 @group(0) @binding(2) var<storage, read_write> best: array<atomic<u32>, 2>;
-fn drawn(p: vec3u) -> vec2u {  // (its tile + 1 and its score's bits; 0: none, off the picture)
+fn drawn(p: vec3u) -> vec2u {  // (its tile + 1 and its score's bits; 0: none, off the picture or never the motif's, see pickOffF)
   let s = textureDimensions(ids);
   if (p.x >= s.x || p.y >= s.y) { return vec2u(0u); }
-  return vec2u(textureLoad(ids, vec2i(p.xy), 0).r, bitcast<u32>(textureLoad(scores, vec2i(p.xy), 0).r + 16.0));
+  let score = textureLoad(scores, vec2i(p.xy), 0).r;
+  if (score < -16.0) { return vec2u(0u); }
+  return vec2u(textureLoad(ids, vec2i(p.xy), 0).r, bitcast<u32>(score + 16.0));
 }
 @compute @workgroup_size(8, 8) fn most(@builtin(global_invocation_id) p: vec3u) {
   let t = drawn(p); if (t.x > 0u) { atomicMax(&best[0], t.y); }
@@ -41394,7 +41402,13 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
   p.setVertexBuffer(1, D.nrm);
   p.setVertexBuffer(2, D.tileIds);
   p.setIndexBuffer(D.pickFan, 'uint32');
-  p.drawIndexed(D.pickFanCount);
+  p.drawIndexed(D.motifFanCount);
+  if (D.pickFanCount > D.motifFanCount) {
+    p.setPipeline(
+      gpuDrawPipe('pickOff', { vertex: 'pickV', fragment: 'pickOffF', buffers: tileBufs, cull, pick: true }),
+    );
+    p.drawIndexed(D.pickFanCount - D.motifFanCount, 1, D.motifFanCount);
+  } // (the tiles the motif never lies on: under the pointer all the same)
   p.end();
   if (middle) {
     for (const pipe of [P.most, P.mostTile]) {

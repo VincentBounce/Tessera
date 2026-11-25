@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.821';
+const VERSION = '0.5.822';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6226,6 +6226,7 @@ const LINK_DEFAULTS = {
   popFont: 'sans',
   exploreRule: () => EXPLORE_RULES[0][0],
   explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
+  distanceColours: 4,
   playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
 };
 
@@ -23512,6 +23513,8 @@ function fitLifeTeams(variant) {
   fillGridSizes(kind, variant.initial);
 }
 // Explore: its rule (how a cell's colour is found) and its palette (see EXPLORE_PALETTES), each a choice of its section
+// Distance's colours, a notch each: so many of its palette's (its 5th, Abyss's and Embers', none then), 4 by default
+const DISTANCE_COLOURS = [2, 3, 4];
 const EXPLORE_RULES = [
   ['tiles', 'Tiles', 'Two cells side by side never the same colour'],
   [
@@ -23546,7 +23549,7 @@ const EXPLORE_PALETTES = [
   ['Moss', ['#26332C', '#2C3A32', '#324138', '#38483E'], 'Dark greens of one hue, barely apart'],
   ['Plum', ['#30293A', '#372F42', '#3E354A', '#453B52'], 'Dark violets of one hue, barely apart'],
 ]; // (name, colours, words)
-const exploreLook = { rule: 'tiles', palette: 0 },
+const exploreLook = { rule: 'tiles', palette: 0, colours: LINK_DEFAULTS.distanceColours }, // (colours: Distance's, its rings' in turn, of its palette's, see DISTANCE_COLOURS)
   explorePalette = () => EXPLORE_PALETTES[exploreLook.palette][1];
 // a graph's colouring, no two neighbours alike (eachNeighbour(a, put): each of node a's), DSatur's (Brélaz 1979): the node
 // most bound first (the most colours among its neighbours), its first colour free (1, 2…); its order and its colours. As
@@ -23690,7 +23693,7 @@ function groundColours() {
     n = P ? P.n : g.n, // (its cells, then the plane's walls)
     of = walk.life ?? P ?? g,
     palette = tilesPalette(),
-    key = `${exploreLook.rule}|${palette}`;
+    key = `${exploreLook.rule}|${palette}|${exploreLook.colours}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
     // (the plane's walls coloured with its cells, as tiles of its grid: each brick in the gold of its colour, see WALL_GOLDS)
     const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
@@ -23760,7 +23763,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes 
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % P); // (a ring a step, the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
+    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % Math.min(P, exploreLook.colours)); // (a ring a step, so many of the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
     return level;
   }
   return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)
@@ -23837,8 +23840,30 @@ function renderExplore() {
     if (key === 'rule') applyDefaults('exploreRule'); // (its grid: see DISPLAY_DEFAULTS)
     compute();
   };
+  // (Distance's colours under its card, a notched slider always there, greyed for another rule: see DISTANCE_COLOURS)
+  const field = Object.assign(document.createElement('div'), {
+      className: 'notch-field',
+      title: "Distance's colours: so many of the palette's, a ring each in turn",
+    }),
+    gauge = Object.assign(document.createElement('span'), { className: 'size-gauge' }),
+    words = Object.assign(document.createElement('span'), { className: 'notch-words' }),
+    said = (k) => (words.textContent = `${DISTANCE_COLOURS[k]} colours`);
+  field.append(gauge, words);
+  sizeGauge(
+    gauge,
+    DISTANCE_COLOURS.length,
+    DISTANCE_COLOURS.indexOf(exploreLook.colours),
+    said,
+    (k) => {
+      exploreLook.colours = DISTANCE_COLOURS[k];
+      compute();
+    },
+    DISTANCE_COLOURS.indexOf(LINK_DEFAULTS.distanceColours),
+  );
+  said(DISTANCE_COLOURS.indexOf(exploreLook.colours));
+  greyInput(gauge.querySelector('input'), field, () => (exploreLook.rule === 'distance' ? '' : 'Only with Distance.'));
   $('exploreRules').replaceChildren(
-    ...EXPLORE_RULES.map(([key, name, detail]) =>
+    ...EXPLORE_RULES.flatMap(([key, name, detail]) => [
       card({
         name,
         detail,
@@ -23847,7 +23872,8 @@ function renderExplore() {
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
       }),
-    ),
+      ...(key === 'distance' ? [field] : []),
+    ]),
   ); // (cards, as the rules of Life: their pictures to come)
   $('explorePalettes').replaceChildren(
     tileGroup(
@@ -36276,6 +36302,7 @@ function getSetup() {
   if (variant.worm) s.playRule = worm.byDigits ? 'digits' : worm.rule;
   if (variant.explore) s.exploreRule = exploreLook.rule;
   if (variant.explore) s.explorePalette = linkWord(EXPLORE_PALETTES[exploreLook.palette][0]); // (by its name: abyss)
+  if (variant.explore) s.distanceColours = exploreLook.colours;
   if (championCode) s.popFound = championCode;
   if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
   s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
@@ -36305,6 +36332,7 @@ function applySetup(s) {
   battleStartsWay = readSetting(s, 'battleStarts', (way) => STARTS_WAYS.some(([w]) => w === way));
   battleSeed = Number(s.battleDraw) || 1;
   exploreLook.rule = readSetting(s, 'exploreRule', (r) => EXPLORE_RULES.some(([key]) => key === r));
+  exploreLook.colours = Number(readSetting(s, 'distanceColours', (c) => DISTANCE_COLOURS.includes(Number(c))));
   exploreLook.palette = Math.max(
     0,
     EXPLORE_PALETTES.findIndex(([name]) => linkWord(name) === readSetting(s, 'explorePalette')),

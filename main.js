@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.830';
+const VERSION = '0.5.831';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18941,13 +18941,13 @@ const howCounted = (kind, f) => {
   const mesh = S && !TORI.includes(kind) && leastMesh(kind),
     g = mesh?.uncut ?? mesh,
     cut = mesh?.per ?? (mesh?.kite ? 3 : 1);
-  if (g?.faces || g?.triFaces) {
-    const by = g.faces ? {} : { 3: g.triFaces.length, 4: g.squareFaces.length },
+  const faces = g && solidFaces(g);
+  if (faces) {
+    const by = {},
       adj = (c) => (c === '4' && HULL_SOLIDS[hullSolidOf(kind)]?.rhombi ? 'rhombic' : FACE_ADJECTIVES[c]), // (its faces of 4 corners as declared)
       cells = { 3: 'triangles', 4: 'squares', 5: 'triangles', 6: 'triangles' },
       round = { 5: 5, 6: 6 }; // (a pentagon, a hexagon: as many triangles round its middle)
-    for (const F of g.faces ?? []) by[F.corners.length] = (by[F.corners.length] ?? 0) + 1; // (a solid of triangles and squares: its faces of each, see Johnson solids)
-    for (const c in by) if (!by[c]) delete by[c];
+    for (const F of faces) by[F.corners.length] = (by[F.corners.length] ?? 0) + 1; // (a solid of triangles and squares: its faces of each, see Johnson solids)
     if (Object.entries(by).reduce((sum, [c, k]) => sum + k * (round[c] ?? 1) * f * f * cut, 0) === n) {
       const red = redFaces(g),
         mark = (c, w) => (red ? `{${c}:${w}}` : w); // (in the colours drawn: its faces red, its motif's cells violet)

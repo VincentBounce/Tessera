@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.877';
+const VERSION = '0.5.878';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18628,8 +18628,8 @@ function syncSizeStepper() {
   const rowsNow = sizeOf(sel.value),
     asked = sizeAsked(kind),
     [rows, width] = ringSized(kind) && sel.selectedOptions[0] ? torusDims(kind, asked) : [],
-    widths = rows ? widthsOf(kind, rows, width) : { list: [], usual: -1 },
-    widthShare = (k) => widths.list[k][0] / torusDims(kind, rows)[1];
+    widths = rows ? widthsOf(kind, rows, width, torusTwist(asked, kind)) : { list: [], usual: -1 },
+    widthShare = (k) => widths.list[k][0] / widths.usualWidth;
   sizeGauge(
     $('widthGauge'),
     widths.list.length,
@@ -18796,20 +18796,26 @@ const torusTwist = (size, kind) => {
 // rows only, a size its rows and these (see ringSize)
 let ringWidthShare = null,
   ringTwistShare = null;
-// a ring's size at its rows, a width share and a twist share (see ringWidthShare): its width the nearest its tiling allows, its twist
-// the nearest notch (a quarter turn a quarter turn at any rows); a size of rows only elsewhere
+// a ring's usual width at its rows and a twist (k, its twist in cells; none, its shape's default): its columns as torusDims makes
+// them at that twist (a Triangle untwisted in Trio, its colours in runs along its faces, its own: see faceRunsOn), the one width
+// its widths are shares of (see ringSize, widthsOf, selectSize)
+const usualWidth = (kind, rows, k) => torusDims(kind, withTwist(rows, k))[1];
+// a ring's size at its rows, a width share and a twist share (see ringWidthShare): its width the nearest its tiling allows, a
+// share of its usual at the twist asked, its twist the nearest notch (a quarter turn a quarter turn at any rows); a size of
+// rows only elsewhere
 function ringSize(kind, rows, width = ringWidthShare, twist = ringTwistShare) {
   if (!ringSized(kind)) return rows;
-  const usual = torusDims(kind, rows)[1],
+  const twistAt = (size) => {
+      const twists = torusTwists(kind, size),
+        near = (k) => Math.abs(k - twist * twists.at(-1));
+      if (!twists.length) return undefined;
+      return twist === null ? twistByDefault(kind, size) : twists.reduce((a, b) => (near(b) < near(a) ? b : a));
+    }, // (none: a ring that takes no twist)
+    usual = usualWidth(kind, rows, twistAt(rows)),
     across = width === null ? usual : Math.round(width * usual),
     size = across === usual ? rows : widthSize(kind, rows, across),
-    twists = torusTwists(kind, size);
-  if (!twists.length) return size;
-  const near = (k) => Math.abs(k - twist * twists.at(-1));
-  return withTwist(
-    size,
-    twist === null ? twistByDefault(kind, size) : twists.reduce((a, b) => (near(b) < near(a) ? b : a)),
-  );
+    k = twistAt(size);
+  return k === undefined ? size : withTwist(size, k);
 }
 const sizeAsked = (kind = surfaceOf(VARIANTS[tabVariant()])) => ringSize(kind, sizeOf($('gridSizeField').value)); // (the menu's rows, its ring's width and twist)
 const gridSizePlayed = () => walkersSize(surfaceOf(VARIANTS[tabVariant()]), sizeAsked()); // (the size played: the size asked, kept as its walkers change, see walkersSize)
@@ -18861,16 +18867,17 @@ const widthShares = () => {
   const at = WIDTH_SHARES[torusForm().notch ?? 2];
   return WIDTH_SHARES.map((s) => s / at);
 };
-function widthsOf(kind, rows, width) {
-  const usual = torusDims(kind, rows)[1],
+function widthsOf(kind, rows, width, k) {
+  // (k: its twist in use, its widths and its usual one there: see usualWidth)
+  const usual = usualWidth(kind, rows, k),
     widths = new Map();
   for (const c of [...widthShares().map((share) => Math.round(share * usual)), width]) {
-    const size = widthSize(kind, rows, c),
+    const size = widthSize(kind, rows, c, k),
       w = torusDims(kind, size)[1];
     if (!widths.has(w) && SURFACES[kind].tiles(size) <= CELLS.most) widths.set(w, w === usual ? rows : size);
   }
   const list = [...widths].sort((a, b) => a[0] - b[0]);
-  return { list, usual: list.findIndex(([w]) => w === usual) };
+  return { list, usual: list.findIndex(([w]) => w === usual), usualWidth: usual };
 }
 /* A grid's size, one way for all of them: its height × its width, their product its cells. On the plane
  * (kind: its cells' shape), its rows × the lattice cells of a row (its cells all of them, a lattice cell's several); on a torus or a Klein bottle, its cells round
@@ -19135,7 +19142,7 @@ const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${siz
 function selectSize(kind, size) {
   const [rows, width] = ringSized(kind) ? torusDims(kind, size) : [untwisted(size)];
   if (ringSized(kind)) {
-    const usual = torusDims(kind, rows)[1],
+    const usual = usualWidth(kind, rows, String(size).includes('+') ? torusTwist(size, kind) : undefined),
       twists = torusTwists(kind, size);
     ringWidthShare = width === usual ? null : width / usual;
     ringTwistShare = String(size).includes('+') && twists.length > 1 ? torusTwist(size, kind) / twists.at(-1) : null;

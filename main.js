@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.831';
+const VERSION = '0.5.832';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14367,6 +14367,7 @@ function hullMesh(kind, f) {
   return (meshCache[key] = Object.assign(finishMesh(verts, tiles, 4, f), {
     squareFaces,
     triFaces,
+    perFace: f * f, // (a square's cells, a triangle's alike)
     triFirst: squareFaces.length * f * f,
     cellFaces: typedOf(Int32Array, tiles, (_, t) => Math.floor(t / (f * f))), // (its squares' faces, then its triangles', f² cells each)
   }));
@@ -28753,7 +28754,7 @@ function faceOf(g, t) {
 }
 const redFaces = (g) => {
   const solid = g?.uncut ?? g; // (a cut's: the solid it cuts, see HULL_CUTS)
-  return !!(solid?.perFace || solid?.triFaces);
+  return !!solid?.perFace;
 }; // (the solids whose faces are drawn red, as their tooltip says them)
 // a solid of squares and triangles, its squares blue among its triangles (none: a solid of squares alone, violet as a cube's)
 const squaresAmongTriangles = (g) => (g.uncut ?? g).triFaces?.length > 0;
@@ -34224,7 +34225,7 @@ function patternPlace(i, K) {
     return triPlace(
       d
         ? faces.reduce((best, fc, k) => (dot3(faceMid(fc), d) > dot3(faceMid(faces[best]), d) + 1e-9 ? k : best), 0)
-        : Math.floor(frontCell() / (g.triFaces ? g.size * g.size : g.perFace)),
+        : Math.floor(frontCell() / g.perFace),
     );
   }
   const { squareFaces } = g.uncut ?? g; // (a cut's: its solid's)
@@ -34255,7 +34256,7 @@ const faceMid = (fc) => unit(meanPoint(fc.corners, 3));
 function triPlace(face) {
   const g = walk.surface,
     faces = g.triFaces ?? g.faces,
-    perFace = g.triFaces ? g.size * g.size : g.perFace;
+    perFace = g.perFace;
   const [A, B, C] = faces[face].corners,
     m = cross(sub(B, A), sub(C, A)),
     n = unit(dot3(m, faceMid(faces[face])) > 0 ? m : m.map((v) => -v)),
@@ -34288,7 +34289,7 @@ function cellPlace(t) {
   if (frameless(g)) return null; // (a globe, Boy's surface: no face, its tiles' own heading, see tileHeading; Boy's triangles no solid's)
   if (g.squareFaces && t < g.triFirst) return { on: 'square', f: Math.floor(t / g.size ** 2) };
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
-    return triPlace(Math.floor((t - (g.triFirst ?? 0)) / (g.triFaces ? g.size * g.size : g.perFace)));
+    return triPlace(Math.floor((t - (g.triFirst ?? 0)) / g.perFace));
   if (g.hexagons) {
     const k = g.cellFaces[t],
       at = (c) => Array.from(g.cen.subarray(3 * c, 3 * c + 3)),

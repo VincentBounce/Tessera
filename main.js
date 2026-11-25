@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.861';
+const VERSION = '0.5.862';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -15537,6 +15537,7 @@ for (const [life, n] of Object.entries(NAV))
     ['Hats', 1, 'Ring 12'],
     ['Spectre', 1, 'Hats'],
     ['Pinwheel', 1, 'Spectre'],
+    ['Pinwheel triangle', 1, 'Pinwheel'],
     ['Klein bottle', 1, 'Möbius strip'],
     ['Cube', 1, 'Tetrahedron'],
     ['Hexagons', 1, 'Kites'],

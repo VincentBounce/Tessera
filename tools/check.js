@@ -275,8 +275,8 @@
   const wait = (ms) => new Promise((go) => setTimeout(go, ms));
   // ok() true and nothing waited for (the app's waits, see waitBegin: digits, a build on its way, a battle's others), 10 s at most
   const until = async (ok) => {
-    for (let t = 0; t < 100 && !(ok() && !waits.size); t++) await wait(100);
-    return ok(); // (whether it came, in 10 s at most)
+    for (let t = 0; t < 600 && !(ok() && !waits.size) && (t < 100 || busy || waits.size); t++) await wait(100);
+    return ok(); // (whether it came: in 10 s, or while the page still computes, in a minute at most)
   };
   // the link the page wrote last (its tab's history entry's, see syncLink; the address bar the page's alone)
   const linkWritten = () => parseHash(`#${history.state?.link ?? ''}`);
@@ -1720,6 +1720,7 @@
       for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
         location.hash = toHash({ ...variantWords(w), ...walls, teams: K });
         await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
+        if (hullColours(VARIANTS[w].surface, K)?.unlike) continue; // (unlike by choice: the pyramid's Duel Up / Down, its Quintet, see hullColourings)
         checked++;
         if (lifeTeams !== K) {
           fail(`${named}: ${K} colours offered, ${lifeTeams} taken`);

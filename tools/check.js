@@ -1660,9 +1660,7 @@
     ]) {
       const offered = [];
       for (const K of [1, 3]) {
-        lifeTeams = K;
-        location.hash = toHash({ ...variantWords(w), teams: K });
-        await until(shown(w, () => lifeTeams === K));
+        await openLife(toHash({ ...variantWords(w), teams: K }));
         offered.push(TEAM_COUNTS.filter((k) => teamsFit(k)).join(','));
       }
       if (offered[0] !== offered[1]) fail(`${w}: colours offered ${offered[0]} in Solo, ${offered[1]} in Trio`);
@@ -1715,11 +1713,9 @@
     ]; // (a rosette sphere: its discs' lunes, cells whole, one apart as the plane's)
     for (const [w, walls, slack] of runs) {
       const named = `${w}${walls.gridWalls ? ' walled' : ''}`; // (its walls by a word, an object before: [object Object])
-      location.hash = toHash({ ...variantWords(w), ...walls, teams: 1 });
-      await until(shown(w, () => lifeTeams === 1));
+      await openLife(toHash({ ...variantWords(w), ...walls, teams: 1 })); // (its own grid built: the counts offered its walls', not the grid's before, still shown till v0.5.882)
       for (const K of TEAM_COUNTS.filter((k) => k > 1 && teamsFit(k))) {
-        location.hash = toHash({ ...variantWords(w), ...walls, teams: K });
-        await until(shown(w, () => lifeTeams === K && walk.life?.colours === K));
+        await openLife(toHash({ ...variantWords(w), ...walls, teams: K }));
         if (hullColours(VARIANTS[w].surface, K)?.unlike) continue; // (unlike by choice: the pyramid's Duel Up / Down, its Quintet, see hullColourings)
         checked++;
         if (lifeTeams !== K) {

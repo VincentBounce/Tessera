@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.881';
+const VERSION = '0.5.882';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23848,7 +23848,7 @@ function groundColours() {
     // (the plane's walls coloured with its cells, as tiles of its grid: each brick in the gold of its colour, see WALL_GOLDS)
     const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
       { level: levels } = exploreLevels(
-        M ? cellNeighbours(M.start, M.list, M.nv) : (walk.life?.nbr ?? cornerNeighbours(g)),
+        M ? cellNeighbours(M.start, M.list, M.nv) : cornerNeighbours(g),
         M ? M.start.length - 1 : n,
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         distanceFrom,
@@ -36200,7 +36200,7 @@ function centreCells(d) {
     known = (g.centres ??= new Map()).get(key);
   if (known) return known;
   const near = new Float64Array(g.n).fill(-Infinity),
-    { start } = walk.life.nbr,
+    { start } = cornerNeighbours(g), // (its grid's, as its Life's are: an Ant's too, which has none, till v0.5.882)
     c = g.cen;
   for (let t = 0; t < g.n; t++) {
     if (start[t] === start[t + 1]) continue;

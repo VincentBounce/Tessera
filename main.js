@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.837';
+const VERSION = '0.5.838';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14914,7 +14914,8 @@ function flatPolyhedron(name, f, kites = false) {
   if (meshCache[key]) return meshCache[key];
   const { P, faces } = POLYHEDRA[name];
   const { verts, add } = vertexStore();
-  const tris = [];
+  const tris = [],
+    downs = []; // (each triangle's way in its face's grid: ▲ (i, j), (i + 1, j), (i, j + 1); ▼ (i + 1, j), (i + 1, j + 1), (i, j + 1))
   for (const [A, B, C] of faces.map((face) => face.map((v) => P[v]))) {
     // a point (i, j) of the face's grid: its corner, each whole point's kept once a face (it is up to 6 triangles'), added
     // as first met, so the corners are numbered as ever
@@ -14932,26 +14933,38 @@ function flatPolyhedron(name, f, kites = false) {
       if (whole) known[slot] = v;
       return v;
     };
-    const put = (c) => {
-      for (const t of kites ? triangleKites(c) : [c]) tris.push(t.map(at));
+    const put = (c, down) => {
+      for (const t of kites ? triangleKites(c) : [c]) {
+        tris.push(t.map(at));
+        downs.push(down);
+      }
     }; // (i, j): the face's own grid
     for (let i = 0; i < f; i++) {
       for (let j = 0; i + j < f; j++) {
-        put([
-          [i, j],
-          [i + 1, j],
-          [i, j + 1],
-        ]);
-        if (i + j < f - 1)
-          put([
+        put(
+          [
+            [i, j],
             [i + 1, j],
-            [i + 1, j + 1],
             [i, j + 1],
-          ]);
+          ],
+          false,
+        );
+        if (i + j < f - 1)
+          put(
+            [
+              [i + 1, j],
+              [i + 1, j + 1],
+              [i, j + 1],
+            ],
+            true,
+          );
       }
     }
   }
   const mesh = finishMesh(verts, tris, kites ? 4 : 3, f);
+  // each triangle's corners as its face's grid lists them (finishMesh may turn them round), and its way there (see hexSolidMesh)
+  mesh.gridCorners = tris;
+  mesh.downs = downs;
   // each face as one big triangle, with its three families of grid lines, for cheap drawing
   mesh.faces = faces.map((face) => {
     const [A, B, C] = face.map((v) => P[v]);
@@ -17628,6 +17641,18 @@ function hexSolidMesh(solid, f) {
   mesh.cellFaces = typedOf(Int32Array, cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
   mesh.folded = typedOf(Uint8Array, cells, (tris) => new Set(tris.map((t) => Math.floor(t / (f * f)))).size > 1);
   mesh.faceMids = POLYHEDRA[solid].faceMids;
+  // each hexagon's heading by construction (see builtHeading): its corners are its triangles, as the plane hexagon's are the
+  // triangles of its centre and its neighbours q and q + 1 (see latticeCorners); in its face's grid a ▲'s corners are corners
+  // 0, 2 and 4 of their hexagons, a ▼'s 1, 3 and 5 (HEX_DIRS); its first triangle's grid gives its corner 0, its way round
+  // (hand: −1 where finishMesh turned that grid's corners round) and its edge 0 (a corner's cell, not a hexagon: none, −1)
+  const corner = (tri, v) => 2 * ico.gridCorners[tri].indexOf(v) + (ico.downs[tri] ? 1 : 0);
+  mesh.hand = typedOf(Int8Array, cells, ([tri]) => (ico.poly[3 * tri + 1] === ico.gridCorners[tri][1] ? 1 : -1));
+  mesh.e0 = typedOf(Int8Array, cells, (tris, v) => {
+    if (tris.length !== 6) return -1;
+    const hand = mesh.hand[v],
+      p0 = mod(-hand * corner(tris[0], v), 6);
+    return liveEdges(mesh, v)[hand === 1 ? p0 : mod(p0 - 1, 6)]; // (its edges with a tile across: the stella's last its 8th)
+  });
   return (meshCache[key] = mesh);
 }
 
@@ -28382,8 +28407,12 @@ let brushHeading = null;
 const brushHeadingAt = (t, place) =>
   (brushHeading?.g === walk.surface && (brushHeading.t === t ? brushHeading : headingAcross(brushHeading, t))) ||
   headingHere(place && patternFrame(0, 1, place), t);
-// tile t's heading: by its face's frame F (see headingOn), else, a surface with no frame, its own (see tileHeading)
-const headingHere = (F, t) => (F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t));
+// tile t's heading: its mesh's (see builtHeading), else by its face's frame F (see headingOn), else, a surface with no frame,
+// its own (see tileHeading)
+const headingHere = (F, t) =>
+  walk.surface.e0 ? builtHeading(walk.surface, t) : F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t);
+// a tile's heading its mesh knows by construction (a solid of hexagons', see hexSolidMesh), else null
+const builtHeading = (g, t) => (g.e0[t] < 0 ? null : { g, t, cell: [0, 0], e0: g.e0[t], hand: g.hand[t] });
 // a tile's own heading, where its surface has no frame (a globe, Boy's surface: see frameless): a plane cell as many sides,
 // its first edge that cell's edge 0; a pattern laid from it as a cell is, turned as the tile lies (see patternFrom)
 const tileHeading = (g, t) => {
@@ -34585,9 +34614,10 @@ function patternOnCell(F, cells, t, anchor = null) {
 }
 // A tile's heading: the plane cell it stands for (cell), its edge standing for that cell's edge 0 (e0) and its way round
 // against the plane's (hand: −1, its edges listed the other way); a pattern laid from it walks there as on the plane (see
-// patternFrom). F's, its face's frame's (see framedHeading); a tile F cannot frame (a solid's corner, a bulging face: the
-// Dode sph's) takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the first shortest path
-// (breadth first, each tile's edges in order): round a corner a heading depends on its path, this one by convention
+// patternFrom). F's, its face's frame's (see framedHeading; a solid of hexagons' by its mesh, see builtHeading); a tile F
+// cannot frame (a solid's corner) takes the nearest framed tile's, carried to it tile by tile (see headingAcross) along the
+// first shortest path (breadth first, each tile's edges in order): round a corner a heading depends on its path, this one
+// by convention
 function headingOn(g, F, t) {
   const way = wayTo(
     t,

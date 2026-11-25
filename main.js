@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.878';
+const VERSION = '0.5.879';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18799,7 +18799,7 @@ let ringWidthShare = null,
 // a ring's usual width at its rows and a twist (k, its twist in cells; none, its shape's default): its columns as torusDims makes
 // them at that twist (a Triangle untwisted in Trio, its colours in runs along its faces, its own: see faceRunsOn), the one width
 // its widths are shares of (see ringSize, widthsOf, selectSize)
-const usualWidth = (kind, rows, k) => torusDims(kind, withTwist(rows, k))[1];
+const usualWidth = (kind, rows, k) => torusDims(kind, k === undefined ? rows : withTwist(rows, k))[1]; // (rows alone a number, as a size of rows is)
 // a ring's size at its rows, a width share and a twist share (see ringWidthShare): its width the nearest its tiling allows, a
 // share of its usual at the twist asked, its twist the nearest notch (a quarter turn a quarter turn at any rows); a size of
 // rows only elsewhere

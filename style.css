@@ -129,6 +129,12 @@ header {
   flex: none;
   border-radius: 8px;
 } /* the length asked: one width whatever it says (see compactCount); round, its highlight's ring too (see highlight) */
+#shareLink {
+  flex: none;
+  height: var(--button-height);
+  padding: 0 12px;
+  white-space: nowrap;
+} /* as high as the length's − and + beside it, on one line */
 
 main {
   flex: 1;

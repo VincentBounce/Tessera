@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.853';
+const VERSION = '0.5.854';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44449,16 +44449,18 @@ const gollyRule = (rule, hex) => {
   if (named) return named;
   return (m ? (m[3] ? `${m[2]}/${m[1]}/${m[3]}` : `B${m[1]}/S${m[2]}`) : rule) + (hex ? 'H' : '');
 };
-// A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied;
-// then as it was (a tile's, a word's, a picture's alone: the same everywhere)
+// A copy to the clipboard, its button told a moment: its picture a check (none: a check before its word), its word Copied,
+// its width kept; then as it was (a tile's, a word's, a picture's alone: the same everywhere)
 function copyFlash(b, text) {
   navigator.clipboard.writeText(text).then(
     () => {
       const was = b.innerHTML,
-        svg = b.querySelector('svg'),
-        words = [b, ...b.querySelectorAll('*')].flatMap((n) =>
+        width = b.style.width;
+      b.style.width = `${b.offsetWidth}px`; // (Copied in its place, not a word of its own size)
+      ((svg = b.querySelector('svg')),
+        (words = [b, ...b.querySelectorAll('*')].flatMap((n) =>
           [...n.childNodes].filter((c) => c.nodeType === 3 && c.textContent.trim()),
-        );
+        )));
       if (svg) svg.outerHTML = icon('check');
       else if (words.length) b.insertAdjacentHTML('afterbegin', `${icon('check')} `);
       words.forEach((w, i) => {
@@ -44466,6 +44468,7 @@ function copyFlash(b, text) {
       });
       setTimeout(() => {
         b.innerHTML = was;
+        b.style.width = width;
       }, 1500);
     },
     () => {},
@@ -44475,6 +44478,7 @@ function copyFlash(b, text) {
 function shareView(b) {
   copyFlash(b, `${location.origin}${location.pathname}${setupHash()}`);
 }
+$('shareLink').addEventListener('click', (e) => shareView(e.currentTarget)); // (the header's, left of the length)
 // Draw it: the generation shown as the cells drawn, in Draw (there already: an edit, Undo's; else Draw opened with them, Undo
 // back to its blank page, as Draw's tab opens)
 $('drawIt').addEventListener('click', () => {
@@ -45474,7 +45478,7 @@ $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
 // its name and version; lit while it shows, as Gallery's); kept over the settings changed (its URL's rows follow them), closed by its
-// cross or its tab; Share link and Home there
+// cross or its tab; Home there (Share link: the header's, see shareLink)
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
 const AUTHOR =
   '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>'; // (its author, as signed)
@@ -45544,7 +45548,6 @@ function credits(open) {
   $('ruleTuto').prepend(
     tutTools({
       words: [
-        ['Share link', 'Copy the link to what is shown', (e) => shareView(e.currentTarget)],
         [
           'Home',
           'Back to the start',

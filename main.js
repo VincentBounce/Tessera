@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.835';
+const VERSION = '0.5.836';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16233,7 +16233,7 @@ function cairoSheet(nu, nv, turned = false) {
     corners = (x, y) => latticeCorners('cairo', x, y).map(([u, v]) => sheet([u + 0.5, v + 0.5])),
     inside = (x, y) => {
       const c = corners(x, y),
-        [i, j] = [0, 1].map((d) => c.reduce((sum, p) => sum + p[d], 0) / c.length);
+        [i, j] = meanPoint(c);
       return i > -1e-9 && i < nu - 1e-9 && j > -1e-9 && j < nv - 1e-9;
     },
     places = turned
@@ -25903,7 +25903,7 @@ const SPECTRE = (() => {
     const mid = sizeOf(sys.Delta).c;
     const items = spectresNear(sys.Delta, ident, mid, (W / Math.sqrt(Math.PI) + 6) / S, []).map((T) => {
       const p = spectre.map((q) => at(T, q)).map(([x, y]) => [x * S, -y * S]);
-      return { p: p.flat(), m: [0, 1].map((d) => p.reduce((s, q) => s + q[d], 0) / 14) };
+      return { p: p.flat(), m: meanPoint(p) };
     });
     return discPatch(items, W, [mid[0] * S, -mid[1] * S]);
   });
@@ -33220,7 +33220,7 @@ function torusLattice(plane, K, spread = false, cut = 'lattice') {
   // moved, every colour as many)
   const along = cut !== 'lattice',
     own = along ? [...Array(n).keys()].filter((t) => blockOf(...xy(t)) === 0).map((t) => m(...xy(t))) : [],
-    first = along ? [0, 1].map((d) => own.reduce((sum, p) => sum + p[d], 0) / own.length) : at(0.01, 0.003),
+    first = along ? meanPoint(own) : at(0.01, 0.003),
     places = best.shifts.map(([c, j]) => {
       const move = apart(o, m(c, j));
       return [first[0] + move[0], first[1] + move[1]];
@@ -34376,8 +34376,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
         const c = planeCellAt(kind, 1, ...F.from(q), 'free');
         return c ? F.cellAt(F.at(cellMiddle(kind, ...c)), true) : -1;
       },
-    }),
-    mean = (ps) => ps[0].map((_, d) => ps.reduce((sum, p) => sum + p[d], 0) / ps.length); // (holding: cellOf, the cell holding a place: the plane's there, its middle laid)
+    }); // (holding: cellOf, the cell holding a place: the plane's there, its middle laid)
   // a linear map's inverse by its two steps' images (their dot products, solved: on a face in space as on the plane)
   const back = (X, Y) => (q) => {
     const xx = dot(X, X),
@@ -34520,8 +34519,8 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     face = ([al, be]) => T0.map((v, d) => v + al * A3[d] + be * B3[d]);
     [o3, op, centre] = [
       face([1 / 3, 1 / 3]),
-      mean(Array.from({ length: place.per }, (_, x) => cellMiddle(kind, x, 0))),
-      mean([T0, T1, T2]),
+      meanPoint(Array.from({ length: place.per }, (_, x) => cellMiddle(kind, x, 0))),
+      meanPoint([T0, T1, T2], 3),
     ];
     on = (t) => t >= first && t < first + place.perFace;
   } else if (place.on === 'hex') {
@@ -34541,9 +34540,9 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
       sub(sq.at(1, 0), sq.at(0, 0)),
       place.on === 'square' ? (g.uncut ?? g).squareFaces[fq].n : AXES[fq],
       sq.at(0, 0),
-      mean(Array.from({ length: per }, (_, x) => cellMiddle(kind, x, 0))),
+      meanPoint(Array.from({ length: per }, (_, x) => cellMiddle(kind, x, 0))),
     ];
-    centre = mean([sq.at(0, 0), sq.at(sq.a - 1, sq.a - 1)]);
+    centre = meanPoint([sq.at(0, 0), sq.at(sq.a - 1, sq.a - 1)], 3);
     const own = new Set();
     for (let r = 0; r < sq.a; r++) for (let c = 0; c < sq.a; c++) own.add(sq.square(r, c));
     on = (t) => own.has(g.uncut ? Math.floor(t / g.per) : t); // (a cell cut again: its cells, so many a cell)

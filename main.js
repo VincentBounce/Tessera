@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.841';
+const VERSION = '0.5.842';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -14961,10 +14961,18 @@ function flatPolyhedron(name, f, kites = false) {
       }
     }
   }
-  const mesh = finishMesh(verts, tris, kites ? 4 : 3, f);
+  const sides = kites ? 4 : 3,
+    mesh = finishMesh(verts, tris, sides, f);
   // each triangle's corners as its face's grid lists them (finishMesh may turn them round), and its way there (see hexSolidMesh)
   mesh.gridCorners = tris;
   mesh.downs = downs;
+  // each tile's heading by construction (see builtHeading): its face's grid the plane's triangles' (a ▲ (i, j), (i + 1, j),
+  // (i, j + 1) the plane's x 0, a ▼ x 1, its corners in their order: see latticeCorners; a kite, 3 a triangle, x 3 times
+  // that and its corner's, see kiteCorners), its edge 0 its first two corners', its way round as finishMesh kept or turned it
+  const per = kites ? 3 : 1;
+  mesh.latticeX = typedOf(Int8Array, downs, (down, t) => per * (down ? 1 : 0) + (t % per));
+  mesh.hand = typedOf(Int8Array, tris, (c, t) => (mesh.poly[sides * t + 1] === c[1] ? 1 : -1));
+  mesh.e0 = typedOf(Int8Array, mesh.hand, (hand) => (hand === 1 ? 0 : sides - 1));
   // each face as one big triangle, with its three families of grid lines, for cheap drawing
   mesh.faces = faces.map((face) => {
     const [A, B, C] = face.map((v) => P[v]);
@@ -17644,9 +17652,9 @@ function hexSolidMesh(solid, f) {
   // each hexagon's heading by construction (see builtHeading): its corners are its triangles, as the plane hexagon's are the
   // triangles of its centre and its neighbours q and q + 1 (see latticeCorners); in its face's grid a ▲'s corners are corners
   // 0, 2 and 4 of their hexagons, a ▼'s 1, 3 and 5 (HEX_DIRS); its first triangle's grid gives its corner 0, its way round
-  // (hand: −1 where finishMesh turned that grid's corners round) and its edge 0 (a corner's cell, not a hexagon: none, −1)
+  // (hand: its triangle's, see flatPolyhedron) and its edge 0 (a corner's cell, not a hexagon: none, −1)
   const corner = (tri, v) => 2 * ico.gridCorners[tri].indexOf(v) + (ico.downs[tri] ? 1 : 0);
-  mesh.hand = typedOf(Int8Array, cells, ([tri]) => (ico.poly[3 * tri + 1] === ico.gridCorners[tri][1] ? 1 : -1));
+  mesh.hand = typedOf(Int8Array, cells, ([tri]) => ico.hand[tri]);
   mesh.e0 = typedOf(Int8Array, cells, (tris, v) => {
     if (tris.length !== 6) return -1;
     const hand = mesh.hand[v],
@@ -28411,8 +28419,10 @@ const brushHeadingAt = (t, place) =>
 // its own (see tileHeading)
 const headingHere = (F, t) =>
   walk.surface.e0 ? builtHeading(walk.surface, t) : F ? headingOn(walk.surface, F, t) : tileHeading(walk.surface, t);
-// a tile's heading its mesh knows by construction (a solid of hexagons', see hexSolidMesh), else null
-const builtHeading = (g, t) => (g.e0[t] < 0 ? null : { g, t, cell: [0, 0], e0: g.e0[t], hand: g.hand[t] });
+// a tile's heading its mesh knows by construction (a solid of triangles', kites' or hexagons', see flatPolyhedron and
+// hexSolidMesh: its plane cell x of row 0, latticeX, 0 where all its cells alike), else null
+const builtHeading = (g, t) =>
+  g.e0[t] < 0 ? null : { g, t, cell: [g.latticeX?.[t] ?? 0, 0], e0: g.e0[t], hand: g.hand[t] };
 // a tile's own heading, where its surface has no frame (a globe, Boy's surface: see frameless): a plane cell as many sides,
 // its first edge that cell's edge 0; a pattern laid from it as a cell is, turned as the tile lies (see patternFrom)
 const tileHeading = (g, t) => {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.825';
+const VERSION = '0.5.826';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23685,6 +23685,12 @@ const tilesPalette = () =>
   EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridFinish').value) - GRID_LINES.length])?.[1] ??
   null;
 const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
+// Display › Grid's ground outside Explore (Blush, Mist…): Distance's rings in 2 colours on the spheres whose rings go round
+// them (rosettes, the globe, the icosahedron's: bands), else Tiles; never Explore's own rule (its look: see exploreLevels)
+const groundLook = (w) =>
+  ['rosettes', 'globe', 'icosahedron'].includes(variantWords(w).shape)
+    ? { rule: 'distance', colours: 2 }
+    : { rule: 'tiles' };
 let groundMemo = {};
 function groundColours() {
   if (!tilesOn() || !(walk.plane || walk.surface)) return null;
@@ -23693,7 +23699,8 @@ function groundColours() {
     n = P ? P.n : g.n, // (its cells, then the plane's walls)
     of = walk.life ?? P ?? g,
     palette = tilesPalette(),
-    key = `${exploreLook.rule}|${palette}|${exploreLook.colours}`;
+    look = groundLook(walk.variant),
+    key = `${look.rule}|${palette}|${look.colours}`;
   if (groundMemo.of !== of || groundMemo.key !== key) {
     // (the plane's walls coloured with its cells, as tiles of its grid: each brick in the gold of its colour, see WALL_GOLDS)
     const M = P && planeMesh(P.kind, P.W, P.torus, P.row, true),
@@ -23703,6 +23710,7 @@ function groundColours() {
         P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
         distanceFrom,
         palette,
+        look,
       ),
       colours = exploreColours(levels, palette).map((c) => texelRgba(c, GROUND_ALPHA)),
       golds = WALL_GOLDS.map((c) => texelRgba(c, GROUND_ALPHA));
@@ -23720,11 +23728,19 @@ function groundColours() {
 // plane coloured alone (DSatur, its pattern whole), its cells' neighbours across a fold not counted: two cells alike may meet
 // there (apart: see cellsApart)
 const pieceByPiece = (n, bySide, apart) => dsatur(n, (t, put) => bySide(t, (u) => !apart(t, u) && put(u))).colour;
-function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes }, middle, palette = explorePalette()) {
+// (look: its rule and Distance's colours, Explore's as picked, Display › Grid's its own: see groundLook)
+function exploreLevels(
+  nbr,
+  n,
+  { faces, kinds, apart, alternated, halves, lunes },
+  middle,
+  palette = explorePalette(),
+  look = exploreLook,
+) {
   const side = sideOf(nbr),
     P = palette.length,
     own = { sides: faces, hemispheres: halves, lunes }, // (the rules a grid needs its own cuts for: none, Tiles)
-    rule = exploreLook.rule in own && !own[exploreLook.rule] ? 'tiles' : exploreLook.rule;
+    rule = look.rule in own && !own[look.rule] ? 'tiles' : look.rule;
   let level = new Uint8Array(n);
   const bySide = (t, put) => {
     for (let q = nbr.start[t]; q < nbr.start[t + 1]; q++) if (side[q]) put(nbr.list[q]);
@@ -23763,7 +23779,7 @@ function exploreLevels(nbr, n, { faces, kinds, apart, alternated, halves, lunes 
           steps[nbr.list[q]] = steps[queue[i]] + 1;
           queue.push(nbr.list[q]);
         }
-    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % Math.min(P, exploreLook.colours)); // (a ring a step, so many of the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
+    for (let t = 0; t < n; t++) level[t] = 1 + (steps[t] % Math.min(P, look.colours)); // (a ring a step, so many of the palette's colours in turn; a loop: a spread of a large grid's overflows the stack)
     return level;
   }
   return level; // (past the palette's last: its own colours, see exploreColours; never two neighbours alike)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.829';
+const VERSION = '0.5.830';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41396,7 +41396,7 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
         P.under.mapAsync(GPUMapMode.READ).then(() => {
           const t = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
           P.under.unmap();
-          if (stroke?.moved && t >= 0 && t !== stroke.tile) strokeToTile(t); // (a stroke on a surface: its way to it, see strokes)
+          if (stroke?.moved && t >= 0 && t !== stroke.tile) strokeToTile(t); // (a stroke on a surface: its way to it, see startsStroke)
           if (t === pickedTile) return;
           pickedTile = t;
           statsDirty = true; // (Draw's brush drawn there, see surfaceGhost)
@@ -43522,8 +43522,8 @@ let drag = null;
 stage.addEventListener('contextmenu', (e) => e.preventDefault()); // the right button drags the view
 stage.addEventListener('pointerdown', (e) => {
   stage.setPointerCapture(e.pointerId);
-  if (drawsHere() && e.button === 0 && e.shiftKey && !strokes(e)) return; // (Draw with Shift: the view still, a click lays its pattern however the pointer moved, see the click below)
-  if (strokes(e))
+  if (drawsHere() && e.button === 0 && e.shiftKey && !startsStroke(e)) return; // (Draw with Shift: the view still, a click lays its pattern however the pointer moved, see the click below)
+  if (startsStroke(e))
     return void (stroke = {
       from: [e.clientX, e.clientY],
       at: [e.clientX, e.clientY],
@@ -43619,7 +43619,7 @@ const cellUnder = (x, y) => {
 // its way by a third of a cell, on a surface from tile to tile by the shortest way (see strokeToTile); a click still turns
 // one cell's state, the right button still pans
 let stroke = null;
-const strokes = (e) =>
+const startsStroke = (e) =>
   drawsHere() && brush.id === 'cell' && e.button === 0 && (!!walk.plane || (!!walk.surface && e.shiftKey));
 function strokeTo(x, y) {
   const [x0, y0] = stroke.at,

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.834';
+const VERSION = '0.5.835';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -17622,8 +17622,7 @@ function hexSolidMesh(solid, f) {
   // its solid's corners and faces, its triangles' solid's (see startList): its own (a dodecahedron's, a stella's), else its
   // triangles' faces
   if (ico.solid) mesh.solid = ico.solid;
-  else
-    mesh.faceCentres = ico.faces.map((fc) => unit([0, 1, 2].map((d) => fc.corners.reduce((sum, p) => sum + p[d], 0)))); // (see solidFaceCentres)
+  else mesh.faceCentres = ico.faces.map(faceMid); // (see solidFaceCentres)
   // each cell's face (see trianglesFace), whether it is folded over an edge (its triangles on two faces), its solid's faces'
   // middles
   mesh.cellFaces = typedOf(Int32Array, cells, (tris) => trianglesFace(POLYHEDRA[solid], f * f, tris));
@@ -19411,15 +19410,15 @@ const firstStart = (g, G) => g.gridStart ?? [g.poly[0], G.nbrs[g.poly[0]][0]];
 // icosahedron's 20 (3 corners side by side)
 function solidFaceCentres(g, C) {
   g = g.uncut ?? g; // (a cut's: the solid it cuts, as its corners, see solidCorners)
-  const sum = (ps) => unit([0, 1, 2].map((d) => ps.reduce((s, p) => s + p[d], 0)));
   if (g.solid) return g.solid.centres;
-  if (solidFaces(g)) return solidFaces(g).map((f) => sum(f.corners));
+  if (solidFaces(g)) return solidFaces(g).map(faceMid);
   if (g.faceCentres) return g.faceCentres; // (a solid of hexagons: its triangles' solid's, see hexSolidMesh)
   const O = [];
   for (let i = 0; i < 12; i++)
     for (let j = i + 1; j < 12; j++)
       for (let k = j + 1; k < 12; k++) {
-        if (dot3(C[i], C[j]) > 0.3 && dot3(C[i], C[k]) > 0.3 && dot3(C[j], C[k]) > 0.3) O.push(sum([C[i], C[j], C[k]]));
+        if (dot3(C[i], C[j]) > 0.3 && dot3(C[i], C[k]) > 0.3 && dot3(C[j], C[k]) > 0.3)
+          O.push(unit(meanPoint([C[i], C[j], C[k]], 3)));
       }
   return O;
 }

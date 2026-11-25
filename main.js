@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.879';
+const VERSION = '0.5.880';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18628,7 +18628,7 @@ function syncSizeStepper() {
   const rowsNow = sizeOf(sel.value),
     asked = sizeAsked(kind),
     [rows, width] = ringSized(kind) && sel.selectedOptions[0] ? torusDims(kind, asked) : [],
-    widths = rows ? widthsOf(kind, rows, width, torusTwist(asked, kind)) : { list: [], usual: -1 },
+    widths = rows ? widthsOf(kind, rows, width, writtenTwist(asked, kind)) : { list: [], usual: -1 },
     widthShare = (k) => widths.list[k][0] / widths.usualWidth;
   sizeGauge(
     $('widthGauge'),
@@ -18799,7 +18799,8 @@ let ringWidthShare = null,
 // a ring's usual width at its rows and a twist (k, its twist in cells; none, its shape's default): its columns as torusDims makes
 // them at that twist (a Triangle untwisted in Trio, its colours in runs along its faces, its own: see faceRunsOn), the one width
 // its widths are shares of (see ringSize, widthsOf, selectSize)
-const usualWidth = (kind, rows, k) => torusDims(kind, k === undefined ? rows : withTwist(rows, k))[1]; // (rows alone a number, as a size of rows is)
+const usualWidth = (kind, rows, k) => torusDims(kind, k === undefined ? rows : withTwist(rows, k))[1], // (rows alone a number, as a size of rows is)
+  writtenTwist = (size, kind) => (String(size).includes('+') ? torusTwist(size, kind) : undefined); // (a size's twist, none where it writes none: a ring taking none, a Klein bottle's)
 // a ring's size at its rows, a width share and a twist share (see ringWidthShare): its width the nearest its tiling allows, a
 // share of its usual at the twist asked, its twist the nearest notch (a quarter turn a quarter turn at any rows); a size of
 // rows only elsewhere
@@ -19142,7 +19143,7 @@ const sizeLabel = (kind, f) => (gridSize(kind, f) ? `${sizeShape(kind, f)} ${siz
 function selectSize(kind, size) {
   const [rows, width] = ringSized(kind) ? torusDims(kind, size) : [untwisted(size)];
   if (ringSized(kind)) {
-    const usual = usualWidth(kind, rows, String(size).includes('+') ? torusTwist(size, kind) : undefined),
+    const usual = usualWidth(kind, rows, writtenTwist(size, kind)),
       twists = torusTwists(kind, size);
     ringWidthShare = width === usual ? null : width / usual;
     ringTwistShare = String(size).includes('+') && twists.length > 1 ? torusTwist(size, kind) / twists.at(-1) : null;

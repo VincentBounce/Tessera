@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.839';
+const VERSION = '0.5.840';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36819,7 +36819,8 @@ function fillGalleryList() {
   const list = readGallery();
   // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles
   // (two alike: their tooltips tell them apart, see setupTitle)
-  const rows = list.filter((x) => NAV[setupVariant(x.setup)]).map((x) => [setupTitle(x), setupWords(x), x]);
+  const rows = list.filter((x) => NAV[setupVariant(x.setup)]).map((x) => [setupTitle(x), setupWords(x), x]),
+    inView = getSetup(); // (once for all its cards, see isInUse)
   const kindOf = (x) => NAV[setupVariant(x.setup)][0];
   $('yourList').replaceChildren(
     ...MODE_TABS.flatMap(([kind]) => {
@@ -36835,7 +36836,7 @@ function fillGalleryList() {
         cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
       cards.append(
         ...mine.map(([title, detail, x]) => {
-          const row = setupRow(title, detail, x);
+          const row = setupRow(title, detail, x, inView);
           looks.push(
             thumbnailOf(x.setup).then((thumbnail) => {
               if (thumbnail) showThumbnail(row, thumbnail);
@@ -36858,7 +36859,10 @@ function fillGalleryList() {
 // Saved under its number's name, with no question (the same setup twice is saved once; another one of
 // the same number gets "(2)", "(3)", …); its row tells the walk, size, start and rule (see setupDetail)
 // the saved setup that is the one in view (same number, walk, size, start, turn and rule), if any
-const savedInView = () => readGallery().find((x) => isInUse(x.setup));
+const savedInView = () => {
+  const inView = getSetup();
+  return readGallery().find((x) => isInUse(x.setup, inView));
+};
 // Gallery's ☆ (its tab's picture, clicked: Save), ★ gold while the setup in view is in the Gallery: clicked again, taken out of them
 function syncSaveButton() {
   const saved = savedInView(),
@@ -45159,18 +45163,18 @@ const shapeAndTiles = (w) => {
 // symmetry, edges, cells drawn or found…) but its version, its length (its digits or generations: d) and how it is looked at
 // (Space-time, its step): one Gallery card a setup, a thumbnail, whatever its length
 const SETUP_LOOKS = ['version', 'maxSteps', 'popStacked', 'step'];
-const isInUse = (setup) => sameSetup(setup, getSetup(), SETUP_LOOKS);
+const isInUse = (setup, inView = getSetup()) => sameSetup(setup, inView, SETUP_LOOKS); // (inView: a list's, read once for all its setups)
 // A setup's row, built-in or saved: the walk's icon, a name and a detail, its check (seen while selecting); a click shows it,
 // framed and still (Auto-fit on: a hand rotation or zoom may have turned it off, and the walk could be on the far side), or
 // selects it (see syncSelection)
 let cardShown = null; // (the card clicked last: its setup adopted once built)
-function setupRow(name, detail, x) {
+function setupRow(name, detail, x, inView) {
   const { setup } = x,
     b = card({
       pic: icon(SHAPE_ICONS[NAV[setupVariant(setup)]?.[2]] ?? VARIANT_ICONS[setupVariant(setup)]),
       name,
       detail,
-      on: isInUse(setup),
+      on: isInUse(setup, inView),
     }); // (its shape's picture, as the Grid's; its tooltip its name (what it reads and its rule) in bold, the rest under it)
   b.append(
     Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),

@@ -20,6 +20,7 @@
  *                                             onNumbers }: a figure's sizes), copied and reset with the others
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
  *     controls,                               the caller's own controls under its title (a switch: main.js's tile)
+ *     drawnBy,                                the code drawing what it tunes (main.js's function), a greyed tab under its title
  *   })
  */
 
@@ -93,6 +94,7 @@ function debugPanel(spec) {
     note,
     more,
     controls = [],
+    drawnBy,
   } = spec;
   const firstOf = (o) => (debugFirst.has(o) ? debugFirst.get(o) : debugFirst.set(o, { ...o }).get(o)),
     first = firsts ?? firstOf(numbers);
@@ -102,6 +104,16 @@ function debugPanel(spec) {
   head.textContent = title;
   panel.append(head);
   if (onClose) panel.append(tutTools({ close: onClose })); // (main.js's)
+  if (drawnBy) {
+    // (shown only: greyed, its words why in its tooltip)
+    const by = document.createElement('button');
+    by.type = 'button';
+    by.textContent = drawnBy;
+    by.title = 'The code drawing it here';
+    by.disabled = true;
+    by.dataset.greyed = 'Shown only: the function that drew the view last';
+    panel.append(textTabs([by])); // (main.js's)
+  }
   panel.append(...controls);
   // a slider a number of an object: its value set at once, the caller told once the drag pauses (a 3D view made again is slow)
   let wait = 0;

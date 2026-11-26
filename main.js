@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.892';
+const VERSION = '0.5.893';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29168,6 +29168,11 @@ const lifeRuleNow = () => {
 // The colours, as blocks: one (black), or 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 civilisations, each block its colours in
 // a cols × rows grid; a block greyed when the figure has no fair spots for that many (see teamsFit)
 const TEAM_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12];
+// out of the menu's graph (see OFF_GRAPH): a team count, Life's or a battle's, no edge since v0.5.690; its search went
+// through every other setup, 7 s a first hover on Octet (2026-11-26)
+for (const k of TEAM_COUNTS)
+  for (const field of ['lifeTeams', 'teams'])
+    OFF_GRAPH[`${field}:${k}`] = 'a team count: its paths through every other setup, 7 s a first hover on Octet';
 const TEAM_GRID = {
   1: [1, 1],
   2: [2, 1],
@@ -29429,6 +29434,7 @@ function renderTeams() {
         text: TEAM_NAMES[k],
         title: `${k === 1 ? 'One colour: alive or dead' : `${k} teams: ${LIFE_COLOUR_NAMES.slice(0, k).join(', ')}`}${colourMissing(k) ? ' · a colour gone can come back: a tie, the missing one born' : ''}`,
         on: k === lifeTeams,
+        choice: `lifeTeams:${k}`, // (out of the menu's graph, see OFF_GRAPH)
         whyNot: ({ w, size, rule }) => lifeTeamsWhyNot(k, w, size, rule),
         mark: colourMissing(k),
         byDefault: k === 1 ? 'yes' : '',
@@ -29506,6 +29512,7 @@ function walkTeamTiles() {
       title: words(k),
       on: k === (battleOn() ? walkTeams : 1),
       byDefault: k === 1 ? 'yes' : '',
+      choice: `teams:${k}`, // (out of the menu's graph, see OFF_GRAPH)
       whyNot: ({ w: v, size, startNo: j }) => teamsWhyNot(k, v, size, j),
       click: () => {
         if (k !== walkTeams) {
@@ -41054,6 +41061,7 @@ const facesHidden = (g) => (shapeSign(g) < 0 ? 'front' : 'back');
 function gpuSurface(paint, path) {
   const D = gpuDrawSetup();
   if (!D) return false;
+  drawnBy = 'gpuSurface';
   const { device } = D,
     g = walk.surface,
     sh = walk.shape,
@@ -41694,6 +41702,7 @@ const flatPathBufs = [
   vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance'),
 ];
 function gpuLatticeWalk(to) {
+  drawnBy = 'gpuLatticeWalk';
   if (walk.is3d) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]); // (a 3D walk in its 3D scene: cubes, or bars along its lines)
   if (walk.rows) {
     gpuClear();
@@ -42053,6 +42062,7 @@ function planeVertices(F, k = 0) {
 function gpuPlane(paint) {
   const D = gpuDrawSetup();
   if (!D) return;
+  drawnBy = 'gpuPlane';
   const { device } = D,
     { n } = walk.plane,
     { scale: s } = view,
@@ -44323,7 +44333,8 @@ const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; 
 // the debug panel open (Credits › Actions' switch, shut by its cross too) and its tab: Cells (wherever Cells shows) or Light
 // (a 3D view), the first allowed where the tab picked has nothing to tune
 let debugOpen = false,
-  debugTab = 'Cells';
+  debugTab = 'Cells',
+  drawnBy = ''; // (the function that drew the view last, its Cells mode with it: gpuPlane, gpuSurface, gpuLatticeWalk; see debugPanel's drawnBy)
 // A walk's line glowing (Display › Cells › Glow, its numbers in the debug panel's Cells): its light blurred round it by LED's
 // halo (see gpuHalo), on the edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
 const lineGlow = { share: 0.3, reach: 2 };
@@ -44415,9 +44426,10 @@ function cellsTuning() {
   );
   if (CELLS_FINISHES[cellsFinish()][0] === 'Glow')
     return debugPanel({
-      key: `glow|${allowed}`, // (its tabs as they are greyed)
+      key: `glow|${allowed}|${drawnBy}`, // (its tabs as they are greyed)
       tabs,
       title: 'Cells › Glow',
+      drawnBy,
       numbers: lineGlow,
       onNumbers: () => (needsFull = true),
       controls: [trials],
@@ -44429,9 +44441,10 @@ function cellsTuning() {
     lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]], // (Panel, Debug: a pick its light's colour, the cell's left as it is)
     sizes = ringFamily(w) === 'klein' && kleinForm().sizes; // (a Klein bottle's shape with sizes to tune)
   debugPanel({
-    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}|${allowed}`, // (its shape's sizes kept as they slide; its tabs as they are greyed)
+    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}|${allowed}|${drawnBy}`, // (its shape's sizes kept as they slide; its tabs as they are greyed)
     tabs,
     title: `Cells › ${CELLS_FINISHES[cellsFinish()][0]}`, // (the mode whose numbers it shows)
+    drawnBy,
     numbers: lights,
     shown: cellsLightOf(CELLS_FINISHES[cellsFinish()][0]),
     shared: ['cellsBody', 'cellsSky', 'cellsDarkInk'], // (every lit mode's)

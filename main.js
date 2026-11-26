@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.890';
+const VERSION = '0.5.891';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44303,7 +44303,7 @@ let debugOpen = false,
   debugTab = 'Cells';
 // A walk's line glowing (a trial, the debug panel's Line): its light blurred round it by LED's halo (see gpuHalo), on the
 // edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
-const lineGlow = { on: true, numbers: { share: 1.5, reach: 2 } };
+const lineGlow = { on: true, numbers: { share: 0.3, reach: 2 } };
 // (its line drawn into the halo's picture 4 pixels wide at least: 2 of that picture's half size, never between its pixels,
 // a fine line else lit at some and missed at others, a waffle)
 const GLOW_LEAST_WIDTH = 4;

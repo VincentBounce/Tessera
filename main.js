@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.896';
+const VERSION = '0.5.897';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -20471,31 +20471,26 @@ function buildCellsWalk(seq, variant, ahead = new Uint8Array(0)) {
 let walkTeams = 1; // a walk's teams: 1 Solo, 2 Duel, 3 Trio… 12 Dozen (as Life's, see renderTeams; which, see battleCounts)
 let battleRule = 0; // a battle's way with an enemy's body as picked: its place in BATTLE_RULES, 0 the first, by default; the one played, see battleRuleInUse
 // its choice (one tab group under the teams), in the tab's order (its place its number: a link's br=, pe= before v0.4.458): its word, its name, its picture (a red head and a blue body
-// or land), its words; along the edges Cut and the Land edges, on cells Cut and Land cells (each greyed in the other's place)
+// or land), its words; Cut, Land and Land no collision anywhere (Land along the edges lines, on cells painted), the other
+// Land edges along the edges only, Snake cells on cells only (each greyed in the other's place)
 const BATTLE_RULES = [
   [
     'landEdges',
-    'Land edges 1',
+    'Land',
     'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0ZM0 0H1V1H0Z',
-    "Along the edges: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land wins, the dead's too",
+    "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Along the edges: a walker's line, the edges it went along, stays (crossing it: a fork); its land the regions it closes. A head pierces an enemy's line going through it (on it, then off it by the other side) or along it: the line let go each way up to a fork or its end, its land there let go too; each walker keeps its land, no line of another in it. A loop closed has its empty tiles painted its colour; an enemy's land surrounded there stays its own, taken only by piercing its line. Heads meeting (two or more at once) all die: they stop conquering, their land stays, the others' to take; with one walker left or none, it ends: the most land (on cells, tiles) wins, the dead's too",
   ],
   [
     'landStop',
     'Land no collision',
     'M0 1.5H1.5V2.5H0ZM2.5 0H3.5V4H2.5Z',
-    "As Land edges 1, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins",
+    "As Land along the edges, and nothing is ever pierced: a walker stops for good just before its first step along or across another's line (on cells, just before its first step onto another's tile); heads meeting (two or more at once) all stop there. The others go on, until all have stopped or the digits end: the most land wins",
   ],
   [
     'landMerge',
     'Land edges merge',
     'M0 1H4V3H0Z',
-    'As Land edges 1, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins',
-  ],
-  [
-    'landCells',
-    'Land cells',
-    'M0 0H4V4H0ZM1 1H3V3H1Z',
-    "On cells: no body; each walker paints the tile it goes into its colour, whatever it was, and a zone its colour closes (the tiles not of its colour cut off, the largest outside) is painted inside. Heads meeting (two or more at once) all die: they stop painting, their tiles stay, the others' to take; with one walker left or none, it ends: the most tiles win, the dead's too",
+    'As Land along the edges, and nothing is ever pierced or stopped: lines cross and run along each other; the first heads meeting (two or more at once) end the battle, every walker stopping there: the most land wins',
   ],
   [
     'cut',
@@ -20519,7 +20514,7 @@ const BATTLE_RULES = [
     'landEdges3',
     'Land edges 3',
     'M1.5 0H2.5V4H1.5ZM0 1.5H4V2.5H0Z',
-    "As Land edges 1, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land edges 1",
+    "As Land along the edges, and a walker dies by its head, its last thread, from its head to its fork, let go: its head on another's (both die), or another's head along or across its last thread (it dies; touched, nothing); elsewhere a thread pierced, as in Land",
   ],
 ];
 // the ways along the edges's lines (a walker's line, its land the regions it closes, see battlePlayer)
@@ -20707,23 +20702,23 @@ const startsOrder = (K, order = battleOrder) =>
   order.some((i, s) => i !== s)
     ? order
     : null;
-// The battle rule a variant plays: the one picked where it goes, else its twin there (on cells a Land edges's Land cells; along
-// the grid Land cells' Land edges 1, Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
+// The battle rule a variant plays: the one picked where it goes, else its twin there (on cells a Land edges's Land; along
+// the grid Snake cells' Cut): what its card lights, its link writes and its battle plays, one source
 const battleRuleInUse = (w, p = battleRule) => {
   const kind = BATTLE_RULES[p][0];
   if (!battleVariant(w) || !battleRuleWhyNot(kind, w)) return p;
-  const twin = !VARIANTS[w].edges ? 'landCells' : kind === 'snakeCells' ? 'cut' : 'landEdges';
+  const twin = kind === 'snakeCells' ? 'cut' : 'landEdges';
   return BATTLE_RULES.findIndex(([k]) => k === twin);
 };
-// Centred's greyed words; a battle rule's at a variant: a way on cells only (Land cells, Snake cells) along a grid, or one along
-// the grid only on cells; a variant with no battle, none (Cut and Land no collision: anywhere)
+// Centred's greyed words; a battle rule's at a variant: a way on cells only (Snake cells) along a grid, or one along the grid
+// only on cells; a variant with no battle, none (Cut, Land and Land no collision: anywhere)
 const CENTRED_WHERE =
   "Only along a closed solid's grid, where each point has as many edges out as walkers, or a multiple.";
 const battleRuleWhyNot = (kind, v) => {
-  const cells = kind === 'landCells' || kind === 'snakeCells';
+  const cells = kind === 'snakeCells';
   return !battleVariant(v)
     ? 'There is no battle here.'
-    : kind === 'cut' || kind === 'landStop' || cells !== !!VARIANTS[v].edges
+    : kind === 'cut' || kind === 'landEdges' || kind === 'landStop' || cells !== !!VARIANTS[v].edges
       ? ''
       : cells
         ? 'This rule plays on cells; this walk goes along the edges.'
@@ -21341,24 +21336,24 @@ function smallerSide(L, cut, j) {
 // landCells: painted. With land, heads meeting all die (see collisions), their land staying: it ends with one or none
 // left, the most land winning (the dead's too): its worth, its land, who wins
 function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(tabVariant())) {
-  let way = BATTLE_RULES[pen][0]; // (its rule in use: on cells Cut, Land no collision, Land cells and Snake cells; along the edges Cut and the Land edges, see battleRuleInUse)
+  let way = BATTLE_RULES[pen][0]; // (its rule in use: on cells Cut, Land no collision, Land on cells and Snake cells; along the edges Cut and the Land edges, see battleRuleInUse)
   // Snake cells: Cut, each body a snake's, its tail sliding unless it grows: on an even step till a tenth of the surface
   // (cap), on an odd step a cell of those it has eaten (food: the cells its bites cut off), see slide
   const snake = way === 'snakeCells' && !alongEdges,
     cap = Math.floor(g.n / 10),
     food = Array(starts.length).fill(0);
   if (way === 'snakeCells') way = 'cut'; // (its bodies Cut's, a snake's: see slide)
-  const stops = way === 'landStop'; // (Land no collision: as Land edges 1 or Land cells, a walker stopped before it would pierce or paint over another, see stop)
-  const merges = way === 'landMerge'; // (Land edges merge: as Land edges 1, nothing pierced nor stopped; the first heads meeting end it, see meet)
+  const stops = way === 'landStop'; // (Land no collision: as Land or Land on cells, a walker stopped before it would pierce or paint over another, see stop)
+  const merges = way === 'landMerge'; // (Land edges merge: as Land, nothing pierced nor stopped; the first heads meeting end it, see meet)
   if (way !== 'cut') way = !alongEdges ? 'landCells' : way; // (on cells, Land no collision paints too: see stops)
-  // Land cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
+  // Land on cells (painted): no body; each walker paints the tile it goes into its colour (land[t], whatever it was), and a zone
   // closed by its colour (see closeAt) is painted inside
   const painted = way === 'landCells';
   const bite = way !== 'cut',
     count = alongEdges ? edgeGraph(g).nv : g.n,
     k = g.sides,
     G = edgeGraph(g),
-    L = bite && alongEdges ? battleLinks(g) : null; // (its walls along the edges only: Land cells paints, see closeAt)
+    L = bite && alongEdges ? battleLinks(g) : null; // (its walls along the edges only: Land on cells paints, see closeAt)
   const wallsOf = L ? starts.map(() => new Int32Array(count)) : [],
     cutsOf = L ? starts.map(() => new Uint16Array(L.eu.length)) : [];
   const land = new Uint8Array(g.n),
@@ -21380,7 +21375,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
   starts.forEach((st, s) => {
     places[s][0] = st[0];
   });
-  // Land edges 1 along the edges (lined): a walker's line the edges it went along, never let go by itself (crossing it:
+  // Land along the edges (lined): a walker's line the edges it went along, never let go by itself (crossing it:
   // a fork); its land the regions its line closes; a head on an enemy's line pierces it (see pierce). Each line's links
   // (lineOf: their count, linksOf: the set), its corners' edges (degree), its pieces (a union-find of its corners), the
   // tiles it closes (closedOf, as battleAreas: outside its largest region, its size, the largest closed one's)
@@ -21590,7 +21585,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
     land[t] = s + 1;
     landCount[s]++;
   };
-  // Land cells: tile t just painted s's colour. The tiles round it not s's, in arcs: one arc or none, nothing closed; two or
+  // Land on cells: tile t just painted s's colour. The tiles round it not s's, in arcs: one arc or none, nothing closed; two or
   // more, a search from each arc at once across the tiles not s's, two meeting joined; one ended while another goes on,
   // a zone closed: painted s's (its cost, the zones closed: the outside never searched whole)
   const closeAt = (s, t) => {
@@ -21701,9 +21696,9 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
     const X = smallerSide(L, cutsOf[s], j);
     if (X) for (const t of X) if (land[t] !== s + 1) own(t, s);
   };
-  // Land edges 1: a line's edge from corner a to b, its link (undefined: none)
+  // Land: a line's edge from corner a to b, its link (undefined: none)
   const linkOf = (a, b) => L.index.get(G.key(a, b));
-  // Land edges 1's lines as played (see lifeOf): each link on a walker's line a span [s, a, b, born, gone], from corner a to
+  // Land's lines as played (see lifeOf): each link on a walker's line a span [s, a, b, born, gone], from corner a to
   // b as it walked it, born the step before it took it, gone the step before it was let go (pierced, Land edges 3's last
   // thread), SEGMENT_NEVER while it stays; openSpans[s], s's link → its span open; kept the first time it is played
   const spans = [],
@@ -21890,7 +21885,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
       else largest[o] = Math.max(largest[o], area);
     }
   };
-  // Land edges 1: whether tiles t and u lie on one side of o's line round the corners given: joined by the tiles round
+  // Land: whether tiles t and u lie on one side of o's line round the corners given: joined by the tiles round
   // them, through no edge of o's line
   const sameSide = (o, corners, t, u) => {
     const next = new Map(); // (each tile round those corners, the tiles across their edges not of o's line)
@@ -21917,7 +21912,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
     }
     return false;
   };
-  // Land edges 1: the land painted as lines close (see splitLine: a loop closed paints its empty tiles, an
+  // Land: the land painted as lines close (see splitLine: a loop closed paints its empty tiles, an
   // enemy's land surrounded stays); tile t no longer closed by s (its line pierced): s's land no more,
   // another's that still closes it (a dead one's too), else none
   const release = (t, s) => {
@@ -21930,7 +21925,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
       landCount[s]--;
     }
   };
-  // the edges of s's line as drawn (Land edges 1), their links
+  // the edges of s's line as drawn (Land), their links
   const lineLinks = (s) => [...linksOf[s]];
   // each walker's worth as it is: its body; with bite, its land (its tiles, counted)
   const worth = () => (bite ? [...landCount] : [...size]);
@@ -21957,7 +21952,7 @@ function battlePlayer(g, alongEdges, S, starts, digits, pen = battleRuleInUse(ta
     const w = worth();
     for (let s = 0; s < K; s++) bestOf[s][i] = Math.max(i > 0 ? bestOf[s][i - 1] : 0, w[s]);
   };
-  // (ownLines: its lines drawn by their spans, where an edge is let go: Land edges 1's pierced, 3's let go, see spans; No
+  // (ownLines: its lines drawn by their spans, where an edge is let go: Land's pierced, 3's let go, see spans; No
   // collision's and Merge's never are, their lines paths, drawn walker by walker in their steps' order as Cut's, see pathSegments)
   const P = {
     K,
@@ -30657,7 +30652,7 @@ const BATTLE_CASES = {
     ],
   },
 };
-// The cases of a battle on cells (see battlePlayer: Land cells, Land no collision, Cut, Snake cells), as along the edges's (see BATTLE_CASES), their
+// The cases of a battle on cells (see battlePlayer: Land on cells, Land no collision, Cut, Snake cells), as along the edges's (see BATTLE_CASES), their
 // moves from tile to tile (degrees, between the tiles' middles; a triangle's alternate: the middle one ▽, its neighbours △);
 // its words, each way's
 const BATTLE_CELL_CASES = {
@@ -30805,7 +30800,7 @@ function battleCaseFigure(grid, way, scripts, cells = false) {
   );
   P.to(Infinity);
   // its lines, each by a key and its two places: a line way's links (along the edges), else a body's steps, tail to head (none
-  // painting: Land cells)
+  // painting: Land on cells)
   const n = P.n,
     L = !cells && battleLinks(g),
     ends = new Map(),
@@ -36533,7 +36528,7 @@ function applySetup(s) {
   if (s.maxSteps !== undefined) lengthPicked = Number(s.maxSteps);
   walkTeams = VARIANTS[w].life ? 1 : Number(readSetting(s, 'teams', (t) => TEAM_COUNTS.includes(Number(t)))); // (a walk's battle, if its surface allows it at its size: see battleOn)
   const ruled = BATTLE_RULES.findIndex(([, name]) => linkWord(name) === readSetting(s, 'battleRule'));
-  battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land edges 1)
+  battleRule = walkTeams > 1 && ruled > 0 ? ruled : 0; // (none: the first, Land)
   battleStartsWay = readSetting(s, 'battleStarts', (way) => STARTS_WAYS.some(([w]) => w === way));
   battleSeed = Number(s.battleDraw) || 1;
   exploreLook.rule = readSetting(s, 'exploreRule', (r) => EXPLORE_RULES.some(([key]) => key === r));
@@ -38813,7 +38808,7 @@ function ribbonSegments(count = 64) {
 // end); and the first segment of each step (at). P: a battle's player along the edges (see 7.6b), played to its end: all
 // its walkers' steps instead, walker after walker, step's place its colour's in the palette (battlePalette), each its
 // steps' lives (born the step before, gone when it leaves its body: see goneOf), at[s][q] the first segment of walker s's
-// step q (q to n + 1); Land edges 1 (lined): its lines' spans instead (see spans), at as Solo's
+// step q (q to n + 1); Land (lined): its lines' spans instead (see spans), at as Solo's
 function pathSegments(P = null) {
   const g = walk.surface,
     sh = walk.shape,
@@ -38839,7 +38834,7 @@ function pathSegments(P = null) {
     }
   };
   if (P?.ownLines) {
-    // (Land edges 1: each span of a link on a line, from the corner it came from, faded out once let go; at[q] the first
+    // (Land: each span of a link on a line, from the corner it came from, faded out once let go; at[q] the first
     // segment born at step q or later, see spans)
     const G = edgeGraph(g);
     let q = 0;

@@ -539,7 +539,7 @@
         teams: 3,
         walkNumberB: 'sqrt(2)',
         walkNumberC: 'sqrt(3)',
-        battleRule: 'landCells',
+        battleRule: 'land',
       }),
       { teams: 3 },
     ],

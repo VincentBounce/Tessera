@@ -7,8 +7,10 @@
  * takes it away. Its numbers are an object's, changed in place; what they change is the caller's (its onChange).
  *   debugPanel({
  *     key, title,                             what it shows (the same key: the panel left as it is), its name
+ *     tabs,                                   the caller's tabs over its title (main.js's textTabs: Cells, Line)
  *     numbers, shown, shared, signed,         an object of numbers, those named in shown (all if none) each a slider (0
- *     onNumbers,                              to 3 times its first value; those in signed as far below 0), those of them
+ *     firsts, onNumbers,                      to 3 times its first value, firsts' if given (a mode's default), else as it
+ *                                             came first; those in signed as far below 0), those of them
  *                                             in shared apart under their own heading (numbers others read too), and
  *                                             what to do once one changed (the object's own values already set)
  *     colours, picked, onPick, note,          colours to pick from, the one picked, what a pick does (none: shown only),
@@ -16,6 +18,7 @@
  *     more,                                   another object's numbers under them, past a line ({ title, numbers,
  *                                             onNumbers }: a figure's sizes), copied and reset with the others
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
+ *     controls,                               the caller's own controls under its title (a switch: main.js's tile)
  *   })
  */
 
@@ -34,6 +37,7 @@ const DEBUG_STYLE = `
   color: var(--text-color);
   font-size: var(--label-text-size);
 }
+#debugPanel .text-tabs { margin: 0 40px 6px 0; } /* (beside its cross) */
 #debugPanel h4 { min-height: 32px; margin: 0 0 6px; padding-right: 40px; font-size: var(--text-size); } /* (as high as its cross) */
 #debugPanel .tut-tools { top: 4px; right: 4px; } /* (its cross, How it works' own, in its corner) */
 #debugPanel h5 { margin: 8px 0 4px; font-size: var(--label-text-size); color: var(--muted-text-color); }
@@ -73,11 +77,13 @@ function debugPanel(spec) {
   } else if (panel.dataset.key === spec.key) return; // (shown already: its sliders and picks as they are)
   panel.dataset.key = spec.key;
   const {
+    tabs,
     title,
     numbers,
     shown = Object.keys(numbers),
     shared = [],
     signed = [],
+    firsts,
     onNumbers,
     onClose,
     colours = [],
@@ -85,14 +91,17 @@ function debugPanel(spec) {
     onPick,
     note,
     more,
+    controls = [],
   } = spec;
   const firstOf = (o) => (debugFirst.has(o) ? debugFirst.get(o) : debugFirst.set(o, { ...o }).get(o)),
-    first = firstOf(numbers);
+    first = firsts ?? firstOf(numbers);
   panel.replaceChildren();
+  if (tabs) panel.append(tabs);
   const head = document.createElement('h4');
   head.textContent = title;
   panel.append(head);
   if (onClose) panel.append(tutTools({ close: onClose })); // (main.js's)
+  panel.append(...controls);
   // a slider a number of an object: its value set at once, the caller told once the drag pauses (a 3D view made again is slow)
   let wait = 0;
   const slider = (name, of = numbers, then = onNumbers) => {
@@ -100,7 +109,7 @@ function debugPanel(spec) {
       words = document.createElement('span'),
       input = document.createElement('input'),
       value = document.createElement('output'),
-      at = firstOf(of)[name],
+      at = (of === numbers ? first : firstOf(of))[name],
       reach = Math.max(signed.includes(name) ? 3 : 1, 3 * Math.abs(at)); // (a signed one from 0 at first: ±3)
     words.textContent = name;
     Object.assign(input, {

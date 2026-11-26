@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.883';
+const VERSION = '0.5.884';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6497,7 +6497,7 @@ function describe(base) {
 // Walks on surfaces, on cells: the walk as a rainbow line over the tiles, the tiles it passes through
 // filled in the colour of their first visit, those it encloses (Area) in the colour of the
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
-const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (Space-time's too)
+const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (no row: the debug panel's Light; Space-time's too)
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'tiles', 'ocean'],
   '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D],
@@ -6589,7 +6589,7 @@ const DISPLAY_DEFAULTS = {
     (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
   ], // (by its shape, see SHAPE_DEFAULTS)
   light: ['light', 'open', true],
-  glint: ['glintM', ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
+  glint: [null, ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
   glass: ['glass', 'open', false],
   cellsFinish: [
     'cellsFinish',
@@ -6701,7 +6701,6 @@ function updateDisplayMenu() {
     upright: 'uprightRow',
     perspective: 'perspectiveRow',
     light: 'lightRow',
-    glint: 'glintRow',
     glass: 'glassRow',
     cellsFinish: 'cellsFinishRow',
     ocean: 'oceanRow',
@@ -6938,7 +6937,6 @@ function renderHeadTiles() {
     (k) => {
       $('cellsFinish').value = k;
       needsFull = true;
-      if (k === CELLS_FINISH.Debug) debugOpen = true; // (Debug opens the debug panel, its cross shuts it: then on every mode)
       cellsTuning(); // (the debug panel: this mode's numbers)
     },
   );
@@ -10595,14 +10593,17 @@ const WALK_HEADINGS = {
   Rewind: 'Grid',
   Explore: 'Grid',
 };
-// the values at a level under the choices above it (pre), in the menu's order
-const navValues = (level, pre) => [
-  ...new Set(
-    Object.values(NAV)
-      .filter((n) => pre.every((v, i) => n[i] === v))
-      .map((n) => n[level]),
-  ),
-];
+// the values at a level under the choices above it (pre), in the menu's order; once each (the menu's tables fixed once the
+// page has loaded: the graph's search asks them at each setup, 0.32 s of a greyed Mixed's first hover till v0.5.884)
+const navValuesMemo = remember('navValuesMemo', {});
+const navValues = (level, pre) =>
+  (navValuesMemo[`${level}|${pre.join('|')}`] ??= [
+    ...new Set(
+      Object.values(NAV)
+        .filter((n) => pre.every((v, i) => n[i] === v))
+        .map((n) => n[level]),
+    ),
+  ]);
 // A space's shapes in the order shown, in their groups ([title, shapes] each, those it has): in 2D, many of them, grouped by
 // their grid's natural shape (see SHAPE_GROUPS); in 3D, the regular solids (faces all alike),
 // the irregular ones (the cubes carved, those of squares and triangles), then the surfaces (a sheet rolled up: Torus, Möbius,
@@ -10644,8 +10645,12 @@ function navPick(from, level, ...values) {
   const want = [...NAV[from]],
     to = level + values.length;
   want.splice(level, values.length, ...values);
-  return nearestVariant(from, (navUnder[want.slice(0, to).join('|')] ??= variantsUnder(...want.slice(0, to))), want);
+  // (the same click from the same variant, the same answer while the families' tilings last chosen stay: the graph's search
+  // asks it again and again from the setups of a variant, 0.54 s of a greyed Mixed's first hover of 1.3 s till v0.5.884)
+  return (navPickMemo[`${from}|${level}|${values.join('|')}|${torusTurned}|${FAMILIES.map((F) => F.tab)}`] ??=
+    nearestVariant(from, (navUnder[want.slice(0, to).join('|')] ??= variantsUnder(...want.slice(0, to))), want));
 }
+const navPickMemo = remember('navPickMemo', {});
 const navUnder = remember('navUnder', {}); // (the variants under a menu's choices, see variantsUnder, once each: the menu's tables fixed once the page has loaded)
 // Of the variants a click may land on, the nearest from the variant it is clicked from: the fewest settings changed (its menu's
 // levels, its tiling by name, see variantChanges: from a sphere of hexagons, Klein bottle opens on its hexagons); on a tie
@@ -10654,10 +10659,10 @@ const navUnder = remember('navUnder', {}); // (the variants under a menu's choic
 function nearestVariant(from, candidates, want = NAV[from]) {
   const shown = shapeGroups(want[0], want[1]).flatMap(([, these]) => these);
   const key = (w) => {
-    const fam = familyOf(w);
+    const at = familyPlace(w); // (its family and tiling: the tab it would take, familyOf's, not read)
     return [
       variantChanges(from, w),
-      fam && fam.F.tabs[fam.F.tab][0] === fam.m ? 0 : 1,
+      at && at.F.tabs[at.F.tab][0] === at.m ? 0 : 1,
       shown.indexOf(NAV[w][2]),
       NAV[w][4] === 'cells' ? 1 : 0,
     ];
@@ -18140,12 +18145,6 @@ function updateMorphButton() {
 // a slider's place, its ends' names faded by it (see .shape-slider: both whole from the middle, the one the knob goes to faded out on its way)
 const showSliderAt = (input) => input.parentElement.style.setProperty('--slider-value', input.value);
 const showShapeAt = () => showSliderAt($('shapeM'));
-// Glint: Soft ── Bright, the light's glint from each tile's own colour (never past it) to white added (a pale face facing it
-// washed white, as before v0.5.236)
-$('glintM').addEventListener('input', () => {
-  showSliderAt($('glintM'));
-  needsFull = true;
-});
 // Unrolled ── Rolled (Flat ── Inflated): the form follows the slider at once (the buttons' animation, from
 // one end to the other, when set from elsewhere); its perspective, the form's own at an end
 $('shapeM').addEventListener('input', () => {
@@ -19630,12 +19629,33 @@ function startList(g) {
     return m;
   };
   const depth = (q) => Math.min(dot3(q, O) - most(q, otherCentres), dot3(q, A) - most(q, otherCorners));
-  const edgeKey = (a, b) => Math.min(a, b) * nv + Math.max(a, b),
+  // (an edge whose middle lies clearly off the face, past its farthest corner from O: off the kite, no depth to measure; the
+  // face's corners those with O among their nearest centres, all of a rhombus's, not F's alone)
+  const faceLeast = Math.min(...C.filter((c) => dot3(c, O) > most(c, centres) - 1e-6).map((c) => dot3(c, O))) - 1e-3,
+    offFace = (v, w) => {
+      const x = V[3 * v] + V[3 * w],
+        y = V[3 * v + 1] + V[3 * w + 1],
+        z = V[3 * v + 2] + V[3 * w + 2];
+      return x * O[0] + y * O[1] + z * O[2] < faceLeast * Math.hypot(x, y, z);
+    };
+  const oneShare = rots.length === centres.length * F.length,
+    edgeKey = (a, b) => Math.min(a, b) * nv + Math.max(a, b),
     done = new Set(),
     picks = [];
   for (let v = 0; v < nv; v++)
     for (const w of G.nbrs[v]) {
       if (done.has(edgeKey(v, w))) continue;
+      // a kite one of the rotations' shares of the sphere (as many as its faces' corners: not a pyramid's, a stella's…): an edge
+      // inside it, off its border, is the only one of its turns there, and none turns it end for end; one outside is picked as
+      // its turn inside; only those on its border are turned (their copies on both sides as deep: v0.5.884, else every edge
+      // turned by every rotation, 0.7 s on an icosahedron of 128 hexagons)
+      const own = !oneShare ? 0 : offFace(v, w) ? -1 : depth(mid(v, w));
+      if (own < -1e-6) continue;
+      done.add(edgeKey(v, w));
+      if (own > 1e-6) {
+        picks.push({ a: v, b: w, flipped: false });
+        continue;
+      }
       let best = null,
         flipped = false;
       for (const m of rots) {
@@ -19664,7 +19684,8 @@ function startList(g) {
     L = 0;
   for (let v = 0; v < nv; v++) {
     h = Math.max(h, dot3(at(v), O));
-    for (const w of G.nbrs[v]) L = Math.max(L, Math.hypot(...[0, 1, 2].map((d) => V[3 * w + d] - V[3 * v + d])));
+    for (const w of G.nbrs[v])
+      L = Math.max(L, Math.hypot(V[3 * w] - V[3 * v], V[3 * w + 1] - V[3 * v + 1], V[3 * w + 2] - V[3 * v + 2]));
   }
   const corner = (c) => c.map((x) => (x * h) / dot3(c, O)),
     As = corner(A),
@@ -19677,7 +19698,19 @@ function startList(g) {
       AB,
     );
   }
-  picks.sort((e1, e2) => (Math.abs(e1.far - e2.far) > 1e-9 ? e2.far - e1.far : e1.along - e2.along));
+  // two as far and as much along (mirrored twice): the one whose turns the corners' order meets first, as the list had them
+  // when every edge was turned (see above)
+  const firstMet = (e) =>
+    (e.met ??= Math.min(
+      ...rots.flatMap((m) => {
+        const a = turned(m, e.a),
+          b = turned(m, e.b);
+        return [a * nv + G.nbrs[a].indexOf(b), b * nv + G.nbrs[b].indexOf(a)];
+      }),
+    ));
+  picks.sort((e1, e2) =>
+    Math.abs(e1.far - e2.far) > 1e-9 ? e2.far - e1.far : e1.along - e2.along || firstMet(e1) - firstMet(e2),
+  );
   const starts = [];
   for (const { a, b, flipped } of picks) {
     // first the way to the end farther from A, then back
@@ -40432,6 +40465,11 @@ struct Rib { @builtin(position) pos: vec4f, @location(0) col: vec3f, @location(1
   return o;
 }
 @fragment fn ribbonF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return glass(i.col, i.alpha, i.pos.z); }
+// the path's glow (see lineGlow): its light alone, into the halo's picture (its alpha none: wholly added, see haloAddF), each
+// segment over the ones before as on the screen (no blend: a dense knot as bright as one line, its colour the one on top), the
+// tiles before it dark, hiding what lies behind them
+@fragment fn ribbonGlowF(i: Rib) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return vec4f(i.col * i.alpha * u.bright, 0.0); }
+@fragment fn darkF(i: Lit) -> @location(0) vec4f { if (u.cut == 1 && i.cutv > 0.0) { discard; } return vec4f(0.0); }
 // Glass's last step: the layers' mean colour over what shows through them all
 @group(1) @binding(0) var acc: texture_2d<f32>;
 @group(1) @binding(1) var rev: texture_2d<f32>;
@@ -40500,6 +40538,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
   return o;
 }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return vec4f(mix(i.col.rgb, u.fadeTo * i.col.a, u.fade), i.col.a); }  // (premultiplied)
+@fragment fn colGlowF(i: Col) -> @location(0) vec4f { return vec4f(i.col.rgb * u.bright, 0.0); }  // (the 2D path's glow, as ribbonGlowF)
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeTurned(p: vec2f) -> vec2f { return vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y); }  // (the plane turned as the view shows it, see planeTurn)
@@ -40558,7 +40597,7 @@ function gpuView(words, k, depth, more = {}) {
   f[7] = SHADE;
   f.set(camera.v, 8);
   f[11] = glint();
-  f[121] = Number($('glintM').value); // (glintWhite)
+  f[121] = glintTuning.glint; // (glintWhite)
   f.set(L, 12);
   f[15] = depth / 4;
   f.set(halfway(L), 16);
@@ -41215,6 +41254,17 @@ function gpuSurface(paint, path) {
       : !lines || P.ownLines
         ? [[0, until(D.segsAt, j + 1)]]
         : D.segsAt.map((A, s) => [until(A, firstStaying(P.goneOf[s])), until(A, j + 2)]);
+  // the path's look in pass (0 the frame; 1, 2 Glass's), its glow's too
+  const pathLook = (pass, cut) => ({
+    glass: pass,
+    cut,
+    N: Math.max(1, rainbowLength()),
+    loopFrom: walk.loop?.from ?? 0,
+    period: closedLoop() ? walk.loop.period : 0,
+    halfW: surfaceLineWidth() / 2 / view.scale,
+    bias: pathBias,
+    colour: lines || keyed ? 3 : 0,
+  });
   // the tiles into rp by pipe (plain, a Finish, LED's lamps), look its numbers
   const drawTiles = (rp, pipe, look) => {
     rp.setPipeline(pipe);
@@ -41300,17 +41350,7 @@ function gpuSurface(paint, path) {
       ); // (the path's, the motif's, the starts')
     if (ranges.some(([a, b]) => b > a)) {
       ribbons();
-      const look = {
-        glass: pass,
-        cut,
-        N: Math.max(1, rainbowLength()),
-        loopFrom: walk.loop?.from ?? 0,
-        period: closedLoop() ? walk.loop.period : 0,
-        halfW: surfaceLineWidth() / 2 / view.scale,
-        bias: pathBias,
-        colour: lines || keyed ? 3 : 0,
-      };
-      rp.setBindGroup(0, gpuGroup(), [slotOf(look)]);
+      rp.setBindGroup(0, gpuGroup(), [slotOf(pathLook(pass, cut))]);
       rp.setVertexBuffer(0, D.quad);
       rp.setVertexBuffer(1, D.ribbon);
       for (const [a, b] of ranges) if (b > a) rp.draw(4, b - a, 0, a);
@@ -41354,6 +41394,47 @@ function gpuSurface(paint, path) {
     );
   };
   gpuFrame(enc, drawAll);
+  if (lineGlowOn() && ranges.some(([a, b]) => b > a))
+    gpuHalo(
+      enc,
+      (glow) => {
+        const cut = cutOn() ? 1 : 0;
+        drawTiles(
+          glow,
+          gpuDrawPipe('dark', {
+            vertex: 'tileV',
+            fragment: 'darkF',
+            buffers: tileBufs,
+            cull: bothSides(g) ? 'none' : facesHidden(g),
+            shadowed: true,
+            format: 'rgba16float',
+          }),
+          { cut },
+        ); // (the tiles first, dark: the path behind them hidden)
+        glow.setPipeline(
+          gpuDrawPipe('ribbonGlow', {
+            vertex: 'ribbonV',
+            fragment: 'ribbonGlowF',
+            topology: 'triangle-strip',
+            cull: bothSides(g) ? 'none' : 'back',
+            writes: false,
+            format: 'rgba16float',
+            buffers: ribbonBufs,
+          }),
+        );
+        glow.setBindGroup(0, gpuGroup(), [
+          slotOf({
+            ...pathLook(0, cut),
+            halfW: Math.max(surfaceLineWidth(), GLOW_LEAST_WIDTH) / 2 / view.scale,
+            bright: lineGlow.numbers.share,
+          }),
+        ]);
+        glow.setVertexBuffer(0, D.quad);
+        glow.setVertexBuffer(1, D.ribbon);
+        for (const [a, b] of ranges) if (b > a) glow.draw(4, b - a, 0, a);
+      },
+      lineGlowHalo(),
+    );
   if (cellsFinishOn() && haloOf(CELLS_FINISHES[cellsFinish()][0]))
     gpuHalo(
       enc,
@@ -41630,6 +41711,13 @@ function eased(key, want) {
   return out;
 }
 // a walk on a lattice (2D, or a 3D one's cubes), or Elementary's rows: none on a surface, none Life's plane (see gpuPlane)
+// the 2D path's buffers: a segment's quad, then each its ends and its key (see walkPathV)
+const flatPathBufs = [
+  vertexLayout(8, [vertexAttribute(0, 'float32x2')]),
+  vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'),
+  vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'),
+  vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance'),
+];
 function gpuLatticeWalk(to) {
   if (walk.is3d) return gpuCubes(to + 1, walk.wx, walkCubes, walk.maxDist[walk.n]); // (a 3D walk in its 3D scene: cubes, or bars along its lines)
   if (walk.rows) {
@@ -41732,6 +41820,7 @@ function gpuLatticeWalk(to) {
       walkFadeSteps(),
     );
   const walked = Math.min(Math.ceil(glideAt()), walk.n); // (the steps walked, its next on its way: from step 0 on, its first line grows too)
+  let pathLook = null; // (its look, its glow's too)
   if (line && walked > 0) {
     rp.setPipeline(
       gpuDrawPipe('flatPath', {
@@ -41740,15 +41829,10 @@ function gpuLatticeWalk(to) {
         topology: 'triangle-strip',
         blend: BLEND_PRE,
         depth: false,
-        buffers: [
-          vertexLayout(8, [vertexAttribute(0, 'float32x2')]),
-          vertexLayout(8, [vertexAttribute(1, 'float32x2')], 'instance'),
-          vertexLayout(8, [vertexAttribute(2, 'float32x2')], 'instance'),
-          vertexLayout(4, [vertexAttribute(3, 'uint32')], 'instance'),
-        ],
+        buffers: flatPathBufs,
       }),
     );
-    const look = {
+    pathLook = {
       colour: cells ? 0 : colour,
       N: Math.max(1, rainbowLength()),
       loopFrom: walk.loop?.from ?? 0,
@@ -41759,10 +41843,39 @@ function gpuLatticeWalk(to) {
     rp.setVertexBuffer(1, D.walkPts, 0);
     rp.setVertexBuffer(2, D.walkPts, 8);
     rp.setVertexBuffer(3, D.walkKeys);
-    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, look)]);
+    rp.setBindGroup(0, gpuGroup(), [gpuView(D.words, slot++, 1, pathLook)]);
     rp.draw(4, walked); // (each as its life draws it, see walkPathV)
   }
   rp.end();
+  if (line && walked > 0 && !cells && lineGlowOn())
+    gpuHalo(
+      enc,
+      (glow) => {
+        glow.setPipeline(
+          gpuDrawPipe('flatPathGlow', {
+            vertex: 'walkPathV',
+            fragment: 'colGlowF',
+            topology: 'triangle-strip',
+            writes: false,
+            format: 'rgba16float',
+            buffers: flatPathBufs,
+          }),
+        );
+        glow.setVertexBuffer(0, D.quad);
+        glow.setVertexBuffer(1, D.walkPts, 0);
+        glow.setVertexBuffer(2, D.walkPts, 8);
+        glow.setVertexBuffer(3, D.walkKeys);
+        glow.setBindGroup(0, gpuGroup(), [
+          gpuView(D.words, slot++, 1, {
+            ...pathLook,
+            width: Math.max(pathLook.width, GLOW_LEAST_WIDTH),
+            bright: lineGlow.numbers.share,
+          }),
+        ]);
+        glow.draw(4, walked);
+      },
+      lineGlowHalo(),
+    );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
   device.queue.submit([enc.finish()]);
   layers.path.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -44206,21 +44319,121 @@ function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   paletteChanged();
 }
-// The debug panel (debug.js) over the 3D view while Life is on a solid or a surface, Solo or a battle: the numbers of Cells'
+// The debug panel (debug.js) over the 3D view wherever Cells shows (Life, a walk on a surface), Solo or a battle: the numbers of Cells'
 // mode shown (see CELLS_LIGHT, cellsLightOf), and the battles' colours: in Solo, a pick the live cell's colour (the theme's palette's, till the page
 // is opened again), in a battle the teams' shown
 const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; // (the live cell's colours as the palettes have them)
-let debugOpen = false; // (opened by Cells › Debug, shut by its cross; open, every mode's numbers)
+// the debug panel open (Credits › Actions' switch, shut by its cross too) and its tab: Cells (wherever Cells shows), Line
+// (a walk on the edges) or Light (a 3D view), the first allowed where the tab picked has nothing to tune
+let debugOpen = false,
+  debugTab = 'Cells';
+// A walk's line glowing (a trial, the debug panel's Line): its light blurred round it by LED's halo (see gpuHalo), on the
+// edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
+const lineGlow = { on: true, numbers: { share: 1.5, reach: 2 } };
+// (its line drawn into the halo's picture 4 pixels wide at least: 2 of that picture's half size, never between its pixels,
+// a fine line else lit at some and missed at others, a waffle)
+const GLOW_LEAST_WIDTH = 4;
+// Glint (the debug panel's Light, a 3D view's): the light's glint from each tile's own colour (0: never past it) to white
+// added (1: a pale face facing it washed white, as before v0.5.236); its mode's default at each tab (see DISPLAY_DEFAULTS)
+const glintTuning = { glint: 0.5 };
+const lineGlowOn = () => lineGlow.on && NAV[walk.variant]?.[4] === 'edges';
+const lineGlowHalo = () => ({
+  steps: [1, 2, 4, 8].slice(0, Math.max(1, Math.min(4, Math.round(lineGlow.numbers.reach)))),
+});
+const shutDebug = () => {
+  debugOpen = false;
+  debugPanel(null);
+  setTile(debugSwitch, { on: false });
+};
+// Credits › Actions' switch: the debug panel, on while open
+const debugSwitch = tile({
+  pic: icon('onCells'),
+  text: 'Debug panel',
+  toggle: true,
+  title:
+    "Numbers tried by eye: Display › Cells' light, the live cell's colour, a walk's line glowing, a 3D view's glint",
+  click: () => {
+    debugOpen = !debugOpen;
+    setTile(debugSwitch, { on: debugOpen });
+    cellsTuning();
+  },
+});
+// the debug panel's tabs, each greyed where it has nothing to tune (whyNot: '' where allowed)
+const DEBUG_TABS = [
+  [
+    'Cells',
+    "Display › Cells: their light's numbers, the live cell's colour",
+    (w) => (shows('cellsFinish', w) ? '' : 'Display › Cells shows in Life and on a surface only'),
+  ],
+  [
+    'Line',
+    "A walk's line on the edges: its glow",
+    (w) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only'),
+  ],
+  ['Light', "A 3D view's light: its glint", (w) => (shows('glint', w) ? '' : 'A 3D view only')],
+];
 function cellsTuning() {
-  const w = tabVariant();
-  if (NAV[w][0] !== 'Life' || !debugOpen) return debugPanel(null);
+  const w = tabVariant(),
+    allowed = DEBUG_TABS.filter(([, , whyNot]) => !whyNot(w)).map(([name]) => name);
+  if (!debugOpen || !allowed.length) return debugPanel(null);
+  const tab = allowed.includes(debugTab) ? debugTab : allowed[0],
+    tabs = textTabs(
+      DEBUG_TABS.map(([name, title, whyNot]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name;
+        b.title = title;
+        b.disabled = !!whyNot(w);
+        if (b.disabled) b.dataset.greyed = whyNot(w);
+        b.classList.toggle('active', name === tab);
+        b.addEventListener('click', () => {
+          debugTab = name;
+          cellsTuning();
+        });
+        return b;
+      }),
+    );
+  if (tab === 'Light')
+    return debugPanel({
+      key: `light|${modeTabOf()}|${allowed}`, // (its mode's default, again at each tab: see displayDefaults)
+      tabs,
+      title: 'Light › Glint',
+      numbers: glintTuning,
+      firsts: { glint: defaultOf('glint', w) },
+      onNumbers: () => (needsFull = true),
+      note: '0: in each tile’s own colour, never past it; 1: white added on it',
+      onClose: shutDebug,
+    });
+  if (tab === 'Line')
+    return debugPanel({
+      key: `walkLine|${allowed}`, // (its tabs as they are greyed)
+      tabs,
+      title: 'Walk › Line',
+      numbers: lineGlow.numbers,
+      onNumbers: () => (needsFull = true),
+      controls: [
+        tile({
+          text: 'Glow',
+          toggle: true,
+          on: lineGlow.on,
+          title: 'The line glowing round it, on the edges',
+          click: (e) => {
+            lineGlow.on = !lineGlow.on;
+            setTile(e.currentTarget, { on: lineGlow.on });
+            needsFull = true;
+          },
+        }),
+      ],
+      onClose: shutDebug,
+    });
   const theme = themeName(),
     solo = lifeTeams === 1,
     lights = cellsLightNow(), // (Solo on a light page its own)
     lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]], // (Panel, Debug: a pick its light's colour, the cell's left as it is)
     sizes = ringFamily(w) === 'klein' && kleinForm().sizes; // (a Klein bottle's shape with sizes to tune)
   debugPanel({
-    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}`, // (its shape's sizes kept as they slide)
+    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}|${allowed}`, // (its shape's sizes kept as they slide; its tabs as they are greyed)
+    tabs,
     title: `Cells › ${CELLS_FINISHES[cellsFinish()][0]}`, // (the mode whose numbers it shows)
     numbers: lights,
     shown: cellsLightOf(CELLS_FINISHES[cellsFinish()][0]),
@@ -44240,10 +44453,7 @@ function cellsTuning() {
             PALETTES[theme].alive = c;
             paletteChanged();
           },
-    onClose: () => {
-      debugOpen = false;
-      debugPanel(null);
-    },
+    onClose: shutDebug,
     note: !solo
       ? 'The battles’ colours, the teams’'
       : `A colour: ${lightColour ? 'its light' : 'the live cell’s'}, till the page is opened again`,
@@ -45109,12 +45319,12 @@ let displayTab = null;
 const modeTabOf = () => `${NAV[tabVariant()]?.[0]}|${variantGroup(tabVariant())}`; // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
 function displayDefaults() {
   applyDefaults('tab');
-  showSliderAt($('glintM')); // (its ends' names by its place, see showSliderAt)
+  glintTuning.glint = defaultOf('glint', tabVariant());
   oceanPicked = false;
   displayTab = modeTabOf();
 }
 applyDefaults('open'); // (the page's first settings, DISPLAY_DEFAULTS': its boxes none of their own)
-showSliderAt($('glintM'));
+glintTuning.glint = defaultOf('glint', tabVariant());
 $('variant').addEventListener('change', () => {
   if (modeTabOf() !== displayTab) displayDefaults();
   // the form of the view belongs to the walk variant: its perspective, the camera's starting angle
@@ -45573,7 +45783,7 @@ function credits(open) {
     `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
     `<section class="clean-storage"><h3>Actions</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button></section></div></div>`;
   renderSoundButton();
-  $('eraseAll').before(soundButton); // (Actions: Sound, then Erase)
+  $('eraseAll').before(soundButton, debugSwitch); // (Actions: Sound, the debug panel, then Erase)
   $('eraseAll').addEventListener('click', (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) resetApp();

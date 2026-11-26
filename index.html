@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.883">
+  <link rel="stylesheet" href="style.css?v=0.5.884">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -20,7 +20,7 @@
     <div class="header-row">
       <div id="modeTabs" class="tabs" role="tablist"></div>
       <div class="header-end">
-        <button id="shareLink" type="button" title="Copy the link to what is shown">Share link</button>  <!-- see shareView -->
+        <button id="shareLink" data-icon="link" type="button" title="Copy the link to what is shown">Share link</button>  <!-- see shareView -->
         <div class="stepper max-steps">  <!-- the length asked, steps at most (a walk's, a creature's, Elementary's and Space-time's generations): kept in every tab, set before going there -->
           <button id="digitsDown" type="button" title="Fewer steps">−</button>
           <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button><span id="waitGauge" hidden><span class="wait-fill"></span><span class="wait-words"></span></span></span>  <!-- waitGauge: a long wait's, over the length (see showWaits) -->
@@ -318,10 +318,6 @@
               <label class="check" id="oceanRow" hidden title="Rainbow and battle colours in earth colours, on a sea blue"><input id="ocean" type="checkbox"> Earth</label>
               <label class="check" id="autoRotateRow" hidden title="Turn the view slowly, swaying up and down so that the top and the bottom show too; it starts Auto-fit, and a hand rotation stops it"><input id="autoRotate" type="checkbox"> Auto-rotate</label>
             </div>
-            <div id="glintRow" class="pill-row" hidden>  <!-- Glint: a slider as Shape's (see showSliderAt) -->
-              <h3>Glint</h3>
-              <div class="shape-slider" title="The light's glint: in each tile's own colour, never past it, or white added on it (a pale face facing it washed white)"><span>Soft</span><span>Bright</span><input id="glintM" type="range" min="0" max="1" step="0.01" aria-label="From soft to bright"></div>
-            </div>
             <div id="cutRow" hidden></div>  <!-- Off, S, E, Up: pills (see pillRow, CUT_AXES) -->
           </div>
           <div class="form-section">  <!-- what the walk shows: colours, areas, cells -->
@@ -353,11 +349,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.883"></script>
-  <script src="punks.js?v=0.5.883"></script>
-  <script src="loops.js?v=0.5.883"></script>
-  <script src="emoji.js?v=0.5.883"></script>
-  <script src="debug.js?v=0.5.883"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.883"></script>
+  <script src="pixelarticons.js?v=0.5.884"></script>
+  <script src="punks.js?v=0.5.884"></script>
+  <script src="loops.js?v=0.5.884"></script>
+  <script src="emoji.js?v=0.5.884"></script>
+  <script src="debug.js?v=0.5.884"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.884"></script>
 </body>
 </html>

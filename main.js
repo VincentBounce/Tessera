@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.922';
+const VERSION = '0.5.923';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37759,10 +37759,13 @@ function easeView(dt) {
 function resize() {
   const r = stage.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  const first = canvasWidth === 0;
+  const first = canvasWidth === 0,
+    middleWas = [viewMiddleX(), canvasHeight / 2];
   canvasWidth = r.width;
   canvasHeight = r.height;
   viewLeft = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left'));
+  view.ox += viewMiddleX() - middleWas[0];
+  view.oy += canvasHeight / 2 - middleWas[1]; // (the view moved by hand, not framed again: its middle's point kept in its middle)
   for (const ctx of Object.values(layers)) {
     ctx.canvas.width = Math.round(canvasWidth * dpr);
     ctx.canvas.height = Math.round(canvasHeight * dpr);

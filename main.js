@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.901';
+const VERSION = '0.5.902';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41446,7 +41446,9 @@ function gpuSurface(paint, path) {
       haloOf(SHINES[shineNow()][0]),
       surfaceTileOnScreen() / HALO_TILE,
     );
-  const under = drawsHere() && pointerPixel, // (Draw on a surface: the tile under the pointer)
+  const under = drawsHere() &&
+      pointerPixel &&
+      !D.picking && [...(stroke?.path.splice(0, STROKE_POINTS) ?? []), pointerPixel], // (Draw on a surface: the tiles under a stroke's path, then the pointer's)
     picking =
       (motifShown || under) &&
       gpuPick(
@@ -41518,7 +41520,10 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
       }),
       read: device.createBuffer({ size: 8, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
-      under: device.createBuffer({ size: 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
+      under: device.createBuffer({
+        size: 4 * (STROKE_POINTS + 1),
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+      }),
     };
   }
   const P = D.pick;
@@ -41580,8 +41585,11 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
     }
     enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
   }
-  const pixel = at && [Math.min(w - 1, Math.max(0, at[0])), Math.min(h - 1, Math.max(0, at[1]))];
-  if (pixel) enc.copyTextureToBuffer({ texture: P.ids, origin: pixel }, { buffer: P.under }, [1, 1]);
+  // (at: pixels, a stroke's path's points then the pointer's: each its tile read, in order)
+  const pixels = at && at.map(([x, y]) => [Math.min(w - 1, Math.max(0, x)), Math.min(h - 1, Math.max(0, y))]);
+  pixels?.forEach((pixel, i) =>
+    enc.copyTextureToBuffer({ texture: P.ids, origin: pixel }, { buffer: P.under, offset: 4 * i }, [1, 1]),
+  );
   D.picking = true;
   const g = walk.surface;
   return () =>
@@ -41595,11 +41603,12 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
           middleTile = { g, t };
           statsDirty = true; // (its motif drawn, see drawAll)
         }),
-      pixel &&
-        P.under.mapAsync(GPUMapMode.READ).then(() => {
-          const t = new Uint32Array(P.under.getMappedRange())[0] - 1; // (its tile + 1, 0 none, see pickF)
+      pixels &&
+        P.under.mapAsync(GPUMapMode.READ, 0, 4 * pixels.length).then(() => {
+          const tiles = Array.from(new Uint32Array(P.under.getMappedRange(0, 4 * pixels.length)), (v) => v - 1); // (its tile + 1, 0 none, see pickF)
           P.under.unmap();
-          if (stroke?.moved && t >= 0 && t !== stroke.tile) strokeToTile(t); // (a stroke on a surface: its way to it, see startsStroke)
+          if (stroke?.moved) strokeToTiles(tiles); // (a stroke on a surface: its path's tiles, see startsStroke)
+          const t = tiles.at(-1); // (the pointer's)
           if (t === pickedTile) return;
           pickedTile = t;
           statsDirty = true; // (Draw's brush drawn there, see surfaceGhost)
@@ -43796,8 +43805,10 @@ stage.addEventListener('pointerdown', (e) => {
       from: [e.clientX, e.clientY],
       at: [e.clientX, e.clientY],
       tile: pickedTile,
+      pixel: pointerPixel,
+      path: [],
       done: new Set(),
-    }); // (Draw's Paint held: it paints, see strokeTo, strokeToTile)
+    }); // (Draw's Paint held: it paints, see strokeTo, strokeToTiles)
   drag = { x: e.clientX, y: e.clientY, pan: !walk.is3d || e.shiftKey || e.button === 2 }; // in 3D, Shift or the right button pans
   stage.classList.add('dragging');
 });
@@ -43810,6 +43821,7 @@ stage.addEventListener('pointermove', (e) => {
       Math.floor(((e.clientY - r.top) * gpuCanvas.height) / r.height),
     ];
     statsDirty = true;
+    if (stroke) stroke.pixel ? strokePath(pointerPixel) : (stroke.pixel = pointerPixel); // (its path from its first pixel known)
     if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4) stroke.moved = true; // (past a click's wobble: its tiles painted as read, see gpuPick)
   }
   if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {
@@ -43884,7 +43896,7 @@ const cellUnder = (x, y) => {
 };
 // Draw's Paint held and moved (the left button; on a surface with Shift, the left alone still turning the view): a stroke,
 // each cell it crosses painted once in the brush's colour (the eraser: dead), none skipped however fast: on the plane along
-// its way by a third of a cell, on a surface from tile to tile by the shortest way (see strokeToTile); a click still turns
+// its way by a third of a cell, on a surface from tile to tile by the shortest way (see strokeToTiles, strokePath); a click still turns
 // one cell's state, the right button still pans
 let stroke = null;
 const startsStroke = (e) =>
@@ -43903,25 +43915,41 @@ function strokeTo(x, y) {
   stroke.at = [x, y];
   seedShown();
 }
-// a surface's stroke on to tile t, the tile under the pointer as read (see gpuPick): the shortest way from its last one,
-// neighbour to neighbour (L.nbr), painted (a jump of more than 64 tiles: t alone)
-function strokeToTile(t) {
-  const { start, list } = walk.life.nbr,
-    way = wayTo(
+// a surface's stroke on to the tiles read (see gpuPick), in order: those under its path's points (a point every third of a
+// tile on screen: neighbours, see strokePath), then the pointer's; each from the last one by the shortest way, neighbour to
+// neighbour (L.nbr): the surface turning under a still pointer (Auto-rotate) moves it too (a jump of more than 64 tiles: t
+// alone); each painted once
+function strokeToTiles(tiles) {
+  const { start, list } = walk.life.nbr;
+  for (const t of tiles) {
+    if (t < 0 || t === stroke.tile) continue;
+    const way = wayTo(
       stroke.tile,
       (u) => u === t,
       (u) => list.slice(start[u], start[u + 1]),
       4096,
     );
-  for (const u of way?.length < 64 ? way : [t]) {
-    if (stroke.done.has(u)) continue;
-    if (!stroke.done.size) rememberDrawing(); // (one Undo a stroke)
-    stroke.done.add(u);
-    brushOn(populationKey(u), 1);
+    for (const u of way?.length < 64 ? way : [t]) {
+      if (stroke.done.has(u)) continue;
+      if (!stroke.done.size) rememberDrawing(); // (one Undo a stroke)
+      stroke.done.add(u);
+      brushOn(populationKey(u), 1);
+    }
+    stroke.tile = t;
   }
-  stroke.tile = t;
   seedShown();
 }
+// a surface's stroke's path on to pixel p (the pointer's, device pixels): a point every third of a tile on screen from its
+// last one, read with the next frame (see gpuPick: STROKE_POINTS a frame at most, the rest the next's)
+function strokePath(p) {
+  const [x0, y0] = stroke.pixel,
+    step = Math.max(1, (surfaceTileOnScreen() * gpuCanvas.width) / gpuCanvas.getBoundingClientRect().width / 3),
+    n = Math.ceil(Math.hypot(p[0] - x0, p[1] - y0) / step);
+  for (let s = 1; s <= n; s++)
+    stroke.path.push([Math.round(x0 + ((p[0] - x0) * s) / n), Math.round(y0 + ((p[1] - y0) * s) / n)]);
+  stroke.pixel = p;
+}
+const STROKE_POINTS = 1024;
 // Life on the plane: the grid's size and edges (built again), its start (the cells only, but by the digits)
 for (const [id, k] of [
   ['planeDown', -1],

@@ -997,9 +997,11 @@ button.switch.active:hover:not(:disabled) {
 /* The Gallery: a box over the view as a page (.middle-box), the settings beside it, the view under it (still drawn: a picture taken) */
 .gallery-tools-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--view-gap);
-} /* Open and Paste RLE, then Select and the Gallery's tools: one row from the left, each group past a line */
+  gap: var(--short-gap) var(--view-gap);
+} /* Open and Paste RLE, then Select and the Gallery's tools: one row from the left, each group past a line; too narrow (a
+     phone), the next group under */
 .gallery-tools-row > * + * {
   padding-left: var(--view-gap);
   border-left: 1px solid var(--border-color);

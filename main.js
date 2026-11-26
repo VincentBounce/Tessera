@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.894';
+const VERSION = '0.5.895';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11203,8 +11203,8 @@ const setupKey = (s) => [s.w, ...SETUP_FIELDS.map((f) => s[f])].join('|');
 // Life's colours, a battle's teams and rule; a surface's sizes at the start only (one stepper, see pathsTo). reads: the fields
 // a search asks (see pathsTo), the others' edges not made (their greyed words the costliest: colours', teams'); none, all
 function choicesAt(s, reads = null) {
-  // (each [key, the setup it leads to, its button's words]; the teams no edges for now, their counts kept along: see
-  // DISCONTINUED.md, but Newcomer)
+  // (each [key, the setup it leads to, its button's words]; the teams and Newcomer no edges for now, kept along: see
+  // DISCONTINUED.md)
   const wants = (field) => !reads || reads.has(field);
   const w = s.w,
     [kind, space, shape, rule] = NAV[w],
@@ -11299,14 +11299,6 @@ function choicesAt(s, reads = null) {
     for (const [shape, torus, text] of OUTLINES)
       if (outlineOf(m.plane, shape, torus) === shape)
         set(`outline:${shape}-${torus ? 'torus' : 'walled'}`, 'outline', `${shape}|${torus ? 1 : 0}`, '', text); // (its outline tiles)
-  if (m.life && wants('newcomer'))
-    set(
-      'newcomer',
-      'newcomer',
-      !s.newcomer,
-      newcomerCan(s.lifeTeams, w, s.size, s.start, s.rule) ? '' : 'none',
-      'Newcomer',
-    ); // (a switch where it can be)
   // the choices that place each colour's part, each tab a click (see PART_CHOICES)
   if (m.life)
     for (const [field, { list, whyNot }] of Object.entries(PART_CHOICES))

@@ -3,9 +3,9 @@
  * ==============================================================================================
  *
  * A panel to try settings by eye, over the view's top left corner, under its axes: numbers, each a slider, and colours to
- * pick from. Not a part of the app's menu: main.js calls it where a trial needs it (see cellsTuning), and debugPanel(null)
+ * pick from. Not a part of the app's menu: main.js calls it where a trial needs it (see debugTuning), and debugPanel(null)
  * takes it away. Its numbers are an object's, changed in place; what they change is the caller's (its onChange).
- * Below it, Display › Cells' modes on trial (LED+, Tube, Debug), tried in it alone: see Cells on trial.
+ * Below it, Display › Shine' modes on trial (LED+, Tube, Debug), tried in it alone: see Shine on trial.
  *   debugPanel({
  *     key, title,                             what it shows (the same key: the panel left as it is), its name
  *     tabs,                                   the caller's tabs over its title (main.js's textTabs: Cells, Line)
@@ -58,7 +58,7 @@ const DEBUG_STYLE = `
 `;
 
 /* ---- The panel ---------------------------------------------------------------------------------- */
-// the function that drew the view last, its Cells mode with it, each writing its name as it draws (main.js's gpuPlane,
+// the function that drew the view last, its Shine mode with it, each writing its name as it draws (main.js's gpuPlane,
 // gpuSurface, gpuLatticeWalk)
 let drawnBy = '';
 const debugFirst = new WeakMap(); // (each numbers object's values as it came first: its sliders' ranges, Reset's values)
@@ -232,11 +232,11 @@ function debugPanel(spec) {
   }
 }
 
-/* ---- Cells on trial ---------------------------------------------------------------------------- */
-// Display › Cells' modes tried in the panel's Cells (main.js's cellsTuning), out of the menu: their names and words (main.js's
-// CELLS_FINISHES ends with them), their numbers (its CELLS_LIGHT's, and in Solo on a light page in 3D, its
-// CELLS_LIGHT_SOLO_3D's) and their lamps (its LAMPS', see there: ledLight, vec3Of main.js's)
-const CELLS_TRIED = [
+/* ---- Shine on trial ---------------------------------------------------------------------------- */
+// Display › Shine' modes tried in the panel's Shine (main.js's debugTuning), out of the menu: their names and words (main.js's
+// SHINES ends with them), their numbers (its SHINE_LIGHT's, and in Solo on a light page in 3D, its
+// SHINE_LIGHT_SOLO_3D's) and their lamps (its LAMPS', see there: ledLight, vec3Of main.js's)
+const SHINES_TRIED = [
   [
     'LED+',
     'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
@@ -244,7 +244,7 @@ const CELLS_TRIED = [
   ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
   ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
 ];
-const CELLS_TRIED_LIGHT = {
+const SHINE_TRIED_LIGHT = {
   tubePeak: 1.6, // (Tube: its light, strongest at tubeAt)
   tubeAt: 0.14, // (its tube's middle, its share of the way from its edge to its middle)
   tubeWidth: 0.07, // (its tube's width, the same share)
@@ -270,7 +270,7 @@ const CELLS_TRIED_LIGHT = {
   ledPlusHalo: 0.8,
   debugHalo: 1.6,
 };
-const CELLS_TRIED_SOLO_3D = {
+const SHINE_TRIED_SOLO_3D = {
   debugEdge: 1,
   debugCeiling: 0.67,
   debugColour: '#fff68f',

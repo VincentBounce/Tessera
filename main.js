@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.887';
+const VERSION = '0.5.888';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6931,7 +6931,7 @@ function renderHeadTiles() {
     $('cellsFinishRow'),
     'Cells',
     "The surface's tiles: how each one painted is lit",
-    CELLS_FINISHES,
+    CELLS_FINISHES.slice(0, CELLS_SHOWN),
     cellsFinish(),
     defaultOf('cellsFinish', tabVariant()),
     (k) => {
@@ -39020,26 +39020,27 @@ const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (LED), a
-// frosted slab lit from under it (LED+), a ceiling's LED panel (Panel), a piece of mosaic (Tessera), a tube along its edge,
-// its light spilling far (Tube), or every light's numbers to try (Debug: LED inside out too, its middle below 0); its
-// number, as
-// Cut's, the place of its pill, the shaders' by its name (CELLS_FINISH)
+// ceiling's LED panel (Panel), a piece of mosaic (Tessera); then those tried in the debug panel's Cells (CELLS_SHOWN on):
+// a frosted slab lit from under it (LED+), a tube along its edge, its light spilling far (Tube), or every light's numbers
+// to try (Debug: LED inside out too, its middle below 0); its number its place (written in no link), the shaders' by its
+// name (CELLS_FINISH)
 const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
   ['Halo', "Each tile painted as it is, LED's halo round it, none on it"],
   ['LED', 'Each tile painted a lamp, brightest in its middle, its light spilling round it: a halo'],
   [
-    'LED+',
-    'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
-  ],
-  [
     'Panel',
     "Each tile painted a ceiling's LED panel, lit evenly to its edges, its light spilling round it; in Solo on a light page in a grey ceiling, its light falling on the tiles round it",
   ],
-  ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
+  [
+    'LED+',
+    'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
+  ],
+  ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
   ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
 ];
+const CELLS_SHOWN = 5; // (Display › Cells' pills, the first five: the others tried in the debug panel's Cells, see cellsTuning)
 const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
 const cellsFinish = () => Number($('cellsFinish').value); // (its box's, see DISPLAY_DEFAULTS)
 const cellsFinishOn = () => cellsFinish() > 0 && !$('cellsFinishRow').hidden;
@@ -44486,6 +44487,22 @@ function cellsTuning() {
             paletteChanged();
           },
     onClose: shutDebug,
+    controls: [
+      textTabs(
+        CELLS_FINISHES.slice(CELLS_SHOWN).map(([name, words], j) =>
+          tile({
+            text: name,
+            title: words,
+            on: cellsFinish() === CELLS_SHOWN + j,
+            click: () => {
+              $('cellsFinish').value = CELLS_SHOWN + j;
+              needsFull = true;
+              cellsTuning();
+            },
+          }),
+        ),
+      ),
+    ], // (the Cells tried: picked here, out of Display › Cells)
     note: !solo
       ? 'The battles’ colours, the teams’'
       : `A colour: ${lightColour ? 'its light' : 'the live cell’s'}, till the page is opened again`,

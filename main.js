@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.886';
+const VERSION = '0.5.887';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -27351,7 +27351,19 @@ function buildLifePlane(seq) {
   }
   $('lifeRule').value = ruleBody(rule.text); // the colours apart (see lifeTeams)
   // the grid first: all that is made of it reads it (Explore's colours, its walls: see planeColouring, planeCorners)
-  walk.plane = { kind, W, row, n, xy, at, torus: planeTorus(kind), polygons: planePolygons(kind, W, planeTorus(kind)) };
+  // (its colours' pieces and a torus's cut as it is built for, its width theirs: the menu's change before it is built again)
+  walk.plane = {
+    kind,
+    W,
+    row,
+    n,
+    xy,
+    at,
+    torus: planeTorus(kind),
+    polygons: planePolygons(kind, W, planeTorus(kind)),
+    apart: piecesApart(),
+    cut: TORUS_CUTS[torusCutNow()][0],
+  };
   const nbr = planeNeighbours(kind, W, planeTorus(kind), rule.iso === 'hensel');
   startLife(seq, rule, n, {
     nbr,
@@ -33256,12 +33268,12 @@ function planeFrame() {
     key,
     block,
     lattice: (K) =>
-      (middles[`lattice${K}${piecesApart()}${torusCutNow()}`] ??= torusLattice(
+      (middles[`lattice${K}${walk.plane.apart}${walk.plane.cut}`] ??= torusLattice(
         walk.plane,
         K,
-        piecesApart(),
-        TORUS_CUTS[torusCutNow()][0],
-      )),
+        walk.plane.apart,
+        walk.plane.cut,
+      )), // (its own pieces and cut, as built: the menu's may be the next walk's, see buildLifePlane)
     middle: (i, cols, rows) =>
       (middles[`${cols}x${rows}`] ??= (() => {
         // (a block's very middle, its cells' middles': an even block's, between them)
@@ -33502,7 +33514,7 @@ const FIGURE_PARTS = {
     fits: (K, { variant }) => K === APERIODIC[variant.plane].pieces,
     parts: (K) => {
       const n = walk.plane.n;
-      return typedOf(Int32Array, n, (t) => Math.floor((t * K) / n));
+      return (walk.plane.pieces ??= typedOf(Int32Array, n, (t) => Math.floor((t * K) / n))); // (once a grid: its middles kept by it, see partMiddles)
     },
   },
   // a walled grid in a hexagon or a disc, or of 3, 6, 8 or 12 colours: its slices round the middle (see planeSlices)
@@ -34584,12 +34596,11 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
       };
     // (its centre: a slice's spot; one colour's, the grid's very middle: a grid that never repeats, its circle's, a rosette
     // sphere's pole; in a hexagon, its centre of turns; else its frame's middle)
-    // (each part's cells' middle, all in one pass, once a grid and a cut: a rosette sphere's lunes' north cells', a grid's
-    // pieces'; asked by each colour's picture at each size tried, see iconLay)
-    const partMiddles = (cut, parts) => {
-      if (middlesMemo?.g === flat && middlesMemo.cut === cut) return middlesMemo.middles;
-      const L = parts(),
-        sums = [],
+    // (each part's cells' middle, all in one pass, once its parts: a rosette sphere's lunes' north cells', a grid's pieces';
+    // asked by each colour's picture at each size tried, see iconLay; known by its parts, each kept once a grid and a cut)
+    const partMiddles = (L) => {
+      if (middlesMemo?.L === L) return middlesMemo.middles;
+      const sums = [],
         counts = [];
       for (let t = 0; t < n; t++) {
         const p = L[t];
@@ -34600,15 +34611,15 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
         sums[p][1] += m[1];
         counts[p] = (counts[p] ?? 0) + 1;
       }
-      return (middlesMemo = { g: flat, cut, middles: sums.map((sum, p) => sum.map((v) => v / counts[p])) }).middles;
+      return (middlesMemo = { L, middles: sums.map((sum, p) => sum.map((v) => v / counts[p])) }).middles;
     };
-    const lune = () => partMiddles(`lunes ${K}`, () => rosetteParts(g, K))[i];
+    const lune = () => partMiddles(rosetteParts(g, K))[i];
     const one = K === 1 || poleColours(g, K); // (each pole's colour: its disc as one colour's)
     const centre = () =>
       !one && !walk.plane
         ? lune()
         : !one && figureOf(K) === 'pieces'
-          ? partMiddles(`pieces ${K}`, () => FIGURE_PARTS.pieces.parts(K))[i] // (its piece's middle: the pinwheel's triangle's)
+          ? partMiddles(FIGURE_PARTS.pieces.parts(K))[i] // (its piece's middle: the pinwheel's triangle's)
           : !one && wallSlices(K)
             ? mid(planeSlices(K).spots[i])
             : !one

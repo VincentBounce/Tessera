@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.902';
+const VERSION = '0.5.903';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -43813,15 +43813,20 @@ stage.addEventListener('pointerdown', (e) => {
   stage.classList.add('dragging');
 });
 stage.addEventListener('pointermove', (e) => {
+  // (a stroke's points: every one the pointer went through since the last event, the browser's one a frame gathering
+  // them; a fast circle stays round)
+  const points = stroke ? (e.getCoalescedEvents?.() ?? []) : [];
+  if (!points.length) points.push(e);
   if (drawsHere() && walk.surface && !e.target.closest('.stage-box')) {
     // Draw on a surface: the pointer's pixel, its tile read with the next frame (see gpuPick)
-    const r = gpuCanvas.getBoundingClientRect();
-    pointerPixel = [
-      Math.floor(((e.clientX - r.left) * gpuCanvas.width) / r.width),
-      Math.floor(((e.clientY - r.top) * gpuCanvas.height) / r.height),
-    ];
+    const r = gpuCanvas.getBoundingClientRect(),
+      pixelOf = (p) => [
+        Math.floor(((p.clientX - r.left) * gpuCanvas.width) / r.width),
+        Math.floor(((p.clientY - r.top) * gpuCanvas.height) / r.height),
+      ];
+    pointerPixel = pixelOf(e);
     statsDirty = true;
-    if (stroke) stroke.pixel ? strokePath(pointerPixel) : (stroke.pixel = pointerPixel); // (its path from its first pixel known)
+    if (stroke) for (const p of points) stroke.pixel ? strokePath(pixelOf(p)) : (stroke.pixel = pixelOf(p)); // (its path from its first pixel known)
     if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4) stroke.moved = true; // (past a click's wobble: its tiles painted as read, see gpuPick)
   }
   if (drawsHere() && walk.plane && !e.target.closest('.stage-box')) {
@@ -43831,8 +43836,10 @@ stage.addEventListener('pointermove', (e) => {
       ghost = cell;
       drawGhost();
     }
-    if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4)
-      strokeTo(e.clientX, e.clientY); // (past a click's wobble)
+    if (stroke && Math.hypot(e.clientX - stroke.from[0], e.clientY - stroke.from[1]) > 4) {
+      for (const p of points) strokeTo(p.clientX, p.clientY); // (past a click's wobble)
+      seedShown(); // (once an event, its points all painted)
+    }
   }
   if (!drag) return;
   const dx = e.clientX - drag.x,
@@ -43913,7 +43920,6 @@ function strokeTo(x, y) {
     brushOn(k, 1);
   }
   stroke.at = [x, y];
-  seedShown();
 }
 // a surface's stroke on to the tiles read (see gpuPick), in order: those under its path's points (a point every third of a
 // tile on screen: neighbours, see strokePath), then the pointer's; each from the last one by the shortest way, neighbour to

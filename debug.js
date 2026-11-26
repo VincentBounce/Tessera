@@ -29,7 +29,7 @@ const DEBUG_STYLE = `
 #debugPanel {
   position: absolute;
   left: calc(var(--view-left) + var(--view-gap));
-  top: var(--view-gap);
+  top: var(--view-top);
   z-index: 5;
   width: 240px;
   padding: 8px 10px;

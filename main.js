@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.904';
+const VERSION = '0.5.905';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -38137,7 +38137,6 @@ const digitColour = (k) =>
           : `hsl(${(k * 360) / walk.base}, 80%, 62%)`;
 
 /* ---- 11.4 Surfaces ------------------------------------------------------------------------ */
-const surfacePaint = { at: 0, cost: 0 };
 
 // A walker's frame on a surface at step i: its place, heading (its last step; at the start, the one it came by), its tile's
 // outward normal (up: a start's flag's pole; an ogive is round its heading) and its size (see headSize, by its tile's area); P(i), tileAt(i):
@@ -43543,16 +43542,15 @@ function tick(now = performance.now()) {
     morphStep(dt); // flat ↔ round, while it is changing
     // the camera turned to keep the walker followed in front (see followed; on a torus, its tile facing it)
     if (walk.n && !walk.life && followed >= 0 && !startsShown && !faced && !$('autoRotate').checked) followWalker();
-    if (gliding()) statsDirty = true; // (its heads gliding: drawn again each frame, as far as its cost allows)
-    // a big sphere can take tens of ms to draw: while animating, redraw at most every 3× that time
+    if (gliding()) statsDirty = true; // (its heads gliding: drawn again each frame)
+    // drawn each frame something changed, as the plane and the 2D walks (a brake to every 3× its cost till v0.5.905: a step
+    // shown 1 or 3 frames at 144 Hz)
     const now = performance.now();
-    if (!held && (needsFull || (statsDirty && now - surfacePaint.at > 3 * surfacePaint.cost))) {
+    if (!held && (needsFull || statsDirty)) {
       drawGrid();
       drawSurface();
       drawOverlay();
       updateStats();
-      surfacePaint.cost = performance.now() - now;
-      surfacePaint.at = now;
       GPU.draw?.device.queue.onSubmittedWorkDone().then(() => setTiming('3D image', performance.now() - now)); // (its whole cost: the card's work done)
       needsFull = statsDirty = false;
     }

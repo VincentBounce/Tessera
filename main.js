@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.914';
+const VERSION = '0.5.915';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -8956,9 +8956,9 @@ function formulaOf(typed) {
 
 /* ---- 4.6 Number cards: from a formula to its card and back -------------------------------- */
 // The card a formula comes from, with the value of its helper menu; none for a formula of its own
-// a page of another site, in a new tab: its words and ↗ (the one link of its kind, see .external-link)
+// a page of another site, in a new tab: its words in the links' colour (the one link of its kind, see .external-link)
 const externalLink = (url, words) =>
-  `<a class="external-link" href="${url}" target="_blank" rel="noopener">${htmlText(words)} ↗</a>`;
+  `<a class="external-link" href="${url}" target="_blank" rel="noopener">${htmlText(words)}</a>`;
 // a fraction p/q, as written; the name a number goes by: a fraction, itself; else its card's (see PRESETS); '' for a
 // formula of one's own
 const isFraction = (formula) => /^\d+\/\d+$/.test(formula);
@@ -45883,12 +45883,11 @@ $('favicon').href =
 // its name and version; lit while it shows, as Gallery's); kept over the settings changed (its URL's rows follow them), closed by its
 // cross or its tab (Share link: the header's, see shareLink)
 const creditsShown = () => !$('ruleTuto').hidden && $('ruleTuto').dataset.shown === 'credits';
-const AUTHOR =
-  '🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · <b>𝕏 <a href="https://x.com/VincentBounce" target="_blank" rel="noopener">@VincentBounce</a></b>'; // (its author, as signed)
+const AUTHOR = `🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · 𝕏 ${externalLink('https://x.com/VincentBounce', '@VincentBounce')}`; // (its author, as signed)
 const CREDITS = [
   [
     'Life and its kin',
-    `${externalLink('https://en.wikipedia.org/wiki/John_Horton_Conway', "John Conway's")} Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and LifeWiki (RLE, patterns)`,
+    `${externalLink('https://en.wikipedia.org/wiki/John_Horton_Conway', "John Conway's")} Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and ${externalLink('https://conwaylife.com/wiki/', 'LifeWiki')} (RLE, patterns)`,
   ],
   [
     'Numbers',

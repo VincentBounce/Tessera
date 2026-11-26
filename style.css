@@ -35,6 +35,7 @@
   --muted-text-color: #8b949e;
   --accent-color: #f0b429;
   --on-accent-color: #1a1300;
+  --link-color: #58a6ff; /* a link to another site */
   --box-background: rgba(14, 17, 22, 0.75); /* the boxes over the view */
   --picked-background: color-mix(
     in srgb,
@@ -68,6 +69,7 @@
   --muted-text-color: #656d76;
   --accent-color: #bf8700;
   --on-accent-color: #ffffff;
+  --link-color: #0969da;
   --box-background: rgba(255, 255, 255, 0.82);
   --picked-background: color-mix(in srgb, rgb(240 180 41) 8%, var(--panel-background));
   --picked-strong-background: color-mix(in srgb, rgb(240 180 41) 22%, var(--panel-background));
@@ -333,13 +335,12 @@ textarea {
   font-family: var(--mono-font);
 } /* a rule's code, wherever (see ruleSpan in main.js), and a rule typed: in --mono-font */
 .external-link {
-  color: inherit;
+  color: var(--link-color);
   text-decoration: none;
-  white-space: nowrap;
 }
 .external-link:hover {
   text-decoration: underline;
-} /* a page of another site, in a new tab: its words and ↗ (see externalLink in main.js) */
+} /* a page of another site, in a new tab (see externalLink in main.js): in the links' colour, underlined on hover */
 textarea {
   resize: none;
   line-height: 1.35;
@@ -2345,12 +2346,16 @@ main:has(.middle-box:not([hidden])) :is(.display-menu, .stage-bar) {
 .tut-body > h2 {
   margin-right: 96px;
 } /* (beside the buttons; the lines under it, under them) */
-.tut-body :is(code, .external-link) {
+.tut-body code {
   color: var(--text-color);
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
-} /* the rule itself, wherever, or a number's page: black and bold (the labels grey) */
+} /* the rule itself, wherever: black and bold (the labels grey) */
+.tut-body .external-link {
+  text-transform: none;
+  letter-spacing: 0;
+} /* (a number's page in a label's line: its own words) */
 .tut-body > h2 code {
   overflow-wrap: anywhere;
 } /* (a long rule: on as many lines; a block rule's numbers, after its commas, see blockTutorial) */

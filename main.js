@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.889';
+const VERSION = '0.5.890';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44198,7 +44198,7 @@ stage.addEventListener('pointerup', (e) => {
 // The keys: each a click on the first control shown and not greyed of its list (E: End, else Life's
 // green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's, else Draw's View while
 // a click draws), or its own action
-// (Space: Stop while it plays, else Play; F: the view fitted again; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
+// (Space: Stop while it plays, else Play; F: the view fitted again; D: the debug panel opened or shut; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
 // its name written after its control's in its tooltip (see shortcutOf); a key with ⌘ or Ctrl by its name Mod+…
 const onMac = /Mac|iPhone|iPad/.test(navigator.platform),
   [MOD_KEY, SHIFT_KEY] = onMac ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
@@ -44209,6 +44209,7 @@ const KEYS = [
   ['r', 'R', ['#restart']],
   ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
   ['f', 'F', ['#autoFitTile'], recentre],
+  ['d', 'D', ['#debugSwitch'], () => debugSwitch.click()], // (the debug panel, its switch in Credits › Actions: never shown there)
   ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open', '#drawView:not(.active)']],
   ['Mod+z', `${MOD_KEY}Z`, ['#drawUndo']],
   ['Mod+Shift+z', `${MOD_KEY}${SHIFT_KEY}Z`, ['#drawRedo']],
@@ -44320,6 +44321,7 @@ const shutDebug = () => {
 };
 // Credits › Actions' switch: the debug panel, on while open
 const debugSwitch = tile({
+  id: 'debugSwitch',
   pic: icon('onCells'),
   text: 'Debug panel',
   toggle: true,

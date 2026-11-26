@@ -179,7 +179,7 @@ main {
   padding: 0;
   border: 0;
   border-radius: 10px 10px 0 0;
-  background: var(--box-background);
+  background-color: var(--box-background);
   backdrop-filter: blur(4px);
 } /* a phone's drawer's handle (see phoneDrawer): a short bar at its top, a tap shuts it or opens it */
 #panelHandle::after {

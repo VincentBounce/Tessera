@@ -749,13 +749,14 @@
     await wait(1500);
     for (let t = 0; f.contentWindow.eval('waits.size') && t < 600; t++) await wait(100); // (its digits or its build still on their way: as the page's own look waits, see checker)
     // (what a link cannot hold, its buttons left out wherever they are: a reversible one's return found by playing it, in its
-    // hunt's section; Draw's tools after a generation played; Undo and Redo, the drawing's own history: Draw picked from a
-    // game keeps the generation shown for Undo, a link opened at Draw nothing)
+    // hunt's section; Draw's tools with View on (turned on by a generation played, kept back at gen 0: see brushInHand);
+    // Undo and Redo, the drawing's own history: Draw picked from a game keeps the generation shown for Undo, a link opened
+    // at Draw nothing)
     const unheld = [
       '#drawUndo',
       '#drawRedo',
       ...(walk.life?.margolus && walk.life.stable ? ['#returnRow'] : []),
-      ...(drawing && stepShown > 0 ? ['#startSection'] : []),
+      ...(drawing && brush.view ? ['#startSection'] : []),
     ];
     const a = linkedAgain(unheld),
       b = offered(f.contentWindow, unheld);

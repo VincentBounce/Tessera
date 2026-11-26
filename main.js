@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.891';
+const VERSION = '0.5.892';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6499,7 +6499,18 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (no row: the debug panel's Light; Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'tiles', 'ocean'],
+  '2D walks': [
+    'heatmap',
+    'fill',
+    'translucent',
+    'cells',
+    'visits',
+    'digit',
+    'gridFinish',
+    'cellsFinish',
+    'tiles',
+    'ocean',
+  ], // (Cells: its Glow only, see cellsLitWhyNot)
   '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6594,8 +6605,9 @@ const DISPLAY_DEFAULTS = {
   cellsFinish: [
     'cellsFinish',
     ['open', 'tab', 'theme'],
-    (variant, w) => (NAV[w][0] === 'Life' && themeName() === 'dark' ? CELLS_FINISH.LED : 0),
-  ], // (Life on a dark page, in 2D as in 3D: LED; else Off)
+    (variant, w) =>
+      NAV[w][0] === 'Life' && themeName() === 'dark' ? CELLS_FINISH.LED : glowWhyNot({ w }) ? 0 : CELLS_FINISH.Glow,
+  ], // (Life on a dark page, in 2D as in 3D: LED; a walk on the edges: Glow; else Off)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],
@@ -6931,7 +6943,11 @@ function renderHeadTiles() {
     $('cellsFinishRow'),
     'Cells',
     "The surface's tiles: how each one painted is lit",
-    CELLS_FINISHES.slice(0, CELLS_SHOWN),
+    CELLS_FINISHES.slice(0, CELLS_SHOWN).map(([name, words]) => [
+      name,
+      words,
+      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : cellsLitWhyNot,
+    ]), // (each its own greyed state)
     cellsFinish(),
     defaultOf('cellsFinish', tabVariant()),
     (k) => {
@@ -39020,7 +39036,8 @@ const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (LED), a
-// ceiling's LED panel (Panel), a piece of mosaic (Tessera); then those tried in the debug panel's Cells (CELLS_TRIED,
+// ceiling's LED panel (Panel), a piece of mosaic (Tessera), or on a walk on the edges, its line glowing, the tiles plain
+// (Glow, see lineGlow); then those tried in the debug panel's Cells (CELLS_TRIED,
 // debug.js's: LED+, Tube, Debug); its number its place (written in no link), the shaders' by its name (CELLS_FINISH)
 const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
@@ -39031,12 +39048,18 @@ const CELLS_FINISHES = [
     "Each tile painted a ceiling's LED panel, lit evenly to its edges, its light spilling round it; in Solo on a light page in a grey ceiling, its light falling on the tiles round it",
   ],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
+  ['Glow', "A walk's line on the edges glowing round it, its tiles plain"],
   ...CELLS_TRIED, // (debug.js's)
 ];
+// where a mode lights the tiles painted (all but Off and Glow, see LAMPS): Life's cells or a surface's tiles, not a 2D walk's
+const cellsLitWhyNot = ({ w }) => (variantGroup(w) === '2D walks' ? 'Tiles lit in Life and on a surface only' : '');
+// Glow: a walk on the edges only (its line glowing, see lineGlowOn)
+const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only');
 const CELLS_SHOWN = CELLS_FINISHES.length - CELLS_TRIED.length; // (Display › Cells' pills: the others tried in the debug panel's Cells, see cellsTuning)
 const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
 const cellsFinish = () => Number($('cellsFinish').value); // (its box's, see DISPLAY_DEFAULTS)
-const cellsFinishOn = () => cellsFinish() > 0 && !$('cellsFinishRow').hidden;
+const cellsFinishOn = () =>
+  !!LAMPS[CELLS_FINISHES[cellsFinish()][0]] && !$('cellsFinishRow').hidden && !cellsLitWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -41378,7 +41401,7 @@ function gpuSurface(paint, path) {
           slotOf({
             ...pathLook(0, cut),
             halfW: Math.max(surfaceLineWidth(), GLOW_LEAST_WIDTH) / 2 / view.scale,
-            bright: lineGlow.numbers.share,
+            bright: lineGlow.share,
           }),
         ]);
         glow.setVertexBuffer(0, D.quad);
@@ -41821,7 +41844,7 @@ function gpuLatticeWalk(to) {
           gpuView(D.words, slot++, 1, {
             ...pathLook,
             width: Math.max(pathLook.width, GLOW_LEAST_WIDTH),
-            bright: lineGlow.numbers.share,
+            bright: lineGlow.share,
           }),
         ]);
         glow.draw(4, walked);
@@ -44297,22 +44320,23 @@ function applyTheme(theme) {
 // mode shown (see CELLS_LIGHT, cellsLightOf), and the battles' colours: in Solo, a pick the live cell's colour (the theme's palette's, till the page
 // is opened again), in a battle the teams' shown
 const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; // (the live cell's colours as the palettes have them)
-// the debug panel open (Credits › Actions' switch, shut by its cross too) and its tab: Cells (wherever Cells shows), Line
-// (a walk on the edges) or Light (a 3D view), the first allowed where the tab picked has nothing to tune
+// the debug panel open (Credits › Actions' switch, shut by its cross too) and its tab: Cells (wherever Cells shows) or Light
+// (a 3D view), the first allowed where the tab picked has nothing to tune
 let debugOpen = false,
   debugTab = 'Cells';
-// A walk's line glowing (a trial, the debug panel's Line): its light blurred round it by LED's halo (see gpuHalo), on the
-// edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
-const lineGlow = { on: true, numbers: { share: 0.3, reach: 2 } };
+// A walk's line glowing (Display › Cells › Glow, its numbers in the debug panel's Cells): its light blurred round it by LED's
+// halo (see gpuHalo), on the edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
+const lineGlow = { share: 0.3, reach: 2 };
 // (its line drawn into the halo's picture 4 pixels wide at least: 2 of that picture's half size, never between its pixels,
 // a fine line else lit at some and missed at others, a waffle)
 const GLOW_LEAST_WIDTH = 4;
 // Glint (the debug panel's Light, a 3D view's): the light's glint from each tile's own colour (0: never past it) to white
 // added (1: a pale face facing it washed white, as before v0.5.236); its mode's default at each tab (see DISPLAY_DEFAULTS)
 const glintTuning = { glint: 0.5 };
-const lineGlowOn = () => lineGlow.on && NAV[walk.variant]?.[4] === 'edges';
+const lineGlowOn = () =>
+  CELLS_FINISHES[cellsFinish()][0] === 'Glow' && !$('cellsFinishRow').hidden && !glowWhyNot({ w: walk.variant });
 const lineGlowHalo = () => ({
-  steps: [1, 2, 4, 8].slice(0, Math.max(1, Math.min(4, Math.round(lineGlow.numbers.reach)))),
+  steps: [1, 2, 4, 8].slice(0, Math.max(1, Math.min(4, Math.round(lineGlow.reach)))),
 });
 const shutDebug = () => {
   debugOpen = false;
@@ -44325,8 +44349,7 @@ const debugSwitch = tile({
   pic: icon('onCells'),
   text: 'Debug panel',
   toggle: true,
-  title:
-    "Numbers tried by eye: Display › Cells' light, the live cell's colour, a walk's line glowing, a 3D view's glint",
+  title: "Numbers tried by eye: Display › Cells' light and Glow, the live cell's colour, a 3D view's glint",
   click: () => {
     debugOpen = !debugOpen;
     setTile(debugSwitch, { on: debugOpen });
@@ -44337,13 +44360,8 @@ const debugSwitch = tile({
 const DEBUG_TABS = [
   [
     'Cells',
-    "Display › Cells: their light's numbers, the live cell's colour",
-    (w) => (shows('cellsFinish', w) ? '' : 'Display › Cells shows in Life and on a surface only'),
-  ],
-  [
-    'Line',
-    "A walk's line on the edges: its glow",
-    (w) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only'),
+    "Display › Cells: their light's numbers, the live cell's colour; Glow's",
+    (w) => (shows('cellsFinish', w) ? '' : 'Display › Cells shows in Life, on a 2D walk and on a surface only'),
   ],
   ['Light', "A 3D view's light: its glint", (w) => (shows('glint', w) ? '' : 'A 3D view only')],
 ];
@@ -44379,26 +44397,30 @@ function cellsTuning() {
       note: '0: in each tile’s own colour, never past it; 1: white added on it',
       onClose: shutDebug,
     });
-  if (tab === 'Line')
+  // (the Cells tried: picked here, out of Display › Cells)
+  const trials = textTabs(
+    CELLS_FINISHES.slice(CELLS_SHOWN).map(([name, words], j) =>
+      tile({
+        text: name,
+        title: words,
+        on: cellsFinish() === CELLS_SHOWN + j,
+        whyNot: cellsLitWhyNot,
+        click: () => {
+          $('cellsFinish').value = CELLS_SHOWN + j;
+          needsFull = true;
+          cellsTuning();
+        },
+      }),
+    ),
+  );
+  if (CELLS_FINISHES[cellsFinish()][0] === 'Glow')
     return debugPanel({
-      key: `walkLine|${allowed}`, // (its tabs as they are greyed)
+      key: `glow|${allowed}`, // (its tabs as they are greyed)
       tabs,
-      title: 'Walk › Line',
-      numbers: lineGlow.numbers,
+      title: 'Cells › Glow',
+      numbers: lineGlow,
       onNumbers: () => (needsFull = true),
-      controls: [
-        tile({
-          text: 'Glow',
-          toggle: true,
-          on: lineGlow.on,
-          title: 'The line glowing round it, on the edges',
-          click: (e) => {
-            lineGlow.on = !lineGlow.on;
-            setTile(e.currentTarget, { on: lineGlow.on });
-            needsFull = true;
-          },
-        }),
-      ],
+      controls: [trials],
       onClose: shutDebug,
     });
   const theme = themeName(),
@@ -44429,22 +44451,7 @@ function cellsTuning() {
             paletteChanged();
           },
     onClose: shutDebug,
-    controls: [
-      textTabs(
-        CELLS_FINISHES.slice(CELLS_SHOWN).map(([name, words], j) =>
-          tile({
-            text: name,
-            title: words,
-            on: cellsFinish() === CELLS_SHOWN + j,
-            click: () => {
-              $('cellsFinish').value = CELLS_SHOWN + j;
-              needsFull = true;
-              cellsTuning();
-            },
-          }),
-        ),
-      ),
-    ], // (the Cells tried: picked here, out of Display › Cells)
+    controls: [trials],
     note: !solo
       ? 'The battles’ colours, the teams’'
       : `A colour: ${lightColour ? 'its light' : 'the live cell’s'}, till the page is opened again`,

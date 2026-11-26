@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.927';
+const VERSION = '0.5.928';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -12664,7 +12664,7 @@ const showInTip = (text) => setTip(...tipWords(text));
 const controlName = (el) =>
   (
     el.getAttribute('aria-label') ??
-    (el.querySelector('.mode-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
+    (el.querySelector('.mode-name, .tab-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
   ).trim();
 // an alert told by the tooltip itself a few seconds, red, fading out (see #tip.alert), till then no tooltip over it; its fade's
 // end ends it (an RLE that does not open, a file refused, states flattened): the control's name that told it (control: its
@@ -45763,7 +45763,7 @@ function galleryTab() {
   b.dataset.ready = '1';
   b.className = 'pane-tab';
   b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> <span class="tab-name">Gallery</span>`; // (its picture the ☆ Save, see syncSaveButton)
-  b.title = 'The Gallery, the curated setups and yours: click one to see it';
+  b.title = 'The curated setups and yours: click one to see it';
   b.addEventListener('click', (e) => {
     if (e.target.closest('.fav')) saveSetup();
     else showPane($('galleryPane').hidden);

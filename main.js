@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.920';
+const VERSION = '0.5.921';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36904,7 +36904,8 @@ function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
   $('yourList').classList.toggle('selecting', selecting());
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
-  setTile($('galleryImport'), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
+  for (const id of ['galleryImport', 'gallerySaveLink'])
+    setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
@@ -44815,20 +44816,20 @@ function copyFlash(b, text) {
   );
 }
 // Share link: the page's link to the setup shown (see setupHash), copied
-const pageLink = (setup = getSetup()) => `${location.origin}${location.pathname}#${toHash(setup)}`;
+const pageLink = () => `${location.origin}${location.pathname}${setupHash()}`;
 function shareView(b) {
   copyFlash(b, pageLink());
 }
 // Save link: that link as a file its system opens in the browser, named as the setup: a Mac's .webloc, else a Windows .url
-function saveLink(setup = getSetup()) {
-  const link = pageLink(setup);
+function saveLink() {
+  const link = pageLink();
   saveBlob(
     new Blob([
       onMac
         ? `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>URL</key><string>${htmlText(link)}</string></dict></plist>\n`
         : `[InternetShortcut]\r\nURL=${link}\r\n`,
     ]),
-    `${setupTitle({ setup })}.${onMac ? 'webloc' : 'url'}`,
+    `${setupTitle({ setup: getSetup() })}.${onMac ? 'webloc' : 'url'}`,
   );
 }
 $('shareLink').addEventListener('click', (e) => shareView(e.currentTarget)); // (the header's, left of the length)
@@ -45638,15 +45639,6 @@ const isInUse = (setup, inView = getSetup()) => sameSetup(setup, inView, SETUP_L
 // framed and still (Auto-fit on: a hand rotation or zoom may have turned it off, and the walk could be on the far side), or
 // selects it (see syncSelection)
 let cardShown = null; // (the card clicked last: its setup adopted once built)
-// a card's link saved as a file, over its name's band at its left, seen on its hover (see .card-link)
-const addCardLink = (b) =>
-  b.querySelector('.mode-name').parentElement.append(
-    Object.assign(document.createElement('span'), {
-      className: 'card-link',
-      innerHTML: icon('save'),
-      title: 'Save its link as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
-    }),
-  );
 function setupRow(name, detail, x, inView) {
   const { setup } = x,
     b = card({
@@ -45659,14 +45651,12 @@ function setupRow(name, detail, x, inView) {
     Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
   ); // (its check, seen while selecting; its star, the card in view's, see .card-star)
-  addCardLink(b);
   b.setAttribute('role', 'option');
   // a click: while selecting, or on its check (seen on its hover), the card selected or let go; on the card in view, the
   // Gallery shut, nothing built again; else the Gallery shut and the card's thumbnail over the view at once, painted; its
   // setup built from the next frame, the thumbnail gone once it is drawn (not the Gallery nor the walk before frozen while
   // it is built)
   b.addEventListener('click', (e) => {
-    if (e.target.closest('.card-link')) return saveLink(setup);
     if (selecting() || e.target.closest('.card-check')) {
       const from = galleryCards.findIndex((c) => c.x.name === selectAnchor),
         to = galleryCards.findIndex((c) => c.x === x);
@@ -45746,13 +45736,8 @@ function inViewCard(inView) {
       title: 'Save the setup in view in the Gallery, in this browser',
     }),
   );
-  addCardLink(b);
   if (inViewUrl) cardPicture(b, inViewUrl);
-  b.addEventListener('click', (e) => {
-    if (e.target.closest('.card-link')) saveLink(inView);
-    else if (e.target.closest('.card-star')) saveSetup();
-    else showPane(false);
-  });
+  b.addEventListener('click', (e) => (e.target.closest('.card-star') ? saveSetup() : showPane(false)));
   return b;
 }
 let inViewUrl = ''; // (taken as the Gallery opens, no icon before it; the card made again, a setup saved or deleted, keeps it)
@@ -45840,6 +45825,13 @@ $('galleryOpenTiles').replaceChildren(
     title:
       "The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
     click: async () => openRle(await navigator.clipboard.readText(), $('pasteRle')),
+  }),
+  tile({
+    id: 'gallerySaveLink',
+    pic: icon('save'),
+    text: 'Save link',
+    title: 'Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
+    click: saveLink,
   }),
 );
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then

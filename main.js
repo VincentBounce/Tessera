@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.895';
+const VERSION = '0.5.896';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34613,12 +34613,13 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
     // sphere's pole; in a hexagon, its centre of turns; else its frame's middle)
     // (each part's cells' middle, all in one pass, once its parts: a rosette sphere's lunes' north cells', a grid's pieces';
     // asked by each colour's picture at each size tried, see iconLay; known by its parts, each kept once a grid and a cut)
-    const partMiddles = (L) => {
-      if (middlesMemo?.L === L) return middlesMemo.middles;
+    // (from: its disc's first cell, a south colour's its half's: each disc's cells numbered as the flat grid's, see disc)
+    const partMiddles = (L, from = 0) => {
+      if (middlesMemo?.L === L && middlesMemo.from === from) return middlesMemo.middles;
       const sums = [],
         counts = [];
       for (let t = 0; t < n; t++) {
-        const p = L[t];
+        const p = L[from + t];
         if (p < 0) continue;
         const m = mid(t);
         sums[p] ??= [0, 0];
@@ -34626,9 +34627,9 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
         sums[p][1] += m[1];
         counts[p] = (counts[p] ?? 0) + 1;
       }
-      return (middlesMemo = { L, middles: sums.map((sum, p) => sum.map((v) => v / counts[p])) }).middles;
+      return (middlesMemo = { L, from, middles: sums.map((sum, p) => sum.map((v) => v / counts[p])) }).middles;
     };
-    const lune = () => partMiddles(rosetteParts(g, K))[i];
+    const lune = () => partMiddles(rosetteParts(g, K), disc)[i];
     const one = K === 1 || poleColours(g, K); // (each pole's colour: its disc as one colour's)
     const centre = () =>
       !one && !walk.plane

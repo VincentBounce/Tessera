@@ -995,25 +995,19 @@ button.switch.active:hover:not(:disabled) {
 }
 /* The Gallery: a box over the view as a page (.middle-box), the settings beside it, the view under it (still drawn: a picture taken) */
 .gallery-tools-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--short-gap);
-} /* on the left Open and Paste RLE (.gallery-left); in the middle the setup in view's: Share link, its picture, Star; on the right
-   Select, then the Gallery's tools (the left as wide as the right: the middle in the band's middle) */
-.gallery-tools,
-.gallery-in-view {
   display: flex;
   align-items: center;
+  gap: var(--view-gap);
+} /* Open and Paste RLE, then Select and the Gallery's tools: one row from the left, each group past a line */
+.gallery-tools-row > * + * {
+  padding-left: var(--view-gap);
+  border-left: 1px solid var(--border-color);
 }
 .gallery-tools {
-  justify-self: end;
+  display: flex;
+  align-items: center;
   gap: var(--badged-tile-gap);
 } /* (Select as one more of them: their gap, the cards selected's badge) */
-.gallery-in-view {
-  gap: var(--short-gap);
-  min-width: 0;
-} /* (narrower when the band lacks room: its picture cut, see #inViewPicture; the tools never) */
 .gallery-tools-row .nav-shapes {
   display: flex;
   gap: var(--short-gap);
@@ -1025,26 +1019,6 @@ button.switch.active:hover:not(:disabled) {
 .gallery-tools-row .nav-shapes button {
   width: var(--tile-width);
 }
-#inViewPicture {
-  height: calc(var(--tile-height) + var(--short-gap) + 18px);
-  aspect-ratio: 1;
-  min-width: 0; /* (narrower when the band lacks room: cut, its picture covering it) */
-  margin: -12px 0 -6px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  position: relative;
-  overflow: hidden;
-  background: var(--page-background);
-} /* the setup in view's picture, whole: the band's height, a tile's, its tiles' margin under them (--short-gap) and the band's paddings
-   (12px, 6px: see .gallery-band); its width by a thumbnail's, square (see THUMBNAIL_SIZE, .gallery-grid .mode-icon) */
-#inViewPicture img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-} /* (out of the band's height: the band's tiles make it) */
 #galleryPane:not([hidden]) {
   display: flex;
   flex-direction: column;
@@ -1086,8 +1060,8 @@ button.switch.active:hover:not(:disabled) {
   background-color: var(--panel-background);
 }
 .gallery-grid button:hover {
-  background: var(--page-background);
-}
+  border-color: var(--muted-text-color);
+} /* a dark frame on hover, as every picture's (.tut-shapes figure): its fill under its picture, a veil there unseen */
 .gallery-grid .mode-icon {
   position: absolute;
   inset: 0;
@@ -1119,8 +1093,8 @@ button.switch.active:hover:not(:disabled) {
   padding: 1px 8px 2px;
   min-width: 0;
   background: var(--box-background);
-  backdrop-filter: blur(4px);
-}
+} /* (its name on a translucent band over its picture, no blur: a blur takes in the card's border under it, its round corners
+     smeared) */
 .gallery-grid .mode-detail {
   display: none;
 } /* (its name only, on its picture: its rule and words in its tooltip) */
@@ -1159,6 +1133,9 @@ button.switch.active:hover:not(:disabled) {
 .gallery-grid button.active .card-star {
   display: flex;
 }
+#inViewCard .card-star path {
+  fill: none;
+} /* (the setup in view not saved: its star hollow, a click saves it, see inViewCard) */
 .gallery-grid .card-star svg {
   width: 20px;
   height: 20px;

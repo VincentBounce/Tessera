@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.912';
+const VERSION = '0.5.913';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36899,6 +36899,7 @@ let galleryCards = [];
 // click on a card selects it or lets it go, its setup not shown; Export, Delete and Refresh then act on them; the last let go,
 // back to cards that open
 const selectedNames = new Set();
+let selectAnchor = ''; // (the card last clicked while selecting: a Shift click's range from it)
 const selecting = () => selectedNames.size > 0;
 const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Refresh act on the cards selected.';
 const halfOrFewer = () => 2 * selectedNames.size <= galleryCards.length; // (Select's click: all; more, none)
@@ -36908,7 +36909,6 @@ function syncSelection() {
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   for (const id of ['galleryImport', 'gallerySaveLink'])
     setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
-  syncSaveButton(); // (its Star tile too)
   setTile($('galleryDelete'), {
     greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
   });
@@ -36982,6 +36982,8 @@ function fillGalleryList() {
           return row;
         }),
       );
+      if (kind === NAV[tabVariant()]?.[0] && !list.some((x) => isInUse(x.setup, inView)))
+        cards.prepend(inViewCard(inView)); // (the setup in view first, unless saved: its own card then, gold, see inViewCard)
       section.append(cards);
       return [section];
     }),
@@ -37007,8 +37009,6 @@ function syncSaveButton() {
   b.title = saved
     ? `Saved in the Gallery as “${setupTitle(saved)}”: a click takes it out`
     : 'Save the setup in view in the Gallery, in this browser';
-  const star = $('galleryStar'); // (the Gallery's Star tile, the same: on while saved, greyed while selecting)
-  if (star) setTile(star, { on: !!saved, greyed: selecting() ? NOT_WHILE_SELECTING : '' });
 }
 // the bar's title, the walk shown's: Space-time's and Elementary's none (their generation their own line, their rule in their
 // chip), Life's what it plays (its generation and its end: the step line, see endMark), a battle's walkers each in its
@@ -37127,7 +37127,7 @@ const thumbnailStore = (mode, ask) =>
         q.onerror = () => fail(q.error);
       }),
   );
-// The view as one thumbnail, cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, as shown
+// The view as one thumbnail, the figure's frame in it cut to THUMBNAIL_SIZE from its middle: every layer under the hover's, in their order, as shown
 // (its Cells, its Tiles), without the grid's lines (see gridLineAlpha) nor the sky (the Gallery's theme behind it, its card's
 // background). WebGPU's picture is only there in the frame that drew it: asked of the next frame, drawn whole without the
 // lines, and taken as it ends, the lines then back (see tick); the sky the view's background, never in it (see paintSky)
@@ -37141,12 +37141,23 @@ const wantThumbnail = (size = THUMBNAIL_SIZE) =>
 function stageThumbnail(size) {
   const { x, w: W, h: H } = viewRect(),
     dpr = $('gridLayer').width / canvasWidth, // (the view's part of each layer, in its pixels)
+    room = boundsRoom(),
+    onScreen = (bx, by) => [view.ox + bx * view.scale, view.oy + by * view.scale],
+    // (a thumbnail: the figure's own frame (its bounds as framed, see viewFor) within the view, no fit's gap round it; a
+    // screenshot: the whole view)
+    [left, top] = size
+      ? onScreen(bounds.minX - room, bounds.minY - room).map((v, i) => Math.max(v, [x, 0][i]))
+      : [x, 0],
+    [right, bottom] = size
+      ? onScreen(bounds.maxX + room, bounds.maxY + room).map((v, i) => Math.min(v, [x + W, H][i]))
+      : [x + W, H],
     [w, h] = size ?? [Math.round(W * dpr), Math.round(H * dpr)],
-    k = Math.max(w / W, h / H),
+    k = Math.max(w / (right - left), h / (bottom - top)), // (cut to its size from its middle, as a picture covering its card)
+    into = [(w - (right - left) * k) / 2, (h - (bottom - top) * k) / 2, (right - left) * k, (bottom - top) * k],
     c = Object.assign(document.createElement('canvas'), { width: w, height: h }),
     g = c.getContext('2d');
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer'])
-    g.drawImage($(id), x * dpr, 0, W * dpr, H * dpr, (w - W * k) / 2, (h - H * k) / 2, W * k, H * k);
+    g.drawImage($(id), left * dpr, top * dpr, (right - left) * dpr, (bottom - top) * dpr, ...into);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
@@ -37673,10 +37684,12 @@ const zoomRange = () => {
     flat ? Math.max(fit, Math.min(viewRect().w, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
   ];
 };
+// the room round a figure's bounds to its edges: a walk's bounds its cells' middles, half a cell more each side (a grid's, a
+// surface's: its corners, its sphere)
+const boundsRoom = () => (walk.is3d || walk.plane || walk.surface ? 0 : 0.5);
 function viewFor(b) {
-  const half = walk.is3d || walk.plane || walk.surface ? 0 : 1; // a walk's bounds its cells' middles: half a cell more each side (a grid's, a surface's: its corners, its sphere)
-  const w = b.maxX - b.minX + half;
-  const h = b.maxY - b.minY + half;
+  const w = b.maxX - b.minX + 2 * boundsRoom();
+  const h = b.maxY - b.minY + 2 * boundsRoom();
   // down to 10⁻⁶ pixel per cell: a walk of 10 million steps can drift millions of cells away
   const fixed = walk.surface || walk.plane; // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
   const scale = Math.min(
@@ -45634,7 +45647,12 @@ function setupRow(name, detail, x, inView) {
   // it is built)
   b.addEventListener('click', (e) => {
     if (selecting() || e.target.closest('.card-check')) {
-      if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
+      const from = galleryCards.findIndex((c) => c.x.name === selectAnchor),
+        to = galleryCards.findIndex((c) => c.x === x);
+      if (e.shiftKey && selecting() && from >= 0)
+        for (const c of galleryCards.slice(Math.min(from, to), Math.max(from, to) + 1)) selectedNames.add(c.x.name);
+      else if (!selectedNames.delete(x.name)) selectedNames.add(x.name);
+      selectAnchor = x.name; // (Shift and a click: every card from the last clicked to this one selected, in their order)
       syncSelection();
       syncRefreshTile();
       return;
@@ -45686,20 +45704,34 @@ function showPane(gallery) {
     $('yourList').querySelector(`[data-kind="${NAV[tabVariant()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
   } // (the tab in use's section)
 }
-// The setup in view's picture, at the band's right: taken as the Gallery opens (a frame drawn without the grid, see
-// wantThumbnail), its title and words its bar's in its tooltip; a click on it shuts the Gallery, back to it
-let inViewUrl = '';
-async function showInViewPicture() {
-  const thumbnail = await wantThumbnail();
-  URL.revokeObjectURL(inViewUrl);
-  inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
-  const x = { setup: getSetup() },
-    b = $('inViewPicture');
-  b.setAttribute('aria-label', setupTitle(x)); // (as a card's: its title in bold, its words under it)
-  b.title = setupWords(x);
-  b.innerHTML = inViewUrl ? `<img src="${inViewUrl}" alt="">` : '';
+// The setup in view not saved, the first card of its tab's section (see fillGalleryList; saved, its own card shows it): its
+// picture taken as the Gallery opens (a frame drawn without the grid, see wantThumbnail, showInViewPicture), its title and
+// words its tooltip; its ☆ saves it (its card then the saved one); a click elsewhere on it shuts the Gallery, back to it
+function inViewCard(inView) {
+  const x = { setup: inView },
+    b = card({
+      pic: icon(SHAPE_ICONS[NAV[setupVariant(inView)]?.[2]] ?? VARIANT_ICONS[setupVariant(inView)]),
+      name: 'In view',
+      detail: `${setupTitle(x)}\n${setupWords(x)}`,
+      on: true,
+    }); // (a card in view's look, as a saved one's: gold, its star, hollow: not saved, see .card-star)
+  b.id = 'inViewCard';
+  b.append(
+    Object.assign(document.createElement('span'), {
+      className: 'card-star',
+      innerHTML: icon('star'),
+      title: 'Save the setup in view in the Gallery, in this browser',
+    }),
+  );
+  if (inViewThumbnail) showThumbnail(b, inViewThumbnail);
+  b.addEventListener('click', (e) => (e.target.closest('.card-star') ? saveSetup() : showPane(false)));
+  return b;
 }
-$('inViewPicture').addEventListener('click', () => showPane(false));
+let inViewThumbnail = null; // (taken as the Gallery opens; the card made again, a setup saved or deleted, keeps it)
+async function showInViewPicture() {
+  inViewThumbnail = await wantThumbnail();
+  if (inViewThumbnail && $('inViewCard')) showThumbnail($('inViewCard'), inViewThumbnail);
+}
 const galleryButton = document.createElement('button');
 function galleryTab() {
   if (galleryButton.dataset.ready) return galleryButton;
@@ -45778,25 +45810,12 @@ $('galleryOpenTiles').replaceChildren(
       "The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
     click: async () => openRle(await navigator.clipboard.readText(), $('pasteRle')),
   }),
-);
-$('galleryShareTiles').replaceChildren(
   tile({
     id: 'gallerySaveLink',
     pic: icon('save'),
     text: 'Save link',
     title: 'Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
     click: saveLink,
-  }),
-);
-$('galleryStarTiles').replaceChildren(
-  tile({
-    id: 'galleryStar',
-    pic: icon('star'),
-    text: 'Star',
-    toggle: true,
-    title:
-      "Save the setup in view in the Gallery, as the ☆ of Gallery's tab; on while it is saved: a click takes it out",
-    click: saveSetup,
   }),
 );
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then

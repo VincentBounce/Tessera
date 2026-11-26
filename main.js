@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.909';
+const VERSION = '0.5.910';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11603,7 +11603,7 @@ function setAntRule(w, rule) {
   compute();
 }
 // The mode tabs that do not fit the header's row, from the last: moved into a "…" tab's menu, a list under it (the same
-// buttons, their clicks and active state as in the row), Gallery the last; the "…" active when the tab shown is in it
+// buttons, their clicks and active state as in the row), Gallery the last; the "…" lit when the tab shown is in it (style.css)
 const moreMenu = Object.assign(document.createElement('div'), { className: 'tab-menu', hidden: true }),
   moreTabs = Object.assign(document.createElement('div'), { className: 'tabs-more', hidden: true });
 moreTabs.append(
@@ -11634,7 +11634,6 @@ function fitModeTabs() {
   moreTabs.hidden = true;
   moreTabs.hidden = fits() && !moreMenu.children.length;
   while (!fits() && moreTabs.previousElementSibling) moreMenu.prepend(moreTabs.previousElementSibling);
-  moreTabs.firstChild.classList.toggle('active', !!moreMenu.querySelector('.active, .pane-tab.open'));
 }
 new ResizeObserver(fitModeTabs).observe(document.querySelector('.header-row'));
 function renderModePicker() {
@@ -11643,7 +11642,9 @@ function renderModePicker() {
   if (rulesVariant !== w) customOpen = false; // (Custom rule closed on another variant, before its cards are drawn)
   rulesVariant = w;
   const button = (html, active, go, title = '', more = {}) => tile({ html, title, on: active, click: go, ...more });
-  // at the top: Walk, Ant, Life (made again: those in the "…" tab's menu too)
+  // at the top: Walk, Ant, Life (made again: those in the "…" tab's menu too); About, the app's own, kept (taken before the
+  // menu it may be in is emptied: out of the page, no id finds it)
+  const about = $('appTab');
   moreMenu.replaceChildren();
   $('modeTabs').replaceChildren(
     galleryTab(),
@@ -11662,7 +11663,8 @@ function renderModePicker() {
       b.toggleAttribute('data-in-more', !!inMore);
       return b;
     }),
-  );
+    about,
+  ); // (About, the app's tab: in the "…" menu whatever the room, its last)
   $('modeTabs').append(moreTabs);
   fitModeTabs();
   $('walkHeading').innerHTML = icon(kind === 'Walk' ? 'compass' : 'grid') + WALK_HEADINGS[kind];
@@ -36707,6 +36709,8 @@ function parseHash(hash = location.hash) {
 // The setup shown as a link's words (#…): Share link's, an RLE file's, the checks'; the address bar never holds it (each link
 // written there a row of the browser's history: 73,641 of them, 4 kB each, slowed Chrome's address bar till v0.5.841)
 const setupHash = () => `#${toHash(getSetup())}`;
+// the address bar's: the page's, its version after its # (always in sight, the setup itself kept in the history, see syncLink)
+const pageAddress = () => `${location.pathname}${location.search}#v${VERSION}`;
 // The setup is kept in the browser's history entry (history.state: { link }, the address bar the page's alone) when what it
 // holds changes: a walk built (see buildWalk), a Life start (setLifeSeed), a Gallery setup clicked; a reload and a tab
 // restored open it again, Back and Forward go from one to the other (see popstate); never over a link come from outside
@@ -36720,7 +36724,7 @@ const markHandChange = (e) =>
 document.addEventListener('click', markHandChange, true);
 document.addEventListener('change', markHandChange, true);
 function syncLink() {
-  if (busy || pendingChampion || location.hash) return; // not while a setup is still being built, nor a link come in read
+  if (busy || pendingChampion || parseHash()) return; // not while a setup is still being built, nor a link come in read
   const link = toHash(getSetup()),
     pushed = handChanged;
   handChanged = false;
@@ -45411,6 +45415,46 @@ $('variant').addEventListener('change', () => {
   $('startNo').value = 1;
   compute();
 });
+// a pane's scroll thumb, drawn in the view's gap beside it (Chrome's own takes its width from the pane, its cards then
+// further from the view than from the window): as high as the pane's share in sight, at its place in the pane's scroll,
+// shown while the pointer is over the pane or it scrolls (see .scroll-thumb), dragged to scroll
+function scrollThumb(pane, thumb) {
+  const place = () => {
+    const track = pane.clientHeight - 2 * parseFloat(getComputedStyle(pane).paddingTop),
+      share = pane.clientHeight / pane.scrollHeight,
+      height = Math.max(24, track * share);
+    thumb.hidden = share >= 1;
+    thumb.style.height = `${height}px`;
+    thumb.style.top = `${pane.offsetTop + parseFloat(getComputedStyle(pane).paddingTop) + (pane.scrollTop / (pane.scrollHeight - pane.clientHeight)) * (track - height)}px`;
+  };
+  let fade = 0;
+  pane.addEventListener('scroll', () => {
+    place();
+    thumb.classList.add('scrolled');
+    clearTimeout(fade);
+    fade = setTimeout(() => thumb.classList.remove('scrolled'), 800);
+  });
+  new ResizeObserver(place).observe(pane);
+  new ResizeObserver(place).observe(pane.firstElementChild); // (its content grown or shrunk: a section shown or hidden)
+  thumb.addEventListener('pointerdown', (e) => {
+    const from = e.clientY,
+      top = pane.scrollTop,
+      rate = (pane.scrollHeight - pane.clientHeight) / (pane.clientHeight - thumb.offsetHeight);
+    thumb.setPointerCapture(e.pointerId);
+    thumb.classList.add('dragged');
+    const move = (m) => (pane.scrollTop = top + (m.clientY - from) * rate);
+    thumb.addEventListener('pointermove', move);
+    thumb.addEventListener(
+      'lostpointercapture',
+      () => {
+        thumb.removeEventListener('pointermove', move);
+        thumb.classList.remove('dragged');
+      },
+      { once: true },
+    );
+  });
+}
+scrollThumb(document.querySelector('.panel'), $('panelThumb'));
 
 /* ---- 12.2 Gallery: built-in setups -------------------------------------------------------- */
 /* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
@@ -45765,7 +45809,7 @@ $('galleryFile').addEventListener('change', () => {
 // a setup link pasted into this tab: read, the address bar the page's again (see syncLink)
 window.addEventListener('hashchange', () => {
   const s = parseHash();
-  history.replaceState(history.state, '', location.pathname + location.search);
+  history.replaceState(history.state, '', pageAddress());
   if (s) applySetup(s);
 });
 // Back or Forward: the setup that entry keeps (see syncLink)
@@ -45798,7 +45842,7 @@ new ResizeObserver(() => {
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('appTab').innerHTML = `${icon('logo')} ${APP_TITLE} v${VERSION}`;
+$('appTab').innerHTML = `${icon('logo')} About`;
 $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,
@@ -45880,7 +45924,7 @@ fillGalleryList();
 // the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup, else this entry's (a
 // reload, a tab restored: see syncLink); otherwise the Walk tab, as a click on it opens it (its defaults, its setup kept)
 const linked = parseHash() ?? (history.state?.link ? parseHash(`#${history.state.link}`) : null);
-history.replaceState(history.state, '', location.pathname + location.search); // (the address bar the page's: see syncLink)
+history.replaceState(history.state, '', pageAddress()); // (the address bar the page's: see syncLink)
 gpuSetup()
   .catch((e) => {
     console.warn('WebGPU off:', e.message);

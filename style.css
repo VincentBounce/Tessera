@@ -11,10 +11,14 @@
     transparent
   ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
   --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
-  --panel-width: 282px; /* the settings' column (.panel): its tiles 4 a row in a card (see .panel section), its scrollbar 4 px from them */
+  --panel-width: 271px; /* the settings' column (.panel): its cards (tiles 4 a row, see .panel section) the view's gap from the window's edge, the view's boxes as far on their right; its scroll thumb in that gap (see .scroll-thumb) */
   --view-left: var(
     --panel-width
   ); /* the view's left edge: the settings' column over the stage, its cards floating on it */
+  --bar-height: 52px; /* the header's boxes, as high as their tabs */
+  --view-top: calc(
+    2 * var(--view-gap) + var(--bar-height)
+  ); /* the view's boxes' top: under the header's, its gap apart */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
   --label-text-size: 12px; /* a field's label, a note, a hint, the ranking */
@@ -106,15 +110,26 @@ body {
 } /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
 
 header {
-  padding: 0;
-  border-bottom: 1px solid var(--border-color);
-} /* one hairline, edge to edge, under the tabs: the first and the last at its edges */
+  position: absolute;
+  z-index: 6;
+  top: var(--view-gap);
+  left: calc(var(--view-left) + var(--view-gap));
+  right: var(--view-gap);
+  height: var(--bar-height);
+  padding: 0 8px;
+  background: var(--box-background);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+} /* one box floating over the view as its others (.stage-box), its gap from the window's top and right and from the settings'
+     cards: the tabs, then Share link and the length; the active tab's underline on its border */
 /* the tabs at the very top on the left, on a hairline; the app's tab on the right */
 .header-row {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--view-gap);
 }
 .header-end {
   flex: none;
@@ -149,32 +164,39 @@ main {
   z-index: 1;
   width: var(--panel-width);
   overflow-y: auto;
-  scrollbar-gutter: stable; /* keep room for the scrollbar: the column never shifts */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
-  padding: 0 8px 4px 16px;
+  scrollbar-width: none; /* its thumb its own, in the view's gap (see .scroll-thumb): Chrome's would take its width */
+  padding: var(--view-gap) 0 var(--view-gap) var(--view-gap);
 } /* over the stage, no background: its cards float on the view, the room between them its own (its wheel scrolls it) */
-.panel::-webkit-scrollbar {
-  width: 8px;
+.scroll-thumb {
+  position: absolute;
+  z-index: 2;
+  left: calc(var(--panel-width) + var(--view-gap) / 2 - 3px);
+  width: 6px;
+  border-radius: 3px;
+  background-color: var(--border-color);
+  opacity: 0;
+  transition: opacity 0.2s;
+} /* a pane's scroll thumb in the view's gap beside it, its top and height its scroll's (see scrollThumb): shown while the
+     pointer is over the pane or the thumb, it scrolls or it is dragged */
+.panel:hover ~ .scroll-thumb,
+.scroll-thumb:is(:hover, .scrolled, .dragged) {
+  opacity: 1;
 }
-.panel::-webkit-scrollbar-track {
-  background: transparent;
+.scroll-thumb:is(:hover, .dragged) {
+  background-color: var(--muted-text-color);
 }
-.panel::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-.panel::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-text-color);
-}
+#paramsPane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+} /* its cards 8 px apart */
 #paramsPane > section {
-  margin: 8px -4px 0 -8px;
   padding: 10px 8px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--box-background);
   backdrop-filter: blur(4px);
-} /* each settings section a card floating on the view, as its boxes (.stage-box), 8 px from the column's sides (its tiles as wide: 4 a row) */
+} /* each settings section a card floating on the view, as its boxes (.stage-box), the view's gap from the window's edge (its tiles 4 a row) */
 #yourList > section {
   margin-top: 16px;
 } /* a Gallery group: its title over its tiles, no frame (its tiles are), apart from the one before */
@@ -771,10 +793,11 @@ button.wide.on-list {
   color: var(--text-color);
   border-bottom-color: var(--border-color);
 }
-.tabs button.active {
+.tabs button.active,
+.tabs-more:has(.tab-menu :is(.active, .pane-tab.open)) > button {
   color: var(--accent-color);
   border-bottom-color: var(--accent-color);
-}
+} /* (the "…" as its tab shown or its pane open: About, Replicators) */
 .tabs button .icon {
   width: 24px;
   height: 24px;
@@ -1003,6 +1026,8 @@ button.switch.active:hover:not(:disabled) {
 #galleryPane:not([hidden]) {
   position: absolute;
   inset: 0;
+  padding-top: var(--view-top);
+  background: var(--page-background);
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -1650,7 +1675,7 @@ button.active .bubble.active {
   --long-gap: var(
     --short-gap
   ); /* (its blocks as close as its tiles: rows, pills; its sections' lines aired as everywhere) */
-  top: var(--view-gap);
+  top: var(--view-top);
   right: var(--view-gap);
   --display-open-width: calc(4 * var(--tile-width) + 3 * var(--short-gap) + 2 * 9px);
 } /* open: 4 tiles a row, and its frame (.stage-box: 8px padding, 1px border, each side) */
@@ -2198,7 +2223,26 @@ fades out, slowly then fast */
 @media (max-width: 720px) {
   :root {
     --view-left: 0px;
-  } /* (the view under the settings, not right of them: its boxes from its own left edge, the player's too) */
+    --view-top: var(--view-gap);
+  } /* (the view under the settings, not right of them: its boxes from its own left edge, the player's too; the header over
+     both, in its place, the view's top boxes at its gap) */
+  header {
+    position: static;
+    height: auto;
+    padding: 0 var(--view-gap) var(--short-gap);
+    border-width: 0 0 1px;
+    border-radius: 0;
+  } /* (in its place at the page's top, not floating: the settings under it) */
+  .header-row {
+    flex-wrap: wrap;
+    row-gap: var(--short-gap);
+  }
+  #modeTabs {
+    flex-basis: 100%;
+  }
+  .header-end {
+    margin-left: auto;
+  } /* (the tabs a row of their own, Share link and the length under them on the right) */
   main {
     flex-direction: column;
   }
@@ -2207,10 +2251,15 @@ fades out, slowly then fast */
     flex: none;
     width: auto;
     max-height: 45%;
+    padding-right: var(--view-gap);
+    scrollbar-width: thin;
     border-right: 0;
     border-bottom: 1px solid var(--border-color);
   } /* (in its place over the view, not over it: the view below, its top boxes (Light) in sight; 45% of what is under the header
   at most, the view the rest: never the window's heights, the header over them) */
+  .scroll-thumb {
+    display: none;
+  } /* (no view's gap beside it: Chrome's thin scrollbar) */
   .hint {
     display: none;
   }
@@ -2265,14 +2314,17 @@ fades out, slowly then fast */
 
 /* how a rule works (ruleTutorial): over the grid, its cells as the grid's, a pair each count (before → after) */
 .rule-tuto {
-  position: absolute;
-  inset: 0 0 0 var(--view-left);
+  inset: var(--view-top) var(--view-gap) var(--view-gap) calc(var(--view-left) + var(--view-gap));
   z-index: 5;
   overflow: hidden;
+  padding: 0;
   cursor: auto;
-  background: var(--page-background);
   color: var(--text-color);
-}
+} /* a page (how a rule works, About, Full number): a box over the view as its others (.stage-box), under the header, the
+     view's gap from the settings' cards and the window's edges */
+main:has(.rule-tuto:not([hidden])) :is(.display-menu, .stage-bar) {
+  display: none;
+} /* (Display and the player under a page: hidden while it shows, the view alone seen through it) */
 .tut-body {
   position: absolute;
   inset: 0;

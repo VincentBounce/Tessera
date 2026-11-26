@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.913';
+const VERSION = '0.5.914';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45876,7 +45876,7 @@ new ResizeObserver(() => {
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('appTab').innerHTML = `${icon('logo')} <span class="tab-name">About</span>`;
+$('appTab').innerHTML = `${icon('logo')} <span class="tab-name">About ${APP_TITLE}</span>`;
 $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,

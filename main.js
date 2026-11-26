@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.918';
+const VERSION = '0.5.919';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36886,10 +36886,9 @@ const savedOf = (setup, list) => {
   const x = { setup, saved: new Date().toISOString() };
   return Object.assign(x, { name: uniqueName(setupTitle(x), list) });
 };
-// a card's picture in place of its icon: one taken now fading in (fresh, as a walk's cells, see .gallery-grid img.fresh), one
-// known drawn at once
-const cardPicture = (row, url, fresh = false) => {
-  row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fresh ? ' class="fresh"' : ''}>`;
+// a card's picture in place of its icon
+const cardPicture = (row, url) => {
+  row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`;
 };
 // the cards shown, in their order: { setup, row } (Refresh takes them so, see refreshThumbnails)
 let galleryCards = [];
@@ -37208,7 +37207,7 @@ async function refreshThumbnails() {
     await adoptShown(x, row);
     const thumbnail = await wantThumbnail();
     await putThumbnail(thumbnailKey(x.setup), thumbnail).catch(() => {});
-    cardPicture(row, thumbnailUrls.get(thumbnailKey(x.setup)), true);
+    cardPicture(row, thumbnailUrls.get(thumbnailKey(x.setup)));
   }
   refreshing = false;
   syncRefreshTile();
@@ -41713,7 +41712,7 @@ function gpuFrame(enc, drawAll) {
 // a 2D cell's fade in as the walk plays, at each visit (none paused: whole), as Life's dying stages (its line grows instead:
 // see walkPathV; a surface's tiles and cubes fade by eased); walkFadeSteps: the steps it takes at the speed played
 const WALK_FADE_SECONDS = 0.5;
-document.documentElement.style.setProperty('--fade-seconds', `${WALK_FADE_SECONDS}s`); // (the style's fades as long: a Gallery picture's)
+document.documentElement.style.setProperty('--fade-seconds', `${WALK_FADE_SECONDS}s`); // (the style's fades as long: the view's layers faded under a hover)
 const walkFadeSteps = () => (playing || reversing ? stepsPerSecond() * WALK_FADE_SECONDS : 0); // (its seconds at any speed: half a step at 1/s)
 // Every cell's colour change in a walk fades in over WALK_FADE_SECONDS, whatever changed it (its steps, a battle, a land, a look, a seek;
 // a new walk drawn at once):
@@ -45747,7 +45746,7 @@ async function showInViewPicture() {
   inViewUrl = '';
   const thumbnail = await wantThumbnail();
   inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
-  if (inViewUrl && $('inViewCard')) cardPicture($('inViewCard'), inViewUrl, true);
+  if (inViewUrl && $('inViewCard')) cardPicture($('inViewCard'), inViewUrl);
 }
 const galleryButton = document.createElement('button');
 function galleryTab() {

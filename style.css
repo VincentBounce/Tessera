@@ -1081,14 +1081,6 @@ button.switch.active:hover:not(:disabled) {
   object-fit: cover;
   display: block;
 }
-.gallery-grid .mode-icon img.fresh {
-  animation: fade-in var(--fade-seconds) linear;
-} /* (a thumbnail just taken fading in, as a walk's cells: WALK_FADE_SECONDS; one known drawn at once, see cardPicture) */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
 .gallery-grid button > span:not(.mode-icon):not(.card-check):not(.card-star) {
   position: relative;
   padding: 1px 8px 2px;
@@ -1632,7 +1624,7 @@ button.active .bubble.active {
   height: 100%;
   object-fit: cover;
   background: var(--page-background);
-} /* (an image is not stretched by its insets: its width and height the view's, from the same --view-left; the thumbnail as taken: the view's middle, see stageThumbnail, on its card's background, the theme's: whole in the frame
+} /* (an image is not stretched by its insets: its width and height the view's, from the same --view-left; the thumbnail as taken: the figure's frame, see stageThumbnail, on its card's background, the theme's: whole in the frame
    painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
    builds) */
 .stage > canvas:not(#hoverLayer):not(#gpuLayer) {

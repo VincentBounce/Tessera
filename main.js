@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.910';
+const VERSION = '0.5.911';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -11650,7 +11650,7 @@ function renderModePicker() {
     galleryTab(),
     ...MODE_TABS.map(([k, pic, title, inMore]) => {
       const b = button(
-        `${icon(pic)} ${k}`,
+        `${icon(pic)} <span class="tab-name">${k}</span>`,
         k === kind,
         () => {
           showPane(false);
@@ -37649,10 +37649,10 @@ function restart() {
 // works on this form: the scale on a log scale (a steady feeling of zoom at any size) and the
 // centre in world units, so zooming out does not drift sideways.
 const MIN_SCALE = 1e-6; // pixels per cell, the farthest zoom out
-const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap')),
-  VIEW_LEFT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left')); // (the settings' column over the stage)
+const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap'));
+let viewLeft = 0; // (the settings' column over the stage: --view-left, read again at each resize, 0 on a phone, see resize)
 // the view: the stage's part the settings' column leaves (their cards float over the rest), where a figure is framed and centred
-const viewRect = () => ({ x: VIEW_LEFT, w: canvasWidth - VIEW_LEFT, h: canvasHeight }),
+const viewRect = () => ({ x: viewLeft, w: canvasWidth - viewLeft, h: canvasHeight }),
   viewMiddleX = () => {
     const { x, w } = viewRect();
     return x + w / 2;
@@ -37707,7 +37707,7 @@ function boundsOffscreen(v = view) {
     ox = v.ox ?? viewMiddleX() - v.cx * v.scale,
     oy = v.oy ?? canvasHeight / 2 - v.cy * v.scale;
   return (
-    ox + bounds.minX * v.scale < VIEW_LEFT + m ||
+    ox + bounds.minX * v.scale < viewLeft + m ||
     ox + bounds.maxX * v.scale > canvasWidth - m ||
     oy + bounds.minY * v.scale < m ||
     oy + bounds.maxY * v.scale > canvasHeight - m
@@ -37737,6 +37737,7 @@ function resize() {
   const first = canvasWidth === 0;
   canvasWidth = r.width;
   canvasHeight = r.height;
+  viewLeft = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left'));
   for (const ctx of Object.values(layers)) {
     ctx.canvas.width = Math.round(canvasWidth * dpr);
     ctx.canvas.height = Math.round(canvasHeight * dpr);
@@ -45434,8 +45435,8 @@ function scrollThumb(pane, thumb) {
     clearTimeout(fade);
     fade = setTimeout(() => thumb.classList.remove('scrolled'), 800);
   });
-  new ResizeObserver(place).observe(pane);
-  new ResizeObserver(place).observe(pane.firstElementChild); // (its content grown or shrunk: a section shown or hidden)
+  const watch = new ResizeObserver(place);
+  for (const part of [pane, ...pane.children]) watch.observe(part); // (its content grown or shrunk: a section shown or hidden)
   thumb.addEventListener('pointerdown', (e) => {
     const from = e.clientY,
       top = pane.scrollTop,
@@ -45455,6 +45456,22 @@ function scrollThumb(pane, thumb) {
   });
 }
 scrollThumb(document.querySelector('.panel'), $('panelThumb'));
+// a phone's settings, a drawer over the view's foot (style.css): shut, a tap on it opens it (that tap no click of what it
+// touched); its handle shuts it or opens it
+const PHONE = matchMedia('(max-width: 720px)');
+function phoneDrawer(panel) {
+  panel.addEventListener(
+    'click',
+    (e) => {
+      if (!PHONE.matches || panel.classList.contains('open') || e.target === $('panelHandle')) return;
+      panel.classList.add('open');
+      e.stopPropagation();
+    },
+    true,
+  );
+  $('panelHandle').addEventListener('click', () => panel.classList.toggle('open'));
+}
+phoneDrawer(document.querySelector('.panel'));
 
 /* ---- 12.2 Gallery: built-in setups -------------------------------------------------------- */
 /* The striking setups found so far, part of the page (nothing stored): hovering one shows it in the
@@ -45661,10 +45678,8 @@ function renderGallery() {
 // it again, a setup clicked or another tab: the parameters of the tab before
 function showPane(gallery) {
   if (!gallery) refreshing = false; // (the pictures being refreshed: stopped, the last built shown)
-  $('paramsPane').hidden = gallery;
-  $('galleryPane').hidden = !gallery;
-  galleryTab().classList.toggle('open', gallery);
-  fitModeTabs(); // (the "…" lit if Gallery is in it)
+  $('galleryPane').hidden = !gallery; // (a box over the view, the settings beside it: see .middle-box)
+  galleryTab().classList.toggle('open', gallery); // (the "…" lit if Gallery is in it: style.css)
   if (gallery) {
     renderGallery();
     showInViewPicture();
@@ -45691,7 +45706,7 @@ function galleryTab() {
   const b = galleryButton;
   b.dataset.ready = '1';
   b.className = 'pane-tab';
-  b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> Gallery`; // (its picture the ☆ Save, see syncSaveButton)
+  b.innerHTML = `<span class="fav" role="button">${icon('star')}</span> <span class="tab-name">Gallery</span>`; // (its picture the ☆ Save, see syncSaveButton)
   b.title = 'The Gallery, the curated setups and yours: click one to see it';
   b.addEventListener('click', (e) => {
     if (e.target.closest('.fav')) saveSetup();
@@ -45842,7 +45857,7 @@ new ResizeObserver(() => {
 updateSpeedLabel();
 resize();
 requestAnimationFrame(tick);
-$('appTab').innerHTML = `${icon('logo')} About`;
+$('appTab').innerHTML = `${icon('logo')} <span class="tab-name">About</span>`;
 $('favicon').href =
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${cssColour('--accent-color')}" fill-rule="evenodd" d="${LOGO_PATH}"/></svg>`)}`; // (no page's style there: the accent's colour)
 // Credits: the people whose work it shows, a page in the middle pane as How it works, opened and closed by the app's tab (π,

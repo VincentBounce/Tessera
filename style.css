@@ -154,7 +154,7 @@ main {
   display: flex;
   min-height: 0;
   position: relative;
-} /* (the Gallery over all of it: see #galleryPane) */
+} /* (the Gallery over the view, as a page: see .middle-box) */
 
 .panel {
   position: absolute;
@@ -167,6 +167,28 @@ main {
   scrollbar-width: none; /* its thumb its own, in the view's gap (see .scroll-thumb): Chrome's would take its width */
   padding: var(--view-gap) 0 var(--view-gap) var(--view-gap);
 } /* over the stage, no background: its cards float on the view, the room between them its own (its wheel scrolls it) */
+#panelHandle {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--box-background);
+  backdrop-filter: blur(4px);
+} /* a phone's drawer's handle (see phoneDrawer): a short bar at its top, a tap shuts it or opens it */
+#panelHandle::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: auto;
+  border-radius: 2px;
+  background-color: var(--muted-text-color);
+}
 .scroll-thumb {
   position: absolute;
   z-index: 2;
@@ -971,7 +993,7 @@ button.switch.active:hover:not(:disabled) {
   gap: var(--short-gap);
   margin-bottom: var(--long-gap);
 }
-/* The Gallery: over the whole of main, under the header, the settings and the view kept under it (still drawn: a picture taken) */
+/* The Gallery: a box over the view as a page (.middle-box), the settings beside it, the view under it (still drawn: a picture taken) */
 .gallery-tools-row {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -1024,21 +1046,14 @@ button.switch.active:hover:not(:disabled) {
   object-fit: cover;
 } /* (out of the band's height: the band's tiles make it) */
 #galleryPane:not([hidden]) {
-  position: absolute;
-  inset: 0;
-  padding-top: var(--view-top);
-  background: var(--page-background);
-  z-index: 5;
   display: flex;
   flex-direction: column;
-  background: var(--panel-background);
 } /* (its tools' band fixed at its top, its setups scrolling under it) */
 .gallery-band {
   flex: none;
   padding: 12px 16px 6px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--page-background);
-} /* (the menu bar's, the page's: one band under it) */
+} /* (a band at its box's top, a line under it) */
 #galleryScroll {
   flex: 1;
   min-height: 0;
@@ -2223,40 +2238,59 @@ fades out, slowly then fast */
 @media (max-width: 720px) {
   :root {
     --view-left: 0px;
-    --view-top: var(--view-gap);
-  } /* (the view under the settings, not right of them: its boxes from its own left edge, the player's too; the header over
-     both, in its place, the view's top boxes at its gap) */
+    --phone-bar-height: calc(var(--bar-height) + var(--button-height) + 2 * var(--short-gap));
+    --view-top: calc(2 * var(--view-gap) + var(--phone-bar-height));
+    --drawer-shut: 64px;
+    --drawer-open: 60%;
+  } /* (the view the whole screen, everything floating on it: the header's box two rows high over it, the settings a drawer
+     at its foot, shut its first card's top in sight, open 60 % of it; its boxes from its own edges) */
   header {
-    position: static;
-    height: auto;
-    padding: 0 var(--view-gap) var(--short-gap);
-    border-width: 0 0 1px;
-    border-radius: 0;
-  } /* (in its place at the page's top, not floating: the settings under it) */
+    height: var(--phone-bar-height);
+    padding-bottom: var(--short-gap);
+  }
   .header-row {
     flex-wrap: wrap;
     row-gap: var(--short-gap);
   }
   #modeTabs {
     flex-basis: 100%;
+    height: var(--bar-height);
   }
+  #modeTabs > button {
+    padding-inline: 10px;
+  }
+  #modeTabs > button .tab-name {
+    display: none;
+  } /* (the row's tabs by their pictures alone, all in sight: their names in their tooltips and in the "…" menu) */
   .header-end {
     margin-left: auto;
   } /* (the tabs a row of their own, Share link and the length under them on the right) */
-  main {
-    flex-direction: column;
-  }
   .panel {
-    position: static;
-    flex: none;
+    top: auto;
+    left: var(--view-gap);
+    right: var(--view-gap);
+    bottom: var(--view-gap);
+    z-index: 4;
     width: auto;
-    max-height: 45%;
-    padding-right: var(--view-gap);
-    scrollbar-width: thin;
-    border-right: 0;
-    border-bottom: 1px solid var(--border-color);
-  } /* (in its place over the view, not over it: the view below, its top boxes (Light) in sight; 45% of what is under the header
-  at most, the view the rest: never the window's heights, the header over them) */
+    height: var(--drawer-shut);
+    padding: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    transition: height 0.25s;
+  } /* (a drawer over the view's foot: shut, a tap on it opens it, see phoneDrawer) */
+  .panel.open {
+    height: var(--drawer-open);
+    overflow-y: auto;
+  } /* (open: its cards scroll, its handle at its top shuts it) */
+  #panelHandle {
+    display: block;
+  }
+  .stage-bar {
+    bottom: calc(var(--drawer-shut) + 2 * var(--view-gap));
+  }
+  main:has(.panel.open) .stage-bar {
+    bottom: calc(var(--drawer-open) + 2 * var(--view-gap));
+  } /* (the player over the drawer, its gap apart) */
   .scroll-thumb {
     display: none;
   } /* (no view's gap beside it: Chrome's thin scrollbar) */
@@ -2313,18 +2347,18 @@ fades out, slowly then fast */
 } /* the base whole: only the loop chip shortens */
 
 /* how a rule works (ruleTutorial): over the grid, its cells as the grid's, a pair each count (before → after) */
-.rule-tuto {
+.middle-box {
   inset: var(--view-top) var(--view-gap) var(--view-gap) calc(var(--view-left) + var(--view-gap));
   z-index: 5;
   overflow: hidden;
   padding: 0;
   cursor: auto;
   color: var(--text-color);
-} /* a page (how a rule works, About, Full number): a box over the view as its others (.stage-box), under the header, the
-     view's gap from the settings' cards and the window's edges */
-main:has(.rule-tuto:not([hidden])) :is(.display-menu, .stage-bar) {
+} /* what opens in the middle (a page: how a rule works, About, Full number; the Gallery): a box over the view as its others
+     (.stage-box), under the header, the view's gap from the settings' cards and the window's edges */
+main:has(.middle-box:not([hidden])) :is(.display-menu, .stage-bar) {
   display: none;
-} /* (Display and the player under a page: hidden while it shows, the view alone seen through it) */
+} /* (Display and the player under a page or the Gallery: hidden while it shows, the view alone seen through it) */
 .tut-body {
   position: absolute;
   inset: 0;

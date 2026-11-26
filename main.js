@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.884';
+const VERSION = '0.5.885';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -42030,33 +42030,48 @@ function gpuCubes(count, of, make, reach) {
 }
 
 // A plane's cells and walls as the GPU draws them: each polygon's corners (those on a straight side left out), its number
-// each, its triangles; with k (Cells, see tesseraF), every polygon k corners, its last repeated, a corner's xyz (z 0): a
-// cell's corners then found from its first, as a surface's tiles' are (see planeLampV)
+// each, its triangles; with k (Cells, see tesseraF), its lamps' too in the same pass, one triangulation for both: every
+// polygon k corners, its last repeated, a corner's xyz (z 0), a cell's corners then found from its first, as a surface's
+// tiles' are (see planeLampV; a second pass for the lamps, 2 s of C5's 14 in Dark, LED at once, till v0.5.885)
 function planeVertices(F, k = 0) {
   const straight = (P, i) => {
     const [a, b, c] = [P.at(i - 1), P[i], P[(i + 1) % P.length]];
     return Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) <= 1e-12;
   };
-  const N = k ? k * F.m : F.start[F.m],
-    d = k ? 3 : 2,
-    pos = new Float32Array(d * N),
+  const N = F.start[F.m],
+    pos = new Float32Array(2 * N),
     ids = new Uint32Array(N),
-    tris = new Uint32Array(3 * F.start[F.m]),
+    tris = new Uint32Array(3 * N),
+    lamps = k && { pos: new Float32Array(3 * k * F.m), ids: new Uint32Array(k * F.m), tris: new Uint32Array(3 * N) },
     shapes = new Map(); // (its cells' shapes, see polygonTriangles)
   let v = 0,
     c = 0;
   for (let t = 0; t < F.m; t++) {
     const P = F.poly(t).filter((_, i, P2) => !straight(P2, i)),
       v0 = v;
-    for (let q = 0; q < (k || P.length); q++) {
-      const [x, y] = P[Math.min(q, P.length - 1)];
-      pos[d * v] = x;
-      pos[d * v + 1] = y;
+    for (const [x, y] of P) {
+      pos[2 * v] = x;
+      pos[2 * v + 1] = y;
       ids[v++] = t;
     }
-    for (const i of polygonTriangles(P, shapes)) tris[c++] = v0 + i;
+    if (lamps)
+      for (let q = 0; q < k; q++) {
+        const [x, y] = P[Math.min(q, P.length - 1)];
+        lamps.pos[3 * (k * t + q)] = x;
+        lamps.pos[3 * (k * t + q) + 1] = y;
+        lamps.ids[k * t + q] = t;
+      }
+    for (const i of polygonTriangles(P, shapes)) {
+      if (lamps) lamps.tris[c] = k * t + i;
+      tris[c++] = v0 + i;
+    }
   }
-  return { pos: pos.subarray(0, d * v), ids: ids.subarray(0, v), tris: tris.subarray(0, c) };
+  return {
+    pos: pos.subarray(0, 2 * v),
+    ids: ids.subarray(0, v),
+    tris: tris.subarray(0, c),
+    lamps: lamps && { ...lamps, tris: lamps.tris.subarray(0, c), k },
+  };
 }
 // Life on the plane: its cells' triangles and walls', once a grid; the page's colour on the cells and the walls'
 // on the walls under all, zoomed in enough the outlines, over all the generation's colours (paint: into their buffer)
@@ -42069,7 +42084,7 @@ function gpuPlane(paint) {
     key = gridKey(),
     F = walk.plane.polygons;
   if (D.keys.plane !== key) {
-    const { pos, ids, tris } = planeVertices(F);
+    const { pos, ids, tris, lamps } = planeVertices(F, cellsFinishOn() ? lampCorners(F) : 0);
     gpuBuffer('planePos', pos);
     gpuBuffer('planeIds', ids);
     gpuBuffer('planeTris', tris, GPUBufferUsage.INDEX);
@@ -42084,6 +42099,7 @@ function gpuPlane(paint) {
     Object.assign(D, { planeCount: tris.length, planeLines: null });
     D.keys.plane = key;
     D.keys.planeBase = null;
+    if (lamps) putPlaneLamps(D, lamps);
   }
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff',
     blankCell = oceanOn() ? OCEAN : bg.trim(), // (a cell none has painted: Earth's sea, as a surface's (see blankTile), else the page's)
@@ -42180,18 +42196,23 @@ function gpuPlane(paint) {
 // Cells on the plane: its polygons' corners laid k a cell (its most), once a grid and only while Cells is on, then its
 // Finish and ground's colour each drawing (see planeLampV); true when ready
 function planeLampsReady(D, F, ground) {
-  if (D.keys.planeLamps !== D.keys.plane) {
-    let k = 3;
-    for (let t = 0; t < F.m; t++) k = Math.max(k, F.start[t + 1] - F.start[t]);
-    const { pos, ids, tris } = planeVertices(F, k);
-    gpuBuffer('planeLampPos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE);
-    gpuBuffer('planeLampIds', ids);
-    gpuBuffer('planeLampTris', tris, GPUBufferUsage.INDEX);
-    Object.assign(D, { planeLampCount: tris.length, planeLampK: k });
-    D.keys.planeLamps = D.keys.plane;
-  }
+  if (D.keys.planeLamps !== D.keys.plane) putPlaneLamps(D, planeVertices(F, lampCorners(F)).lamps);
   gpuBuffer('planePieces', Uint32Array.of(D.planeLampK, cellsFinish(), ground, 0), GPUBufferUsage.UNIFORM);
   return true;
+}
+// a lamp's corners on the plane: its polygons' most, 3 at least
+function lampCorners(F) {
+  let k = 3;
+  for (let t = 0; t < F.m; t++) k = Math.max(k, F.start[t + 1] - F.start[t]);
+  return k;
+}
+// the plane's lamps (see planeVertices) into their buffers, for the grid built
+function putPlaneLamps(D, { pos, ids, tris, k }) {
+  gpuBuffer('planeLampPos', pos, GPUBufferUsage.VERTEX | GPUBufferUsage.STORAGE);
+  gpuBuffer('planeLampIds', ids);
+  gpuBuffer('planeLampTris', tris, GPUBufferUsage.INDEX);
+  Object.assign(D, { planeLampCount: tris.length, planeLampK: k });
+  D.keys.planeLamps = D.keys.plane;
 }
 // the plane's painted cells under Cells into rp, by fragment (lit, or its halo's lamps: format its picture's), look slot
 function drawPlaneLamps(D, rp, fragment, slot) {

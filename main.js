@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.907';
+const VERSION = '0.5.908';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6499,7 +6499,7 @@ function describe(base) {
 // step that closed them; or the tiles coloured by their visits (Heatmap, on cells only).
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (no row: the debug panel's Light; Space-time's too)
 const DISPLAY_BY_TAB = {
-  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'shine', 'tiles', 'ocean'], // (Shine: its Glow, and Halo on cells only, see shineLitWhyNot)
+  '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'shine', 'tiles', 'ocean'], // (Shine: its Glow, and Halo on cells only, see lampWhyNot)
   '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D],
   'Walks on surfaces': [
     'shape',
@@ -6934,7 +6934,7 @@ function renderHeadTiles() {
     SHINES.slice(0, SHINES_SHOWN).map(([name, words]) => [
       name,
       words,
-      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : LAMPS[name].flat ? flatLampWhyNot : shineLitWhyNot,
+      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : LAMPS[name].flat ? flatLampWhyNot : lampWhyNot,
     ]), // (each its own greyed state)
     shineNow(),
     defaultOf('shine', tabVariant()),
@@ -39040,7 +39040,7 @@ const SHINES = [
 ];
 // where a mode lights the tiles painted (all but Off and Glow, see LAMPS): Life's cells or a surface's tiles, not a 2D walk's
 // (their corners the plane's or a surface's, see lampAt); a flat lamp (Halo: its light its halo's only) a 2D walk's cells too
-const shineLitWhyNot = ({ w }) => (variantGroup(w) === '2D walks' ? 'Tiles lit in Life and on a surface only' : '');
+const lampWhyNot = ({ w }) => (variantGroup(w) === '2D walks' ? 'Tiles lit in Life and on a surface only' : '');
 const flatLampWhyNot = ({ w }) =>
   variantGroup(w) === '2D walks' && NAV[w][4] !== 'cells'
     ? 'Tiles in Life, on a surface or a 2D walk on cells only'
@@ -39050,8 +39050,7 @@ const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '
 const SHINES_SHOWN = SHINES.length - SHINES_TRIED.length; // (Display › Shine' pills: the others tried in the debug panel's Shine, see debugTuning)
 const SHINE = Object.fromEntries(SHINES.map(([name], k) => [name, k]));
 const shineNow = () => Number($('shine').value); // (its box's, see DISPLAY_DEFAULTS)
-const shineLampsOn = () =>
-  !!LAMPS[SHINES[shineNow()][0]] && !$('shineRow').hidden && !shineLitWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
+const shineLampsOn = () => !!LAMPS[SHINES[shineNow()][0]] && !$('shineRow').hidden && !lampWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
 let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
@@ -44479,7 +44478,7 @@ function debugTuning() {
         text: name,
         title: words,
         on: shineNow() === SHINES_SHOWN + j,
-        whyNot: shineLitWhyNot,
+        whyNot: lampWhyNot,
         click: () => {
           $('shine').value = SHINES_SHOWN + j;
           needsFull = true;

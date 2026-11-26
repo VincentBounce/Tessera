@@ -8,6 +8,9 @@
 # tools/ship.sh "subject without its version" ["body: the Co-Authored-By line…"]
 # STEP=1 tools/ship.sh …: a step the user names (0.4 → 0.5): the middle number up, the last one back at 0
 repo="${0:A:h:h}"; cd "$repo" || exit 1
+# the tasks file (the main checkout's, out of git) copied beside it for the user's backup of the resources folder
+main=$(git rev-parse --path-format=absolute --git-common-dir)/..
+[[ -f "$main/_Tasks TO DO.md" ]] && cp -p "$main/_Tasks TO DO.md" "$main/../Tessera resources/_Tasks TO DO COPY.md"
 subject=$1; body=$2
 [[ -n $subject ]] || { echo 'tools/ship.sh "subject" ["body"]'; exit 1; }
 git diff --cached --quiet && { echo "nothing staged: git add first"; exit 1; }

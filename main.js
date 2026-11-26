@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.915';
+const VERSION = '0.5.916';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -45887,7 +45887,7 @@ const AUTHOR = `🇫🇷 Vincent ᗱƆᑌᑎϹᗴ 👾 · 𝕏 ${externalLink('h
 const CREDITS = [
   [
     'Life and its kin',
-    `${externalLink('https://en.wikipedia.org/wiki/John_Horton_Conway', "John Conway's")} Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's cell-auto.com (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and ${externalLink('https://conwaylife.com/wiki/', 'LifeWiki')} (RLE, patterns)`,
+    `${externalLink('https://en.wikipedia.org/wiki/John_Horton_Conway', "John Conway's")} Game of Life; Edward Fredkin's Replicator; Rudy Rucker and John Walker's Faders; Alan Hensel's letters for squares, Paul Callahan's for hexagons; Norman Margolus and Tommaso Toffoli's blocks; Gérard Vichniac's Q2R; Tim Tyler's ${externalLink('https://cell-auto.com/', 'cell-auto.com')} (Q*Bert, Square-4, stellated blocks); Stephen Wolfram's elementary rules; Chris Langton's ant and loop, John Byl's loop; Mike Paterson and John Conway's worms; Golly and ${externalLink('https://conwaylife.com/wiki/', 'LifeWiki')} (RLE, patterns)`,
   ],
   [
     'Numbers',

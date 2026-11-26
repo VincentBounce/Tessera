@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.908';
+const VERSION = '0.5.909';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -16961,12 +16961,14 @@ function tilingTorusMesh(name, nv, nu, twist = 0) {
     colourCells: sheet.colourCells,
   }));
 }
-// a tile's corners the other way round, its last one repeated still last (a tile with fewer corners than the strip's:
-// repeated first, its normal, from its first corners, was none, and the back's tiles all but black)
+// a tile's corners the other way round, its new last one repeated to fill it (a tile with fewer corners than the strip's:
+// repeated first, its normal, from its first corners, was none, and the back's tiles all but black); its own undoing: a
+// tile turned over twice listed as it was (the old last corner kept as the fill, the first corner again: its heading
+// one corner round, every pattern on a Möbius strip's front of Big rhombitri misshapen, before v0.5.909)
 const turnOver = (c) => {
   let d = c.length;
   while (d > 1 && c[d - 1] === c[d - 2]) d--;
-  return [...c.slice(0, d).reverse(), ...c.slice(d)];
+  return [...c.slice(0, d).reverse(), ...c.slice(d).map(() => c[0])];
 };
 // The mesh of the strip's two faces: the front of each tile as on the sheet, its back the same
 // corners turned over. A corner of the sheet is a corner of each face (but one where the faces

@@ -15,9 +15,9 @@
   --view-left: var(
     --panel-width
   ); /* the view's left edge: the settings' column over the stage, its cards floating on it */
-  --bar-height: 52px; /* the header's boxes, as high as their tabs */
+  --header-height: 52px; /* the header's box, as high as its tabs */
   --view-top: calc(
-    2 * var(--view-gap) + var(--bar-height)
+    2 * var(--view-gap) + var(--header-height)
   ); /* the view's boxes' top: under the header's, its gap apart */
   /* the text's sizes, four, each element one of them: */
   --caption-text-size: 11px; /* a card's words, a bubble, a figure's caption */
@@ -117,7 +117,7 @@ header {
   top: var(--view-gap);
   left: calc(var(--view-left) + var(--view-gap));
   right: var(--view-gap);
-  height: var(--bar-height);
+  height: var(--header-height);
   padding: 0 8px;
   background: var(--box-background);
   backdrop-filter: blur(4px);
@@ -2210,14 +2210,14 @@ fades out, slowly then fast */
 @media (max-width: 720px) {
   :root {
     --view-left: 0px;
-    --phone-bar-height: calc(var(--bar-height) + var(--button-height) + 2 * var(--short-gap));
-    --view-top: calc(2 * var(--view-gap) + var(--phone-bar-height));
-    --drawer-shut: 64px;
-    --drawer-open: 60%;
+    --phone-header-height: calc(var(--header-height) + var(--button-height) + 2 * var(--short-gap));
+    --view-top: calc(2 * var(--view-gap) + var(--phone-header-height));
+    --drawer-shut-height: 64px;
+    --drawer-open-height: 60%;
   } /* (the view the whole screen, everything floating on it: the header's box two rows high over it, the settings a drawer
      at its foot, shut its first card's top in sight, open 60 % of it; its boxes from its own edges) */
   header {
-    height: var(--phone-bar-height);
+    height: var(--phone-header-height);
     padding-bottom: var(--short-gap);
   }
   .header-row {
@@ -2226,7 +2226,7 @@ fades out, slowly then fast */
   }
   #modeTabs {
     flex-basis: 100%;
-    height: var(--bar-height);
+    height: var(--header-height);
   }
   #modeTabs > button {
     padding-inline: 10px;
@@ -2244,24 +2244,24 @@ fades out, slowly then fast */
     bottom: var(--view-gap);
     z-index: 4;
     width: auto;
-    height: var(--drawer-shut);
+    height: var(--drawer-shut-height);
     padding: 0;
     overflow: hidden;
     border-radius: 10px;
     transition: height 0.25s;
   } /* (a drawer over the view's foot: shut, a tap on it opens it, see phoneDrawer) */
   .panel.open {
-    height: var(--drawer-open);
+    height: var(--drawer-open-height);
     overflow-y: auto;
   } /* (open: its cards scroll, its handle at its top shuts it) */
   #panelHandle {
     display: block;
   }
   .stage-bar {
-    bottom: calc(var(--drawer-shut) + 2 * var(--view-gap));
+    bottom: calc(var(--drawer-shut-height) + 2 * var(--view-gap));
   }
   main:has(.panel.open) .stage-bar {
-    bottom: calc(var(--drawer-open) + 2 * var(--view-gap));
+    bottom: calc(var(--drawer-open-height) + 2 * var(--view-gap));
   } /* (the player over the drawer, its gap apart) */
   .scroll-thumb {
     display: none;

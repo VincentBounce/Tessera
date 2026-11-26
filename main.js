@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.897';
+const VERSION = '0.5.898';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6946,7 +6946,7 @@ function renderHeadTiles() {
     CELLS_FINISHES.slice(0, CELLS_SHOWN).map(([name, words]) => [
       name,
       words,
-      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : cellsLitWhyNot,
+      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : LAMPS[name].flat ? flatLampWhyNot : cellsLitWhyNot,
     ]), // (each its own greyed state)
     cellsFinish(),
     defaultOf('cellsFinish', tabVariant()),
@@ -39047,7 +39047,12 @@ const CELLS_FINISHES = [
   ...CELLS_TRIED, // (debug.js's)
 ];
 // where a mode lights the tiles painted (all but Off and Glow, see LAMPS): Life's cells or a surface's tiles, not a 2D walk's
+// (their corners the plane's or a surface's, see lampAt); a flat lamp (Halo: its light its halo's only) a 2D walk's cells too
 const cellsLitWhyNot = ({ w }) => (variantGroup(w) === '2D walks' ? 'Tiles lit in Life and on a surface only' : '');
+const flatLampWhyNot = ({ w }) =>
+  variantGroup(w) === '2D walks' && NAV[w][4] !== 'cells'
+    ? 'Tiles in Life, on a surface or a 2D walk on cells only'
+    : '';
 // Glow: a walk on the edges only (its line glowing, see lineGlowOn)
 const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only');
 const CELLS_SHOWN = CELLS_FINISHES.length - CELLS_TRIED.length; // (Display › Cells' pills: the others tried in the debug panel's Cells, see cellsTuning)
@@ -40184,6 +40189,11 @@ const cellsLightOf = (name) => {
 };
 // a mode's halo now, none: undefined; the tiles none painted, darkened now (1: as they are)
 const haloOf = (name) => LAMPS[name]?.halo?.(cellsLightNow());
+// a flat lamp's halo (Halo: its tiles drawn as Off's, its light its halo's only), any drawer's tiles: a 2D walk's cells too
+const flatLampHalo = () => {
+  const name = CELLS_FINISHES[cellsFinish()][0];
+  return LAMPS[name]?.flat && !$('cellsFinishRow').hidden ? haloOf(name) : null;
+};
 const ceilingNow = () =>
   (cellsFinishOn() ? LAMPS[CELLS_FINISHES[cellsFinish()][0]]?.ceiling?.(cellsLightNow()) : null) ?? 1;
 // a draw's numbers, in this order (vec3s padded to 4 words; see struct U)
@@ -41760,26 +41770,26 @@ function gpuLatticeWalk(to) {
   const enc = device.createCommandEncoder(),
     rp = gpuRenderPass(enc, null, [0, 0, 0, 0], false),
     colour = mode === 'digit' ? 2 : 0;
-  // tiles, each from its instance and the step it came at; fade: the steps a tile takes to fade in (0: at once)
-  const tiles = (buffer, atBuffer, tpl, count, alpha, fade) => {
-    rp.setPipeline(
-      gpuDrawPipe('flatTiles', {
+  // tiles, each from its instance and the step it came at; fade: the steps a tile takes to fade in (0: at once); into: its
+  // pass, the view's, or a halo's picture (glow: its light's share, its colour alone, see colGlowF and gpuHalo)
+  const tiles = (buffer, atBuffer, tpl, count, alpha, fade, into = rp, glow = 0) => {
+    into.setPipeline(
+      gpuDrawPipe(glow ? 'flatTilesGlow' : 'flatTiles', {
         vertex: 'walkTilesV',
-        fragment: 'colF',
-        blend: BLEND_PRE,
-        depth: false,
+        fragment: glow ? 'colGlowF' : 'colF',
+        ...(glow ? { writes: false, format: 'rgba16float' } : { blend: BLEND_PRE, depth: false }),
         buffers: [
           vertexLayout(16, [vertexAttribute(0, 'float32x4')], 'instance'),
           vertexLayout(4, [vertexAttribute(1, 'float32')], 'instance'),
         ],
       }),
     );
-    rp.setBindGroup(0, gpuGroup(), [
-      gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: 1, fadeSteps: fade }),
+    into.setBindGroup(0, gpuGroup(), [
+      gpuView(D.words, slot++, 1, { colour, tpl, alphaF: alpha, bright: glow || 1, fadeSteps: fade }),
     ]); // (the step and its fraction: fading in smoothly)
-    rp.setVertexBuffer(0, buffer);
-    rp.setVertexBuffer(1, atBuffer);
-    rp.draw(12, count);
+    into.setVertexBuffer(0, buffer);
+    into.setVertexBuffer(1, atBuffer);
+    into.draw(12, count);
   };
   if (fillCount) tiles(D.walkFill, D.walkFillAt, D.fillTpl, fillCount, areaLight() ? 0.35 : 1, 0);
   if (cellCount)
@@ -41847,6 +41857,13 @@ function gpuLatticeWalk(to) {
         glow.draw(4, walked);
       },
       lineGlowHalo(),
+    );
+  const halo = cellCount && flatLampHalo(); // (Halo: its cells' light round them, as the plane's and a surface's)
+  if (halo)
+    gpuHalo(
+      enc,
+      (glow) => tiles(D.walkCells, D.walkCellsAt, D.cellTpl, cellCount, 1, walkFadeSteps(), glow, halo.share),
+      halo,
     );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
   device.queue.submit([enc.finish()]);

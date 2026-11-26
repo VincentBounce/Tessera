@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.888';
+const VERSION = '0.5.889';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -39020,10 +39020,8 @@ const GLASS_ALPHA = 0.4; // (a tile's share: a layer behind seen at 60%, two at 
 const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Cells: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (LED), a
-// ceiling's LED panel (Panel), a piece of mosaic (Tessera); then those tried in the debug panel's Cells (CELLS_SHOWN on):
-// a frosted slab lit from under it (LED+), a tube along its edge, its light spilling far (Tube), or every light's numbers
-// to try (Debug: LED inside out too, its middle below 0); its number its place (written in no link), the shaders' by its
-// name (CELLS_FINISH)
+// ceiling's LED panel (Panel), a piece of mosaic (Tessera); then those tried in the debug panel's Cells (CELLS_TRIED,
+// debug.js's: LED+, Tube, Debug); its number its place (written in no link), the shaders' by its name (CELLS_FINISH)
 const CELLS_FINISHES = [
   ['Off', 'The tiles plain, each one colour'],
   ['Halo', "Each tile painted as it is, LED's halo round it, none on it"],
@@ -39033,14 +39031,9 @@ const CELLS_FINISHES = [
     "Each tile painted a ceiling's LED panel, lit evenly to its edges, its light spilling round it; in Solo on a light page in a grey ceiling, its light falling on the tiles round it",
   ],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
-  [
-    'LED+',
-    'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
-  ],
-  ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
-  ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
+  ...CELLS_TRIED, // (debug.js's)
 ];
-const CELLS_SHOWN = 5; // (Display › Cells' pills, the first five: the others tried in the debug panel's Cells, see cellsTuning)
+const CELLS_SHOWN = CELLS_FINISHES.length - CELLS_TRIED.length; // (Display › Cells' pills: the others tried in the debug panel's Cells, see cellsTuning)
 const CELLS_FINISH = Object.fromEntries(CELLS_FINISHES.map(([name], k) => [name, k]));
 const cellsFinish = () => Number($('cellsFinish').value); // (its box's, see DISPLAY_DEFAULTS)
 const cellsFinishOn = () => cellsFinish() > 0 && !$('cellsFinishRow').hidden;
@@ -40103,38 +40096,15 @@ const CELLS_LIGHT = {
   tesseraSlope: 1.6, // (its rounding's slope at its edge)
   ledEdge: 0.15, // (LED: its light at its edge)
   ledMiddle: 1.1, // (and added in its middle)
-  tubePeak: 1.6, // (Tube: its light, strongest at tubeAt)
-  tubeAt: 0.14, // (its tube's middle, its share of the way from its edge to its middle)
-  tubeWidth: 0.07, // (its tube's width, the same share)
-  tubeFloor: 0.06, // (its light off the tube: its middle, and between its edge and its tube)
-  ledPlusEdge: 0.35, // (LED+: its light at its edge)
-  ledPlusMiddle: 0.9, // (and added over its middle, where its lamp is)
-  ledPlusJoint: 0.12, // (its dark joint, its share of the way from its edge to its middle)
-  ledPlusGloss: 0.6, // (the sky's glint on it, its grey)
   panelLight: 0.85, // (Panel: its light, even)
   panelCeiling: 1, // (the tiles none painted, darkened: none)
   panelColour: null, // (its light's colour, a CSS colour; none: its ink's, see lampLight)
   panelCast: false, // (its halo cast on the tiles round it, else added: see LAMPS)
-  debugEdge: 0.85, // (Debug: its light at its edge)
-  debugMiddle: 0, // (and added in its middle: below 0, dark there, LED inside out)
-  debugSpot: 1, // (its middle's width: wider the higher)
-  debugWhite: 0, // (its light turned white where strongest, its share: a white core)
-  debugFrame: 0, // (its frame, its share of the way from its edge to its middle: none)
-  debugFrameLight: 0, // (the frame's light)
-  debugFrameFade: 0.7, // (where its frame starts fading into its light, its share of the frame)
-  debugGloss: 0, // (the sky's glint on it, its grey)
-  debugAngle: 0, // (its light weaker seen aslant, its share)
-  debugCeiling: 1, // (the tiles none painted, darkened: none)
-  debugColour: null, // (its light's colour; none: its ink's)
-  debugCast: false, // (its halo cast on the tiles round it, else added)
-  debugReach: 2, // (its halo's blurs, 1 to 4: wider)
   haloHalo: 1.6, // (each mode's halo: its lamps' light added round them, its share)
   ledHalo: 1.6,
-  tubeHalo: 1.6,
-  ledPlusHalo: 0.8,
   panelHalo: 1.6,
-  debugHalo: 1.6,
   cellsDarkInk: 0.2, // (an ink darker than this lights in its inverse: black's white)
+  ...CELLS_TRIED_LIGHT, // (debug.js's)
 };
 // Panel and Debug in Solo on a light page, in 3D: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
 // tiles round it (the ground near white: a light added on it cut off to white), as the user tuned it there; every other
@@ -40146,12 +40116,7 @@ const CELLS_LIGHT_SOLO_3D = {
   panelColour: '#f7ffb8',
   panelCast: true,
   panelHalo: 0.84,
-  debugEdge: 1,
-  debugCeiling: 0.67,
-  debugColour: '#fff68f',
-  debugCast: true,
-  debugReach: 3,
-  debugHalo: 0.84,
+  ...CELLS_TRIED_SOLO_3D, // (debug.js's)
 };
 // the same in 2D: Panel's light white and dimmer, as the user tuned it there, its ceiling none (Debug's alone in 2D)
 const CELLS_LIGHT_SOLO_2D = { ...CELLS_LIGHT_SOLO_3D, panelLight: 0.47, panelColour: '#ffffff', panelCeiling: 1 };
@@ -40171,38 +40136,13 @@ const vec3Of = (colour) => `vec3f(${rgbOf(colour).map((v) => (v / 255).toFixed(4
 const LAMPS = {
   Halo: { light: ledLight, flat: true, halo: (L) => ({ share: L.haloHalo, steps: [1, 2] }) },
   LED: { light: ledLight, halo: (L) => ({ share: L.ledHalo, steps: [1, 2] }) },
-  'LED+': {
-    light: (L) =>
-      `return col * (${L.ledPlusEdge} + ${L.ledPlusMiddle} * l * l) * smoothstep(0.0, ${L.ledPlusJoint}, w);`, // (a slab over its lamp: brightest over it, dark at its joint)
-    gloss: (L) => L.ledPlusGloss, // (the sky glinting on its slab)
-    halo: (L) => ({ share: L.ledPlusHalo, steps: [1] }),
-  },
   Panel: {
     light: (L) => `return ${L.panelColour ? vec3Of(L.panelColour) : 'col'} * ${L.panelLight};`, // (even to its edges; its light panelColour's, if any)
     ceiling: (L) => L.panelCeiling,
     halo: (L) => ({ share: L.panelHalo, steps: L.panelCast ? [1, 2, 4] : [1, 2], cast: L.panelCast }),
   },
-  Tube: {
-    light: (L) =>
-      `let t = (w - ${L.tubeAt}) / ${Math.max(L.tubeWidth, 0.01)}; return col * (${L.tubeFloor} + ${L.tubePeak} * exp(-t * t));`,
-    halo: (L) => ({ share: L.tubeHalo, steps: [1, 2, 4, 8] }),
-  },
   Tessera: { mosaic: (L) => ({ slope: L.tesseraSlope, bevel: Math.max(L.tesseraBevel, 0.01) }) },
-  Debug: {
-    // (every number of a lamp: its middle, a white core, a frame, weaker aslant; its light debugColour's, if any; debugMiddle
-    // below 0: never a light below none)
-    light: (L) => `let peak = pow(l, 2.0 / ${Math.max(L.debugSpot, 0.05)});
-    let lit = mix(${L.debugColour ? vec3Of(L.debugColour) : 'col'}, vec3f(1.0), ${L.debugWhite} * peak) * (${L.debugEdge} + ${L.debugMiddle} * peak);
-    let framed = lit * mix(${L.debugFrameLight}, 1.0, smoothstep(${L.debugFrame} * ${L.debugFrameFade}, ${Math.max(L.debugFrame, 1e-4)}, w));
-    return max(framed * mix(1.0, max(dot(n, u.V), 0.0), ${L.debugAngle}), vec3f(0.0));`,
-    gloss: (L) => L.debugGloss,
-    ceiling: (L) => L.debugCeiling,
-    halo: (L) => ({
-      share: L.debugHalo,
-      steps: [1, 2, 4, 8].slice(0, Math.min(4, Math.max(1, Math.round(L.debugReach)))),
-      cast: L.debugCast,
-    }),
-  },
+  ...LAMPS_TRIED, // (debug.js's)
 };
 // what every lamp reads besides its own: a lit tile's own colour, dimmed, and the sky's lamp on it (its light not flat); a
 // dark ink's light its inverse (any light)

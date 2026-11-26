@@ -5,6 +5,7 @@
  * A panel to try settings by eye, over the view's top left corner, under its axes: numbers, each a slider, and colours to
  * pick from. Not a part of the app's menu: main.js calls it where a trial needs it (see cellsTuning), and debugPanel(null)
  * takes it away. Its numbers are an object's, changed in place; what they change is the caller's (its onChange).
+ * Below it, Display › Cells' modes on trial (LED+, Tube, Debug), tried in it alone: see Cells on trial.
  *   debugPanel({
  *     key, title,                             what it shows (the same key: the panel left as it is), its name
  *     tabs,                                   the caller's tabs over its title (main.js's textTabs: Cells, Line)
@@ -215,3 +216,78 @@ function debugPanel(spec) {
     for (const name of Object.keys(more.numbers)) slider(name, more.numbers, more.onNumbers);
   }
 }
+
+/* ---- Cells on trial ---------------------------------------------------------------------------- */
+// Display › Cells' modes tried in the panel's Cells (main.js's cellsTuning), out of the menu: their names and words (main.js's
+// CELLS_FINISHES ends with them), their numbers (its CELLS_LIGHT's, and in Solo on a light page in 3D, its
+// CELLS_LIGHT_SOLO_3D's) and their lamps (its LAMPS', see there: ledLight, vec3Of main.js's)
+const CELLS_TRIED = [
+  [
+    'LED+',
+    'Each tile painted a frosted slab lit from under it: brightest over its middle, dark at its joint, the sky still glinting on it, its light spilling a little round it',
+  ],
+  ['Tube', 'Each tile painted a neon tube along its edge, its middle dark, its light spilling far round it'],
+  ['Debug', 'Each tile painted a lamp, every number of its light to try in the debug panel'],
+];
+const CELLS_TRIED_LIGHT = {
+  tubePeak: 1.6, // (Tube: its light, strongest at tubeAt)
+  tubeAt: 0.14, // (its tube's middle, its share of the way from its edge to its middle)
+  tubeWidth: 0.07, // (its tube's width, the same share)
+  tubeFloor: 0.06, // (its light off the tube: its middle, and between its edge and its tube)
+  ledPlusEdge: 0.35, // (LED+: its light at its edge)
+  ledPlusMiddle: 0.9, // (and added over its middle, where its lamp is)
+  ledPlusJoint: 0.12, // (its dark joint, its share of the way from its edge to its middle)
+  ledPlusGloss: 0.6, // (the sky's glint on it, its grey)
+  debugEdge: 0.85, // (Debug: its light at its edge)
+  debugMiddle: 0, // (and added in its middle: below 0, dark there, LED inside out)
+  debugSpot: 1, // (its middle's width: wider the higher)
+  debugWhite: 0, // (its light turned white where strongest, its share: a white core)
+  debugFrame: 0, // (its frame, its share of the way from its edge to its middle: none)
+  debugFrameLight: 0, // (the frame's light)
+  debugFrameFade: 0.7, // (where its frame starts fading into its light, its share of the frame)
+  debugGloss: 0, // (the sky's glint on it, its grey)
+  debugAngle: 0, // (its light weaker seen aslant, its share)
+  debugCeiling: 1, // (the tiles none painted, darkened: none)
+  debugColour: null, // (its light's colour; none: its ink's)
+  debugCast: false, // (its halo cast on the tiles round it, else added)
+  debugReach: 2, // (its halo's blurs, 1 to 4: wider)
+  tubeHalo: 1.6,
+  ledPlusHalo: 0.8,
+  debugHalo: 1.6,
+};
+const CELLS_TRIED_SOLO_3D = {
+  debugEdge: 1,
+  debugCeiling: 0.67,
+  debugColour: '#fff68f',
+  debugCast: true,
+  debugReach: 3,
+  debugHalo: 0.84,
+};
+const LAMPS_TRIED = {
+  'LED+': {
+    light: (L) =>
+      `return col * (${L.ledPlusEdge} + ${L.ledPlusMiddle} * l * l) * smoothstep(0.0, ${L.ledPlusJoint}, w);`, // (a slab over its lamp: brightest over it, dark at its joint)
+    gloss: (L) => L.ledPlusGloss, // (the sky glinting on its slab)
+    halo: (L) => ({ share: L.ledPlusHalo, steps: [1] }),
+  },
+  Tube: {
+    light: (L) =>
+      `let t = (w - ${L.tubeAt}) / ${Math.max(L.tubeWidth, 0.01)}; return col * (${L.tubeFloor} + ${L.tubePeak} * exp(-t * t));`,
+    halo: (L) => ({ share: L.tubeHalo, steps: [1, 2, 4, 8] }),
+  },
+  Debug: {
+    // (every number of a lamp: its middle, a white core, a frame, weaker aslant; its light debugColour's, if any; debugMiddle
+    // below 0: never a light below none)
+    light: (L) => `let peak = pow(l, 2.0 / ${Math.max(L.debugSpot, 0.05)});
+    let lit = mix(${L.debugColour ? vec3Of(L.debugColour) : 'col'}, vec3f(1.0), ${L.debugWhite} * peak) * (${L.debugEdge} + ${L.debugMiddle} * peak);
+    let framed = lit * mix(${L.debugFrameLight}, 1.0, smoothstep(${L.debugFrame} * ${L.debugFrameFade}, ${Math.max(L.debugFrame, 1e-4)}, w));
+    return max(framed * mix(1.0, max(dot(n, u.V), 0.0), ${L.debugAngle}), vec3f(0.0));`,
+    gloss: (L) => L.debugGloss,
+    ceiling: (L) => L.debugCeiling,
+    halo: (L) => ({
+      share: L.debugHalo,
+      steps: [1, 2, 4, 8].slice(0, Math.min(4, Math.max(1, Math.round(L.debugReach)))),
+      cast: L.debugCast,
+    }),
+  },
+};

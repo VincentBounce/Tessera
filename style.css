@@ -1081,9 +1081,9 @@ button.switch.active:hover:not(:disabled) {
   object-fit: cover;
   display: block;
 }
-.gallery-grid .mode-icon img {
+.gallery-grid .mode-icon img.fresh {
   animation: fade-in var(--fade-seconds) linear;
-} /* (every thumbnail fading in as it shows, as a walk's cells: WALK_FADE_SECONDS) */
+} /* (a thumbnail just taken fading in, as a walk's cells: WALK_FADE_SECONDS; one known drawn at once, see cardPicture) */
 @keyframes fade-in {
   from {
     opacity: 0;

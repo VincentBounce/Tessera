@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.917';
+const VERSION = '0.5.918';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36886,13 +36886,11 @@ const savedOf = (setup, list) => {
   const x = { setup, saved: new Date().toISOString() };
   return Object.assign(x, { name: uniqueName(setupTitle(x), list) });
 };
-// a row's thumbnail in place of its icon (its URL let go with the row: see fillGalleryList)
-let thumbnailUrls = [];
-const showThumbnail = (row, thumbnail) => {
-  const url = URL.createObjectURL(thumbnail);
-  thumbnailUrls.push(url);
-  row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt="">`;
-}; // (fading in as a walk's cells, see .gallery-grid img)
+// a card's picture in place of its icon: one taken now fading in (fresh, as a walk's cells, see .gallery-grid img.fresh), one
+// known drawn at once
+const cardPicture = (row, url, fresh = false) => {
+  row.querySelector('.mode-icon').innerHTML = `<img src="${url}" alt=""${fresh ? ' class="fresh"' : ''}>`;
+};
 // the cards shown, in their order: { setup, row } (Refresh takes them so, see refreshThumbnails)
 let galleryCards = [];
 // The cards selected, by their names: a card's check (seen on its hover) selects it; while one is, every check shows and a
@@ -36931,8 +36929,7 @@ function deleteSelected() {
     kept = new Set(left.map((x) => thumbnailKey(x.setup)));
   writeGallery(left);
   for (const x of list)
-    if (selectedNames.has(x.name) && !kept.has(thumbnailKey(x.setup)))
-      thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(x.setup))).catch(() => {});
+    if (selectedNames.has(x.name) && !kept.has(thumbnailKey(x.setup))) dropThumbnail(thumbnailKey(x.setup));
   selectedNames.clear();
   fillGalleryList();
 }
@@ -36948,9 +36945,6 @@ const syncRefreshTile = () =>
   });
 // The Gallery's setups, as rows like the built-in ones (see setupRow), its thumbnail over each
 function fillGalleryList() {
-  thumbnailUrls.forEach((url) => URL.revokeObjectURL(url));
-  thumbnailUrls = [];
-  const looks = []; // (each card's thumbnail looked for)
   galleryCards = [];
   const list = readGallery();
   // every tab's (Life, Ant, Walk…), each under its name, the tab in use's even with none (the ☆ said there); by their titles
@@ -36972,12 +36966,9 @@ function fillGalleryList() {
         cards.innerHTML = `<p class="caption">None in ${kind} yet: the ☆ of Gallery's tab keeps the setup in view</p>`;
       cards.append(
         ...mine.map(([title, detail, x]) => {
-          const row = setupRow(title, detail, x, inView);
-          looks.push(
-            thumbnailOf(x.setup).then((thumbnail) => {
-              if (thumbnail) showThumbnail(row, thumbnail);
-            }),
-          ); // (none yet: its icon)
+          const row = setupRow(title, detail, x, inView),
+            url = thumbnailUrls.get(thumbnailKey(x.setup)); // (none known, or not read yet: its icon)
+          if (url) cardPicture(row, url);
           galleryCards.push({ x, row });
           return row;
         }),
@@ -36989,7 +36980,7 @@ function fillGalleryList() {
     }),
   );
   setTile($('galleryExport'), { greyed: list.length ? '' : 'The Gallery is empty.' }); // (none to take; the Gallery's state, no setup's: greyed, not whyNot, see setTile)
-  Promise.all(looks).then(syncRefreshTile); // (once each card's thumbnail is looked for)
+  syncRefreshTile();
   syncSelection();
   syncSaveButton();
 }
@@ -37041,7 +37032,7 @@ function saveSetup() {
     alertTip('This browser does not allow saving (private window?).', galleryTab().querySelector('.fav'));
   fillGalleryList();
   wantThumbnail()
-    .then((thumbnail) => thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(setup))))
+    .then((thumbnail) => putThumbnail(thumbnailKey(setup), thumbnail))
     .then(fillGalleryList, () => {}); // (none kept: its row keeps its icon)
 }
 
@@ -37051,7 +37042,7 @@ function deleteSetup(name) {
     left = list.filter((x) => x !== gone);
   writeGallery(left);
   if (gone && !left.some((x) => thumbnailKey(x.setup) === thumbnailKey(gone.setup)))
-    thumbnailStore('readwrite', (store) => store.delete(thumbnailKey(gone.setup))).catch(() => {}); // (its thumbnail, if no other row shows it)
+    dropThumbnail(thumbnailKey(gone.setup)); // (its thumbnail, if no other row shows it)
   fillGalleryList();
 }
 
@@ -37160,7 +37151,29 @@ function stageThumbnail(size) {
     g.drawImage($(id), left * dpr, top * dpr, (right - left) * dpr, (bottom - top) * dpr, ...into);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
-const thumbnailOf = (setup) => thumbnailStore('readonly', (store) => store.get(thumbnailKey(setup))).catch(() => null);
+// The thumbnails as this session knows them, each key's picture URL: read from the store all at once (the Gallery's first
+// opening, see showPane), then kept as each one taken or let go changes the store (putThumbnail, dropThumbnail): a card
+// drawn with its picture at once, never its icon first
+const thumbnailUrls = new Map();
+let thumbnailsRead = null;
+const readThumbnails = () =>
+  (thumbnailsRead ??= Promise.all([
+    thumbnailStore('readonly', (store) => store.getAllKeys()),
+    thumbnailStore('readonly', (store) => store.getAll()),
+  ]).then(
+    ([keys, pictures]) => keys.forEach((key, i) => thumbnailUrls.set(key, URL.createObjectURL(pictures[i]))),
+    () => {},
+  )); // (none kept, the store refused: the cards' icons)
+const dropThumbnail = (key) => {
+  URL.revokeObjectURL(thumbnailUrls.get(key));
+  thumbnailUrls.delete(key);
+  return thumbnailStore('readwrite', (store) => store.delete(key)).catch(() => {});
+};
+const putThumbnail = (key, thumbnail) => {
+  URL.revokeObjectURL(thumbnailUrls.get(key));
+  thumbnailUrls.set(key, URL.createObjectURL(thumbnail));
+  return thumbnailStore('readwrite', (store) => store.put(thumbnail, key));
+};
 // Refresh: the cards selected (taken again, a thumbnail or not), else those with no thumbnail, in their order, one after the
 // other: each shown (as a click on it) and taken once built, its thumbnail fading in on its card; a click again, the Gallery
 // shut or a card clicked stops it (the last built shown)
@@ -37180,12 +37193,12 @@ async function refreshThumbnails() {
   const used = new Set(readGallery().map((x) => thumbnailKey(x.setup))); // (the thumbnails no card shows any more, a setup gone or its key changed: erased)
   if (refreshing)
     for (const key of await thumbnailStore('readonly', (store) => store.getAllKeys()))
-      if (!used.has(key)) await thumbnailStore('readwrite', (store) => store.delete(key));
+      if (!used.has(key)) await dropThumbnail(key);
   for (const { x, row } of galleryCards.slice()) {
     // (as they are now: the list drawn again meanwhile, these go on)
     const { setup } = x;
     if (!refreshing) return;
-    if (selectedNames.size ? !selectedNames.has(x.name) : await thumbnailOf(setup)) continue;
+    if (selectedNames.size ? !selectedNames.has(x.name) : thumbnailUrls.has(thumbnailKey(setup))) continue;
     const built = whenBuilt();
     if (!isInUse(setup) && applySetup(setup)) {
       renderModePicker();
@@ -37194,8 +37207,8 @@ async function refreshThumbnails() {
     if (!refreshing) return; // (stopped meanwhile: another setup shown, not its thumbnail)
     await adoptShown(x, row);
     const thumbnail = await wantThumbnail();
-    await thumbnailStore('readwrite', (store) => store.put(thumbnail, thumbnailKey(x.setup))).catch(() => {});
-    showThumbnail(row, thumbnail);
+    await putThumbnail(thumbnailKey(x.setup), thumbnail).catch(() => {});
+    cardPicture(row, thumbnailUrls.get(thumbnailKey(x.setup)), true);
   }
   refreshing = false;
   syncRefreshTile();
@@ -37226,11 +37239,10 @@ async function adoptShown(x, row) {
   row.title = setupWords(x); // (as a card's: its words, see card)
   const key = thumbnailKey(x.setup),
     thumbnail = key !== was && (await thumbnailStore('readonly', (store) => store.get(was)).catch(() => null));
-  if (thumbnail)
-    await thumbnailStore('readwrite', (store) => {
-      store.delete(was);
-      return store.put(thumbnail, key);
-    }).catch(() => {});
+  if (thumbnail) {
+    await dropThumbnail(was);
+    await putThumbnail(key, thumbnail).catch(() => {});
+  } // (its picture under its new key)
   syncSaveButton();
 }
 
@@ -45702,8 +45714,8 @@ function showPane(gallery) {
   $('galleryPane').hidden = !gallery; // (a box over the view, the settings beside it: see .middle-box)
   galleryTab().classList.toggle('open', gallery); // (the "…" lit if Gallery is in it: style.css)
   if (gallery) {
-    renderGallery();
-    showInViewPicture();
+    showInViewPicture(); // (the last one let go before the cards are drawn: taken anew)
+    readThumbnails().then(renderGallery); // (every card's picture known first: read once a session)
     $('yourList').querySelector(`[data-kind="${NAV[tabVariant()]?.[0]}"]`)?.scrollIntoView({ block: 'start' });
   } // (the tab in use's section)
 }
@@ -45713,7 +45725,6 @@ function showPane(gallery) {
 function inViewCard(inView) {
   const x = { setup: inView },
     b = card({
-      pic: icon(SHAPE_ICONS[NAV[setupVariant(inView)]?.[2]] ?? VARIANT_ICONS[setupVariant(inView)]),
       name: 'In view',
       detail: `${setupTitle(x)}\n${setupWords(x)}`,
       on: true,
@@ -45726,14 +45737,17 @@ function inViewCard(inView) {
       title: 'Save the setup in view in the Gallery, in this browser',
     }),
   );
-  if (inViewThumbnail) showThumbnail(b, inViewThumbnail);
+  if (inViewUrl) cardPicture(b, inViewUrl);
   b.addEventListener('click', (e) => (e.target.closest('.card-star') ? saveSetup() : showPane(false)));
   return b;
 }
-let inViewThumbnail = null; // (taken as the Gallery opens; the card made again, a setup saved or deleted, keeps it)
+let inViewUrl = ''; // (taken as the Gallery opens, no icon before it; the card made again, a setup saved or deleted, keeps it)
 async function showInViewPicture() {
-  inViewThumbnail = await wantThumbnail();
-  if (inViewThumbnail && $('inViewCard')) showThumbnail($('inViewCard'), inViewThumbnail);
+  URL.revokeObjectURL(inViewUrl);
+  inViewUrl = '';
+  const thumbnail = await wantThumbnail();
+  inViewUrl = thumbnail ? URL.createObjectURL(thumbnail) : '';
+  if (inViewUrl && $('inViewCard')) cardPicture($('inViewCard'), inViewUrl, true);
 }
 const galleryButton = document.createElement('button');
 function galleryTab() {

@@ -1114,6 +1114,27 @@ button.switch.active:hover:not(:disabled) {
 .gallery-grid button:hover .card-check {
   display: flex;
 } /* (while selecting, every card's; else a card hovered's: a click on it selects the card) */
+/* a card's link saved as a file: on its name's band at its left (6 px from the card's side, past the band's 8 px), seen on its
+   hover; a grey square under it on its own hover, as a rule card's picture's (.mode-icon.act) */
+.gallery-grid .card-link {
+  position: absolute;
+  left: -2px;
+  bottom: calc(100% + 6px);
+  display: none;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--text-color);
+}
+.gallery-grid button:hover .card-link {
+  display: flex;
+}
+.gallery-grid .card-link:hover {
+  background: var(--border-color);
+}
+.gallery-grid .card-link svg {
+  width: 20px;
+  height: 20px;
+}
 /* the card in view: its gold star at the top right, always, facing the check; its gold border not while selecting (gold then
    the cards selected only) */
 .gallery-grid .card-star {

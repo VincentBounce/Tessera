@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.919">
+  <link rel="stylesheet" href="style.css?v=0.5.920">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -232,8 +232,8 @@
     <div id="panelThumb" class="scroll-thumb" hidden></div>  <!-- the settings' scroll thumb, in the view's gap beside them (see scrollThumb) -->
     <div id="galleryPane" class="stage-box middle-box" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
       <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
-        <div class="gallery-tools-row">  <!-- Open and Paste RLE, Save link, then the selection's tools and the Gallery's (the setup in view: the first card of its tab's section, see inViewCard) -->
-          <div id="galleryOpenTiles" class="nav-shapes"></div>  <!-- Open and Paste RLE: a pattern in the nearest setup that plays it; Save link: the setup in view's as a file -->
+        <div class="gallery-tools-row">  <!-- Open and Paste RLE, then the selection's tools and the Gallery's (the setup in view: the first card of its tab's section, see inViewCard) -->
+          <div id="galleryOpenTiles" class="nav-shapes"></div>  <!-- Open and Paste RLE: a pattern in the nearest setup that plays it -->
           <div class="gallery-tools">
             <div id="gallerySelectTiles" class="nav-shapes"></div>  <!-- Select: none, some, all (see syncSelection) -->
             <div id="galleryTools" class="nav-shapes"></div>  <!-- Refresh, Delete, Import, Export -->
@@ -345,11 +345,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.919"></script>
-  <script src="punks.js?v=0.5.919"></script>
-  <script src="loops.js?v=0.5.919"></script>
-  <script src="emoji.js?v=0.5.919"></script>
-  <script src="debug.js?v=0.5.919"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.919"></script>
+  <script src="pixelarticons.js?v=0.5.920"></script>
+  <script src="punks.js?v=0.5.920"></script>
+  <script src="loops.js?v=0.5.920"></script>
+  <script src="emoji.js?v=0.5.920"></script>
+  <script src="debug.js?v=0.5.920"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.920"></script>
 </body>
 </html>

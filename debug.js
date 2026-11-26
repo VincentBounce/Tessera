@@ -20,7 +20,7 @@
  *                                             onNumbers }: a figure's sizes), copied and reset with the others
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
  *     controls,                               the caller's own controls under its title (a switch: main.js's tile)
- *     drawnBy,                                the code drawing what it tunes (main.js's function), a greyed tab under its title
+ *     showsDrawer,                            the code drawing what it tunes (drawnBy below), a greyed tab under its title
  *   })
  */
 
@@ -58,6 +58,9 @@ const DEBUG_STYLE = `
 `;
 
 /* ---- The panel ---------------------------------------------------------------------------------- */
+// the function that drew the view last, its Cells mode with it, each writing its name as it draws (main.js's gpuPlane,
+// gpuSurface, gpuLatticeWalk)
+let drawnBy = '';
 const debugFirst = new WeakMap(); // (each numbers object's values as it came first: its sliders' ranges, Reset's values)
 function debugPanel(spec) {
   let panel = document.getElementById('debugPanel');
@@ -76,8 +79,8 @@ function debugPanel(spec) {
     panel.id = 'debugPanel';
     keepsItsPresses(panel); // (a slider dragged moves it, never the view: main.js's)
     document.getElementById('stage').append(panel);
-  } else if (panel.dataset.key === spec.key) return; // (shown already: its sliders and picks as they are)
-  panel.dataset.key = spec.key;
+  } else if (panel.dataset.key === `${spec.key}|${spec.showsDrawer && drawnBy}`) return; // (shown already: its sliders and picks as they are)
+  panel.dataset.key = `${spec.key}|${spec.showsDrawer && drawnBy}`;
   const {
     tabs,
     title,
@@ -94,7 +97,7 @@ function debugPanel(spec) {
     note,
     more,
     controls = [],
-    drawnBy,
+    showsDrawer,
   } = spec;
   const firstOf = (o) => (debugFirst.has(o) ? debugFirst.get(o) : debugFirst.set(o, { ...o }).get(o)),
     first = firsts ?? firstOf(numbers);
@@ -104,7 +107,7 @@ function debugPanel(spec) {
   head.textContent = title;
   panel.append(head);
   if (onClose) panel.append(tutTools({ close: onClose })); // (main.js's)
-  if (drawnBy) {
+  if (showsDrawer && drawnBy) {
     // (shown only: greyed, its words why in its tooltip)
     const by = document.createElement('button');
     by.type = 'button';

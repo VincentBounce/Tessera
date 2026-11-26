@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.893';
+const VERSION = '0.5.894';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44333,8 +44333,7 @@ const ALIVE_FIRST = { dark: PALETTES.dark.alive, light: PALETTES.light.alive }; 
 // the debug panel open (Credits › Actions' switch, shut by its cross too) and its tab: Cells (wherever Cells shows) or Light
 // (a 3D view), the first allowed where the tab picked has nothing to tune
 let debugOpen = false,
-  debugTab = 'Cells',
-  drawnBy = ''; // (the function that drew the view last, its Cells mode with it: gpuPlane, gpuSurface, gpuLatticeWalk; see debugPanel's drawnBy)
+  debugTab = 'Cells';
 // A walk's line glowing (Display › Cells › Glow, its numbers in the debug panel's Cells): its light blurred round it by LED's
 // halo (see gpuHalo), on the edges only, in 2D and on a surface; share: its light's, reach: its blurs (1 to 4, wider)
 const lineGlow = { share: 0.3, reach: 2 };
@@ -44426,10 +44425,10 @@ function cellsTuning() {
   );
   if (CELLS_FINISHES[cellsFinish()][0] === 'Glow')
     return debugPanel({
-      key: `glow|${allowed}|${drawnBy}`, // (its tabs as they are greyed)
+      key: `glow|${allowed}`, // (its tabs as they are greyed)
       tabs,
       title: 'Cells › Glow',
-      drawnBy,
+      showsDrawer: true,
       numbers: lineGlow,
       onNumbers: () => (needsFull = true),
       controls: [trials],
@@ -44441,10 +44440,10 @@ function cellsTuning() {
     lightColour = { Panel: 'panelColour', Debug: 'debugColour' }[CELLS_FINISHES[cellsFinish()][0]], // (Panel, Debug: a pick its light's colour, the cell's left as it is)
     sizes = ringFamily(w) === 'klein' && kleinForm().sizes; // (a Klein bottle's shape with sizes to tune)
   debugPanel({
-    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}|${allowed}|${drawnBy}`, // (its shape's sizes kept as they slide; its tabs as they are greyed)
+    key: `${theme}|${solo}|${cellsFinish()}|${sizes && shapeOn('klein')}|${allowed}`, // (its shape's sizes kept as they slide; its tabs as they are greyed)
     tabs,
     title: `Cells › ${CELLS_FINISHES[cellsFinish()][0]}`, // (the mode whose numbers it shows)
-    drawnBy,
+    showsDrawer: true,
     numbers: lights,
     shown: cellsLightOf(CELLS_FINISHES[cellsFinish()][0]),
     shared: ['cellsBody', 'cellsSky', 'cellsDarkInk'], // (every lit mode's)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.923';
+const VERSION = '0.5.924';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37129,18 +37129,18 @@ const wantThumbnail = (size = THUMBNAIL_SIZE) =>
     needsFull = true;
   });
 function stageThumbnail(size) {
-  const { x, w: W, h: H } = viewRect(),
+  const { x, y, w: W } = viewRect(),
     dpr = $('gridLayer').width / canvasWidth, // (the view's part of each layer, in its pixels)
     room = boundsRoom(),
     // (a thumbnail: the figure's own frame (its bounds as framed, see viewFor) within the view, no fit's gap round it; a
     // screenshot: the whole view)
     [left, top] = size
-      ? onScreen(bounds.minX - room, bounds.minY - room).map((v, i) => Math.max(v, [x, 0][i]))
-      : [x, 0],
+      ? onScreen(bounds.minX - room, bounds.minY - room).map((v, i) => Math.max(v, [x, y][i]))
+      : [x, y],
     [right, bottom] = size
-      ? onScreen(bounds.maxX + room, bounds.maxY + room).map((v, i) => Math.min(v, [x + W, H][i]))
-      : [x + W, H],
-    [w, h] = size ?? [Math.round(W * dpr), Math.round(H * dpr)],
+      ? onScreen(bounds.maxX + room, bounds.maxY + room).map((v, i) => Math.min(v, [x + W, canvasHeight][i]))
+      : [x + W, canvasHeight],
+    [w, h] = size ?? [Math.round((right - left) * dpr), Math.round((bottom - top) * dpr)],
     k = Math.max(w / (right - left), h / (bottom - top)), // (cut to its size from its middle, as a picture covering its card)
     into = [(w - (right - left) * k) / 2, (h - (bottom - top) * k) / 2, (right - left) * k, (bottom - top) * k],
     c = Object.assign(document.createElement('canvas'), { width: w, height: h }),
@@ -37671,12 +37671,18 @@ function restart() {
 // centre in world units, so zooming out does not drift sideways.
 const MIN_SCALE = 1e-6; // pixels per cell, the farthest zoom out
 const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap'));
-let viewLeft = 0; // (the settings' column over the stage: --view-left, read again at each resize, 0 on a phone, see resize)
-// the view: the stage's part the settings' column leaves (their cards float over the rest), where a figure is framed and centred
-const viewRect = () => ({ x: viewLeft, w: canvasWidth - viewLeft, h: canvasHeight }),
+let viewLeft = 0, // (the settings' column over the stage: --view-left, read again at each resize, 0 on a phone, see resize)
+  viewTop = 0; // (the header floating over it: its foot, the view's boxes' top less their gap, --view-top: see resize)
+// the view: the stage's part the settings' column and the header leave (they float over the rest), where a figure is framed and
+// centred
+const viewRect = () => ({ x: viewLeft, y: viewTop, w: canvasWidth - viewLeft, h: canvasHeight - viewTop }),
   viewMiddleX = () => {
     const { x, w } = viewRect();
     return x + w / 2;
+  },
+  viewMiddleY = () => {
+    const { y, h } = viewRect();
+    return y + h / 2;
   }; // pixels: a fit's margin, the player's and the view's boxes' (style.css)
 // how far the wheel zooms: from the view's fit (the whole of it framed, see viewFor; a walk's as it is now) ZOOM_OUT times
 // farther, whatever its size; nearer, in 3D ZOOM_IN times, in 2D down to ZOOM_CELLS cells across the screen (a cell's size,
@@ -37691,7 +37697,7 @@ const zoomRange = () => {
     flat = !walk.is3d && !walk.surface;
   return [
     Math.max(MIN_SCALE, fit / ZOOM_OUT),
-    flat ? Math.max(fit, Math.min(viewRect().w, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
+    flat ? Math.max(fit, Math.min(viewRect().w, viewRect().h) / ZOOM_CELLS) : fit * ZOOM_IN,
   ];
 };
 // a point of the figure's plane (its 3D points projected) on the screen, by the view's zoom and place
@@ -37706,14 +37712,14 @@ function viewFor(b) {
   const fixed = walk.surface || walk.plane; // a surface or a grid fills the view at any size; a walk starts no closer than 40 px a cell
   const scale = Math.min(
     fixed ? Infinity : 40,
-    Math.max(MIN_SCALE, Math.min((viewRect().w - 2 * VIEW_GAP) / w, (canvasHeight - 2 * VIEW_GAP) / h)),
+    Math.max(MIN_SCALE, Math.min((viewRect().w - 2 * VIEW_GAP) / w, (viewRect().h - 2 * VIEW_GAP) / h)),
   ); // (the view's gap each side, as the player's)
   return { scale, cx: (b.minX + b.maxX) / 2, cy: (b.minY + b.maxY) / 2 };
 }
 function setView(v) {
   view.scale = v.scale;
   view.ox = viewMiddleX() - v.cx * v.scale;
-  view.oy = canvasHeight / 2 - v.cy * v.scale;
+  view.oy = viewMiddleY() - v.cy * v.scale;
   needsFull = true;
   showZoom();
 }
@@ -37730,11 +37736,11 @@ function fitToBounds(b) {
 function boundsOffscreen(v = view) {
   const m = walk.is3d ? -1 : VIEW_GAP - 0.5,
     ox = v.ox ?? viewMiddleX() - v.cx * v.scale,
-    oy = v.oy ?? canvasHeight / 2 - v.cy * v.scale;
+    oy = v.oy ?? viewMiddleY() - v.cy * v.scale;
   return (
     ox + bounds.minX * v.scale < viewLeft + m ||
     ox + bounds.maxX * v.scale > canvasWidth - m ||
-    oy + bounds.minY * v.scale < m ||
+    oy + bounds.minY * v.scale < viewTop + m ||
     oy + bounds.maxY * v.scale > canvasHeight - m
   );
 }
@@ -37746,7 +37752,7 @@ function easeView(dt) {
   if (!viewGoal) return;
   const k = 1 - Math.exp(-dt / 0.15);
   const cx = (viewMiddleX() - view.ox) / view.scale,
-    cy = (canvasHeight / 2 - view.oy) / view.scale;
+    cy = (viewMiddleY() - view.oy) / view.scale;
   const scale = view.scale * (viewGoal.scale / view.scale) ** k;
   const next = { scale, cx: cx + (viewGoal.cx - cx) * k, cy: cy + (viewGoal.cy - cy) * k };
   const arrived =
@@ -37760,12 +37766,13 @@ function resize() {
   const r = stage.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const first = canvasWidth === 0,
-    middleWas = [viewMiddleX(), canvasHeight / 2];
+    middleWas = [viewMiddleX(), viewMiddleY()];
   canvasWidth = r.width;
   canvasHeight = r.height;
   viewLeft = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left'));
+  viewTop = parseFloat(getComputedStyle($('viewTools')).top) - VIEW_GAP; // (Display's top, --view-top as a length)
   view.ox += viewMiddleX() - middleWas[0];
-  view.oy += canvasHeight / 2 - middleWas[1]; // (the view moved by hand, not framed again: its middle's point kept in its middle)
+  view.oy += viewMiddleY() - middleWas[1]; // (the view moved by hand, not framed again: its middle's point kept in its middle)
   for (const ctx of Object.values(layers)) {
     ctx.canvas.width = Math.round(canvasWidth * dpr);
     ctx.canvas.height = Math.round(canvasHeight * dpr);

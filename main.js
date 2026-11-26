@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.898';
+const VERSION = '0.5.899';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26916,13 +26916,10 @@ const iconPixel = (b64) => {
 const cellWidth = (kind) => {
   if (APERIODIC[kind]) return APERIODIC[kind](cellsPlane().W).width;
   const per = gridCells(kind);
-  return Math.sqrt(
-    [0, 1]
-      .flatMap((y) => Array.from({ length: per }, (_, x) => polyArea(planeCorners(kind, x, y))))
-      .reduce((sum, v) => sum + v, 0) /
-      (2 * per),
-  );
+  return polygonsWidth([0, 1].flatMap((y) => Array.from({ length: per }, (_, x) => planeCorners(kind, x, y))));
 };
+// polygons' width: the square root of their mean area (a grid's cells', see cellWidth; a 2D walk's cells' templates')
+const polygonsWidth = (polygons) => Math.sqrt(polygons.reduce((sum, p) => sum + polyArea(p), 0) / polygons.length);
 // a list of n items, each made when first read (its length, its items by index: the 10,000 punks' cells not all at once, only
 // those drawn; a hunt's, all: see huntClick)
 // a choice drawn from a list of them (random: in [0, 1)): its index; a lazy list's null (a move that does not fit, see
@@ -38671,11 +38668,12 @@ function enclosedFrom(n, nf, eu, ev, faces, crossed, sphere, maxSize = Infinity)
 
 // Rainbow along the walk on a surface: the path through the tile centres up to the current step,
 // each step in its colour, over the tiles.
-const surfaceLineWidth = () => {
-  // about a fifth of a tile edge on screen
+// a surface's tile edge on screen, in CSS pixels (its first tile's)
+const surfaceTileOnScreen = () => {
   const sc = walk.shape.corners;
-  return Math.max(1, Math.min(walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]) * view.scale * 0.2, 3));
+  return walk.R * Math.hypot(sc[0] - sc[3], sc[1] - sc[4], sc[2] - sc[5]) * view.scale;
 };
+const surfaceLineWidth = () => Math.max(1, Math.min(surfaceTileOnScreen() * 0.2, 3)); // (about a fifth of a tile edge on screen)
 
 const colourProbe = document.createElement('canvas').getContext('2d');
 const rgbOf = (colour) => {
@@ -40469,27 +40467,22 @@ fn haloShare() -> f32 {  // (its mode's halo, its light's share: the halo's pict
 ${lampBranches(L, 'halo', (h) => `return ${h.share};`)}
   return 0.0;
 }
-fn halo(q: vec4f, d: vec2i) -> vec4f {  // (d: its way, its taps that many pixels apart)
+@group(2) @binding(0) var<uniform> haloStep: vec4f;  // (its taps' way and spacing, in the halo picture's pixels: see gpuHalo)
+fn halo(q: vec4f) -> vec4f {  // (its taps haloStep apart, read between pixels: any spacing, a tile's share)
   let w = array<f32, 5>(${HALO_WEIGHTS.join(', ')});
-  let p = vec2i(q.xy); let top = vec2i(textureDimensions(acc)) - 1;
-  var c = textureLoad(acc, p, 0) * w[0];
-  for (var k = 1; k < 5; k++) { c += (textureLoad(acc, clamp(p + d * k, vec2i(0), top), 0) + textureLoad(acc, clamp(p - d * k, vec2i(0), top), 0)) * w[k]; }
-  return vec4f(c.rgb, textureLoad(acc, p, 0).a);  // (its alpha the lamps' marks, unblurred)
+  let p = q.xy - 0.5;  // (its pixel's middle, as haloBetween counts)
+  var c = haloAt(vec2i(q.xy)) * w[0];
+  for (var k = 1; k < 5; k++) { c += (haloBetween(p + haloStep.xy * f32(k)) + haloBetween(p - haloStep.xy * f32(k))) * w[k]; }
+  return vec4f(c.rgb, haloAt(vec2i(q.xy)).a);  // (its alpha the lamps' marks, unblurred)
 }
-${[1, 2, 4, 8]
-  .map(
-    (
-      s,
-    ) => `@fragment fn halo${s}AcrossF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(${s}, 0)); }
-@fragment fn halo${s}DownF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q, vec2i(0, ${s})); }`,
-  )
-  .join(
-    '\n',
-  )}  // (its taps 1 to 8 pixels apart, each filling the next one's gaps: 1 first, every pixel mixed with both its neighbours)
+@fragment fn haloBlurF(@builtin(position) q: vec4f) -> @location(0) vec4f { return halo(q); }
 fn haloAt(p: vec2i) -> vec4f { return textureLoad(acc, clamp(p, vec2i(0), vec2i(textureDimensions(acc)) - 1), 0); }
+fn haloBetween(f: vec2f) -> vec4f {  // (between its 4 nearest pixels, f counted from pixel middles: smooth)
+  let i = vec2i(floor(f)); let t = fract(f);
+  return mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y);
+}
 @fragment fn haloAddF(@builtin(position) q: vec4f) -> @location(0) vec4f {  // (premultiplied: as opaque as it is bright)
-  let f = q.xy / 2.0 - 0.5; let i = vec2i(floor(f)); let t = fract(f);  // (between its 4 nearest pixels, of half the size: smooth)
-  let h = mix(mix(haloAt(i), haloAt(i + vec2i(1, 0)), t.x), mix(haloAt(i + vec2i(0, 1)), haloAt(i + vec2i(1, 1)), t.x), t.y);
+  let h = haloBetween(q.xy / 2.0 - 0.5);  // (of half the size)
   let c = h.rgb * (1.0 - h.a);  // (its share its mode's, see lampsF; none on Halo's lamps)
   return vec4f(c, max(c.r, max(c.g, c.b)));
 }
@@ -40783,9 +40776,29 @@ const gpuTargets = () => {
 };
 // LED's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
 // then down, its taps steps' pixels apart (its mode's, see LAMPS: 1 then 2, LED+'s 1 alone, Tube's 4 and 8 too), added on the canvas, or cast on it
-function gpuHalo(enc, drawLamps, { steps, cast }) {
+// (its steps in tiles, scale: a tile's size on screen over HALO_TILE, a line's width over GLOW_LEAST_WIDTH for a glow: as
+// wide round a tile, near or far)
+function gpuHalo(enc, drawLamps, { steps, cast }, scale) {
   const D = GPU.draw,
-    S = gpuTargets();
+    S = gpuTargets(),
+    { device } = D;
+  D.haloSteps ??= device.createBuffer({
+    size: 256 * HALO_PASSES,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  D.haloStepsLayout ??= device.createBindGroupLayout({
+    entries: [
+      {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: { type: 'uniform', hasDynamicOffset: true, minBindingSize: 16 },
+      },
+    ],
+  });
+  D.haloStepsGroup ??= device.createBindGroup({
+    layout: D.haloStepsLayout,
+    entries: [{ binding: 0, resource: { buffer: D.haloSteps, size: 16 } }],
+  });
   const lamps = enc.beginRenderPass({
     colorAttachments: [{ view: S.haloA.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
     depthStencilAttachment: {
@@ -40797,21 +40810,26 @@ function gpuHalo(enc, drawLamps, { steps, cast }) {
   });
   drawLamps(lamps);
   lamps.end();
-  const blur = (across, down) => [
-    [S.haloB.createView(), across, S.haloAGroup],
-    [S.haloA.createView(), down, S.haloBGroup],
+  // each step across then down, its spacing in the halo picture's pixels, each pass its own place in haloSteps (a frame's
+  // halos one after another: HALO_PASSES places, round)
+  const blur = (s) => [
+    [S.haloB.createView(), [s * scale, 0], S.haloAGroup],
+    [S.haloA.createView(), [0, s * scale], S.haloBGroup],
   ];
-  for (const [to, entry, from] of [
-    ...steps.flatMap((s) => blur(`halo${s}AcrossF`, `halo${s}DownF`)),
-    [D.ctx.getCurrentTexture().createView(), 'haloAddF', S.haloAGroup],
+  for (const [to, step, from] of [
+    ...steps.flatMap(blur),
+    [D.ctx.getCurrentTexture().createView(), null, S.haloAGroup],
   ]) {
-    const add = entry === 'haloAddF',
+    const add = !step,
+      entry = add ? 'haloAddF' : 'haloBlurF',
       p = enc.beginRenderPass({
         colorAttachments: [{ view: to, loadOp: add ? 'load' : 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
       });
     p.setPipeline(
       gpuPipe(`halo|${entry}|${add && cast}`, (D2) => ({
-        layout: D2.device.createPipelineLayout({ bindGroupLayouts: [D2.g0, D2.mixed] }),
+        layout: D2.device.createPipelineLayout({
+          bindGroupLayouts: add ? [D2.g0, D2.mixed] : [D2.g0, D2.mixed, D2.haloStepsLayout],
+        }),
         vertex: { module: D2.module, entryPoint: 'quadV' },
         fragment: {
           module: D2.module,
@@ -40825,6 +40843,11 @@ function gpuHalo(enc, drawLamps, { steps, cast }) {
     );
     p.setBindGroup(0, gpuGroup(), [0]);
     p.setBindGroup(1, from);
+    if (step) {
+      const at = 256 * (D.haloStepAt = ((D.haloStepAt ?? -1) + 1) % HALO_PASSES);
+      device.queue.writeBuffer(D.haloSteps, at, Float32Array.of(...step, 0, 0));
+      p.setBindGroup(2, D.haloStepsGroup, [at]);
+    }
     p.draw(4);
     p.end();
   }
@@ -41415,6 +41438,7 @@ function gpuSurface(paint, path) {
         for (const [a, b] of ranges) if (b > a) glow.draw(4, b - a, 0, a);
       },
       lineGlowHalo(),
+      Math.max(surfaceLineWidth(), GLOW_LEAST_WIDTH) / GLOW_LEAST_WIDTH,
     );
   if (cellsFinishOn() && haloOf(CELLS_FINISHES[cellsFinish()][0]))
     gpuHalo(
@@ -41434,6 +41458,7 @@ function gpuSurface(paint, path) {
           { cut: cutOn() ? 1 : 0 },
         ),
       haloOf(CELLS_FINISHES[cellsFinish()][0]),
+      surfaceTileOnScreen() / HALO_TILE,
     );
   const under = drawsHere() && pointerPixel, // (Draw on a surface: the tile under the pointer)
     picking =
@@ -41857,6 +41882,7 @@ function gpuLatticeWalk(to) {
         glow.draw(4, walked);
       },
       lineGlowHalo(),
+      Math.max(pathLook.width, GLOW_LEAST_WIDTH) / GLOW_LEAST_WIDTH,
     );
   const halo = cellCount && flatLampHalo(); // (Halo: its cells' light round them, as the plane's and a surface's)
   if (halo)
@@ -41864,6 +41890,7 @@ function gpuLatticeWalk(to) {
       enc,
       (glow) => tiles(D.walkCells, D.walkCellsAt, D.cellTpl, cellCount, 1, walkFadeSteps(), glow, halo.share),
       halo,
+      (polygonsWidth(CELL_TEMPLATES[walk.lattice]) * view.scale) / HALO_TILE,
     );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
   device.queue.submit([enc.finish()]);
@@ -42179,6 +42206,7 @@ function gpuPlane(paint) {
       enc,
       (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3),
       haloOf(CELLS_FINISHES[cellsFinish()][0]),
+      (cellWidth(walk.plane.kind) * view.scale) / HALO_TILE,
     );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 4);
   device.queue.submit([enc.finish()]);
@@ -44345,6 +44373,10 @@ const lineGlow = { share: 0.3, reach: 2 };
 // (its line drawn into the halo's picture 4 pixels wide at least: 2 of that picture's half size, never between its pixels,
 // a fine line else lit at some and missed at others, a waffle)
 const GLOW_LEAST_WIDTH = 4;
+// a tile's size on screen (CSS pixels) whose halo's steps are its mode's as written (see LAMPS: 1 and 2 pixels of the halo's
+// picture); a halo is as many tiles wide at any size (see gpuHalo's scale)
+const HALO_TILE = 12;
+const HALO_PASSES = 32; // (the blur's passes a frame's halos take at most: 8 steps each way, all the halos drawn)
 // Glint (the debug panel's Light, a 3D view's): the light's glint from each tile's own colour (0: never past it) to white
 // added (1: a pale face facing it washed white, as before v0.5.236); its mode's default at each tab (see DISPLAY_DEFAULTS)
 const glintTuning = { glint: 0.5 };

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.903';
+const VERSION = '0.5.904';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -36475,7 +36475,7 @@ function getSetup() {
     s.popStacked = spaceTimeOn() ? 1 : 0; // (Space-time)
   }
   if (life && plane.start === 'draw' && population.size)
-    s.popCells = populationRle(drawnInEngine(population, lifeTeams)); // (a surface's: its tiles, see populationKey; in the engine's states of its teams, s.teams, see drawnInEngine)
+    lazyField(s, 'popCells', () => populationRle(drawnInEngine(population, lifeTeams))); // (a surface's: its tiles, see populationKey; in the engine's states of its teams, s.teams, see drawnInEngine)
   if (life && !variant.loops)
     Object.assign(
       s,
@@ -36490,8 +36490,23 @@ function getSetup() {
   if (variant.explore) s.exploreColours = exploreLook.colours;
   if (championCode) s.popFound = championCode;
   if (walk.variant === w && stepShown !== (lifeTime() ? 0 : firstShown())) s.step = stepShown; // (the step or generation shown, when not the one it opens at)
-  s.version = setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION; // (last: the version it was made with, see setupFrom)
+  lazyField(s, 'version', () =>
+    setupFrom && sameSetup(setupFrom.setup, s, ['version', 'step']) ? setupFrom.v : VERSION,
+  ); // (last: the version it was made with, see setupFrom; it compares the drawing's cells)
   return s;
+}
+// a setup's field computed when first read, then kept: those only a link or the Gallery reads (a drawing's cells, 5 ms for
+// 21,000 of them; the version, comparing them), never a title's or a ranking's setup, asked each frame (see renderRanking)
+function lazyField(s, key, compute) {
+  Object.defineProperty(s, key, {
+    get() {
+      const value = compute();
+      Object.defineProperty(s, key, { value, enumerable: true, writable: true, configurable: true });
+      return value;
+    },
+    enumerable: true,
+    configurable: true,
+  });
 }
 
 // a link's step or generation shown (at=), gone to once its walk is built (see applyPendingView)

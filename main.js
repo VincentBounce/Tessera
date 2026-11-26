@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.905';
+const VERSION = '0.5.906';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40143,8 +40143,12 @@ const SHINE_LIGHT_SOLO_3D = {
 };
 // the same in 2D: Panel's light white and dimmer, as the user tuned it there, its ceiling none (Debug's alone in 2D)
 const SHINE_LIGHT_SOLO_2D = { ...SHINE_LIGHT_SOLO_3D, panelLight: 0.47, panelColour: '#ffffff', panelCeiling: 1 };
-// the lamps' numbers now, the view's shader made with them (see gpuDrawSetup): three cases
+// a walk's and an ant's: Halo's halo lighter, as the user tuned it there (a walk's cells, 2D as on a surface); every other
+// number as SHINE_LIGHT's
+const SHINE_LIGHT_WALKS = { ...SHINE_LIGHT, haloHalo: 1 };
+// the lamps' numbers now, the view's shader made with them (see gpuDrawSetup): four cases
 const shineLightNow = () => {
+  if (['Walk', 'Ant'].includes(NAV[walk.variant]?.[0])) return SHINE_LIGHT_WALKS; // (a walk's, an ant's: their own, any theme)
   if (lifeTeams !== 1 || themeName() !== 'light') return SHINE_LIGHT; // (a battle, or a dark page: 2D and 3D alike)
   return walk.plane ? SHINE_LIGHT_SOLO_2D : SHINE_LIGHT_SOLO_3D;
 };

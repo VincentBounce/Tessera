@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.906';
+const VERSION = '0.5.907';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -26619,16 +26619,7 @@ function rosetteIcon(kind) {
 }
 for (const k of Object.keys(ROSETTES))
   if (!conedFamily(k)) {
-    // (made when first drawn: its disc needs what comes later, see packedPolygons)
-    Object.defineProperty(ICONS, k, {
-      configurable: true,
-      enumerable: true,
-      get: () => {
-        const v = svgPath(rosetteIcon(k));
-        Object.defineProperty(ICONS, k, { value: v, enumerable: true });
-        return v;
-      },
-    });
+    lazyField(ICONS, k, () => svgPath(rosetteIcon(k))); // (made when first drawn: its disc needs what comes later, see packedPolygons)
   }
 const APERIODIC = {
   hat: HAT,
@@ -36495,8 +36486,9 @@ function getSetup() {
   ); // (last: the version it was made with, see setupFrom; it compares the drawing's cells)
   return s;
 }
-// a setup's field computed when first read, then kept: those only a link or the Gallery reads (a drawing's cells, 5 ms for
-// 21,000 of them; the version, comparing them), never a title's or a ranking's setup, asked each frame (see renderRanking)
+// an object's field computed when first read, then kept: a setup's that only a link or the Gallery reads (a drawing's cells,
+// 5 ms for 21,000 of them; the version, comparing them), never a title's or a ranking's setup, asked each frame (see
+// renderRanking); a rosette's icon, its disc needing what comes later (see ICONS)
 function lazyField(s, key, compute) {
   Object.defineProperty(s, key, {
     get() {

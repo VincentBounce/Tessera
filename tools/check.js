@@ -707,6 +707,7 @@
       const watch = watchSearches();
       for (const b of document.querySelectorAll('aside.panel button, #viewTools button, #animBar button'))
         if (b.disabled && b.offsetParent) {
+          localStorage.tesseraHoverAt = `${new Date().toTimeString().slice(0, 8)} ${where} › ${name(b)}`; // (the hover under way: one that never ends found, as clickAll's)
           const t = performance.now();
           b.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
           const ms = performance.now() - t,
@@ -719,6 +720,7 @@
       watch.stop();
     };
     const resize = async (value) => {
+      localStorage.tesseraHoverAt = `${new Date().toTimeString().slice(0, 8)} ${tabVariant()} sized ${value}`; // (a size built: its own wait)
       $('gridSizeField').value = value;
       $('gridSizeField').dispatchEvent(new Event('change'));
       await wait(200);

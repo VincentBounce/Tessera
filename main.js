@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.921';
+const VERSION = '0.5.922';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37132,7 +37132,6 @@ function stageThumbnail(size) {
   const { x, w: W, h: H } = viewRect(),
     dpr = $('gridLayer').width / canvasWidth, // (the view's part of each layer, in its pixels)
     room = boundsRoom(),
-    onScreen = (bx, by) => [view.ox + bx * view.scale, view.oy + by * view.scale],
     // (a thumbnail: the figure's own frame (its bounds as framed, see viewFor) within the view, no fit's gap round it; a
     // screenshot: the whole view)
     [left, top] = size
@@ -37695,6 +37694,8 @@ const zoomRange = () => {
     flat ? Math.max(fit, Math.min(viewRect().w, canvasHeight) / ZOOM_CELLS) : fit * ZOOM_IN,
   ];
 };
+// a point of the figure's plane (its 3D points projected) on the screen, by the view's zoom and place
+const onScreen = (x, y) => [view.ox + x * view.scale, view.oy + y * view.scale];
 // the room round a figure's bounds to its edges: a walk's bounds its cells' middles, half a cell more each side (a grid's, a
 // surface's: its corners, its sphere)
 const boundsRoom = () => (walk.is3d || walk.plane || walk.surface ? 0 : 0.5);
@@ -38041,10 +38042,7 @@ function draw3DFrame(ctx) {
   const X = [x0, x1],
     Y = [y0, y1],
     Z = [z0, z1];
-  const pt = (i, j, k) => {
-    const [px, py] = proj(X[i], Y[j], Z[k]);
-    return [view.ox + px * view.scale, view.oy + py * view.scale];
-  };
+  const pt = (i, j, k) => onScreen(...proj(X[i], Y[j], Z[k]));
   for (let a = 0; a < 2 && !walk.surface; a++)
     for (let b = 0; b < 2; b++) {
       for (const [p, q] of [

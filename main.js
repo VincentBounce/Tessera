@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.933';
+const VERSION = '0.5.934';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -37677,10 +37677,11 @@ function restart() {
 const MIN_SCALE = 1e-6; // pixels per cell, the farthest zoom out
 const VIEW_GAP = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-gap'));
 let viewLeft = 0, // (the settings' column over the stage: --view-left, read again at each resize, 0 on a phone, see resize)
-  viewTop = 0; // (the header floating over it: its foot, the view's boxes' top less their gap, --view-top: see resize)
+  viewTop = 0, // (the header floating over it: its foot, the view's boxes' top less their gap, --view-top: see resize)
+  viewFoot = 0; // (a phone's: the player and the drawer over the view's foot, from the player's top down; see readViewFoot)
 // the view: the stage's part the settings' column and the header leave (they float over the rest), where a figure is framed and
 // centred
-const viewRect = () => ({ x: viewLeft, y: viewTop, w: canvasWidth - viewLeft, h: canvasHeight - viewTop }),
+const viewRect = () => ({ x: viewLeft, y: viewTop, w: canvasWidth - viewLeft, h: canvasHeight - viewTop - viewFoot }),
   viewMiddleX = () => {
     const { x, w } = viewRect();
     return x + w / 2;
@@ -37746,7 +37747,7 @@ function boundsOffscreen(v = view) {
     ox + bounds.minX * v.scale < viewLeft + m ||
     ox + bounds.maxX * v.scale > canvasWidth - m ||
     oy + bounds.minY * v.scale < viewTop + m ||
-    oy + bounds.maxY * v.scale > canvasHeight - m
+    oy + bounds.maxY * v.scale > canvasHeight - viewFoot - m
   );
 }
 
@@ -37767,6 +37768,8 @@ function easeView(dt) {
   if (arrived) viewGoal = null;
 }
 
+// a phone's view's foot: the player over its drawer, its gap above it (none on a wider screen: the player in its corner)
+const readViewFoot = () => (viewFoot = PHONE.matches ? canvasHeight - $('animBar').offsetTop + VIEW_GAP : 0);
 function resize() {
   const r = stage.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -37776,6 +37779,7 @@ function resize() {
   canvasHeight = r.height;
   viewLeft = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--view-left'));
   viewTop = parseFloat(getComputedStyle($('viewTools')).top) - VIEW_GAP; // (Display's top, --view-top as a length)
+  readViewFoot();
   view.ox += viewMiddleX() - middleWas[0];
   view.oy += viewMiddleY() - middleWas[1]; // (the view moved by hand, not framed again: its middle's point kept in its middle)
   for (const ctx of Object.values(layers)) {
@@ -45510,6 +45514,11 @@ function phoneDrawer(panel) {
     true,
   );
   $('panelHandle').addEventListener('click', () => panel.classList.toggle('open'));
+  panel.addEventListener('transitionend', (e) => {
+    if (e.propertyName !== 'height') return;
+    readViewFoot();
+    if ($('autoFit').checked) fitToBounds(bounds); // (framed again over it; a view moved by hand stays where it is)
+  });
 }
 phoneDrawer(document.querySelector('.panel'));
 

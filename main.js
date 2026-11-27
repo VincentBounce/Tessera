@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.931';
+const VERSION = '0.5.932';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18995,7 +18995,7 @@ const sizeSides = (kind, f) => {
   const K = ringColours(ringVariant()),
     [x, y] = [Math.sqrt(d[2] * r), Math.sqrt(d[2] / r)],
     [a, b] = !S
-      ? wallSlices(K, kind)
+      ? wallSlices(K, { kind, torus: planeTorus(kind) })
         ? [Math.sqrt(K), Math.sqrt(K)]
         : TEAM_GRID[K]
       : /^(mobius|klein)/.test(kind)
@@ -33077,8 +33077,8 @@ const patchSpots = (surface, K) => {
 // angle from it, as many in each (a colour from the middle out to the wall, as much wall as the others); a slice's
 // spot: its cell nearest halfway out along its middle angle. Kept per grid
 let sliceMemo = null;
-const wallSlices = (K, kind = cellsPlane()?.kind) =>
-  !!kind && !planeTorus(kind) && K > 1 && ((K !== 2 && K !== 4) || !!APERIODIC[kind] || shaped(kind)); // (in a circle or a hexagon: always; kind: the plane's in use, else a size's to tell)
+const wallSlices = (K, { kind, torus } = cellsPlane() ?? {}) =>
+  !!kind && !torus && K > 1 && ((K !== 2 && K !== 4) || !!APERIODIC[kind] || shaped(kind)); // (in a circle or a hexagon: always; the grid shown's kind and torus, as built, else the menu's for a size to tell)
 function planeSlices(K) {
   const { kind, W, n, xy } = cellsPlane(),
     turn = planeTurn(),
@@ -33693,7 +33693,7 @@ const figureOf = (K, { variant, g } = shownFigure()) =>
       ? 'lattice'
       : APERIODIC[variant.plane]?.pieces
         ? 'pieces'
-        : wallSlices(K, g.kind)
+        : wallSlices(K, g)
           ? 'slices'
           : 'blocks'
     : g?.mobius
@@ -44712,7 +44712,7 @@ function lifeRle() {
       ? { ...pictureCells(), grid: g.mobius ? '' : g.klein ? 'K' : 'T' }
       : edged && {
           ...pictureCells(),
-          grid: planeTorus(kind) ? 'T' : 'P',
+          grid: walk.plane.torus ? 'T' : 'P', // (the game shown's, as built)
           at: (t) => {
             const [x, y] = walk.plane.xy(t);
             return [x, base === 'hex' ? walk.plane.W - 1 - y : y]; // (hexagons mirrored top to bottom, see gollyRule)

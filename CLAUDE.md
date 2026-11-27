@@ -30,7 +30,7 @@ mesh memory squeezed onto one line to show −6.)
 The user makes the app's single-file versions with two scripts in the folder `Tessera resources` beside the repo
 (double-click), each running `tools/bundle.py` once and showing its file there in the Finder: `_Make Tessera HTML5
 compressed.command` and `_Make Tessera HTML5 plain💚.command` (`--plain`):
-- `Tessera v<version> compressed.html`: no comment anywhere: not in the scripts (main.js, emoji.js, punks.js,
+- `Tessera v<version> compressed.html`: no comment anywhere: not in the scripts (main.js, emoji.js, punkgen.js,
   pixelarticons.js: `//`, `/* */`), the page's inline script (the theme's), the loader, style.css (`/* */`, minified by
   esbuild too) or
   index.html (`<!-- -->`); blank lines and line-end spaces gone; the scripts and the inline script minified by esbuild
@@ -48,7 +48,7 @@ Never delete the bundles in `Tessera resources` (old versions included, the `Wal
 
 ## Format
 The code is Prettier's standard (`.prettierrc.json`: 120 columns, single quotes, semicolons, trailing commas), applied by
-`tools/ship.sh` to every `.js` and `.css` staged (`brew install prettier`); the generated data (`emoji.js`, `punks.js`,
+`tools/ship.sh` to every `.js` and `.css` staged (`brew install prettier`); the generated data (`emoji.js`, `punkgen.js`,
 `pixelarticons.js`, `loops.js`) and the prototypes left out (`.prettierignore`). **Write the code to this standard from the
 start**, as Prettier would leave it: one statement a line, never code squeezed to look shorter (see SIMPLER above and
 Line balance).

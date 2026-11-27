@@ -204,7 +204,7 @@ A cellular automaton on the plane (squares, triangles, hexagons, Cairo pentagons
     - **Realm:** on a solid, a whole face each; elsewhere, its whole part but its cells next to another colour's, so that the colours start two cells apart whatever the shape of their parts;
     - **Mirror:** on a solid, two opposite faces each (where the colouring pairs them);
     - **Wild:** its whole part, the colours side by side;
-    - **Icon, Punk:** a picture (a Pixelarticons icon, a CryptoPunk), 24 cells or as big as fits, one a colour; **Emoji** (the plane, one colour): as big as the grid;
+    - **Icon, Punk:** a picture (a Pixelarticons icon, a punk drawn from the CryptoPunks sprites, CC0: one of 95,848,704, its number its name), 24 cells or as big as fits, one a colour; **Emoji** (the plane, one colour): as big as the grid;
     - **Famous, Anywhere:** the rule's known patterns, turned and mirrored, at its part's middle or anywhere in it.
 
     Each random start is as dense as drawn between 10 and 70 %, each colour at least one cell alive; a zone with at most 20,000 possible starts has them all tried.

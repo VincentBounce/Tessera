@@ -322,7 +322,7 @@
   // v0.4.247: the hunt's score over a battle's stats, a battle frozen at its first step)
   async function checkNames(fail) {
     let checked = 0;
-    for (const file of ['main.js', 'emoji.js', 'punks.js', 'pixelarticons.js']) {
+    for (const file of ['main.js', 'emoji.js', 'punkgen.js', 'pixelarticons.js']) {
       const names = [
           ...(await (await fetch(`${file}?${Date.now()}`)).text()).matchAll(/^(?:async\s+)?function\*?\s+([\w$]+)/gm),
         ].map((m) => m[1]),

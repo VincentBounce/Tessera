@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.952';
+const VERSION = '0.5.953';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -27149,7 +27149,7 @@ function iconChoices(N, set) {
   const choices = Array.from({ length: K }, (_, i) => {
     if (!lays) return [];
     const { cells, pix, mirror } = lays[i];
-    return lazyList(set.names.length, (n) => {
+    return lazyList(set.count(), (n) => {
       const pixel = set.pixel(n, P),
         out = [];
       pix.forEach(([px, py], j) => {
@@ -27163,8 +27163,8 @@ function iconChoices(N, set) {
 }
 function iconCells(N, set) {
   const seed = new Uint8Array(walk.life.seed.length),
-    random = () => Math.floor(Math.random() * set.names.length);
-  plane.icons = plane.icons.map((i) => (i < set.names.length ? i : random())); // (one of the other set's, past this one's: another)
+    random = () => Math.floor(Math.random() * set.count());
+  plane.icons = plane.icons.map((i) => (i < set.count() ? i : random())); // (one of the other set's, past this one's: another)
   plane.icons = Array.from({ length: lifeParts() }, (_, k) => plane.icons[k] ?? random()); // (the icons laid, one a colour: more colours than said, one at random each; fewer, the first ones)
   iconChoices(N, set).forEach((c, i) => {
     const f = c[plane.icons[i]] ?? [];
@@ -32614,34 +32614,93 @@ const HUNT_ZONES = {
 }; // a start from a link with its cells (a hunt's result), from none of these: shown then only
 const famousZone = (zone) => zone === 'patterns' || zone === 'centred';
 const onDisc = () => !!cellsPlane() && inDisc(patternKind()); // (a grid in a disc: its patterns by their middles, see centredChoices; the pinwheel's triangle none, its patterns its disc's cells)
-// the Icon and Punk zones' pictures (pixelarticons.js, punks.js): 24 × 24 bits each, their names (a link's: an icon's, a
-// punk's number), what one is called, where they come from
+// a set of pictures by number, from its list of names: how many, a number's name (a link's word), a name's number (unknown:
+// the first)
+const listedSet = (list) => ({
+  count: () => list().length,
+  name: (i) => list()[i],
+  index: (name) => Math.max(0, list().indexOf(name)),
+});
+// A punk by its number among all of them (punkgen.js's PUNK_HEADS): its head (a man's first, then a woman's), its archetype,
+// then each category's drawing or none, the digits of its number in mixed bases: a number's punk known by construction
+const punkCounts = PUNK_HEADS.map(({ archetypes, categories }) =>
+    categories.reduce((n, c) => n * (c.length + 1), archetypes.length),
+  ),
+  PUNK_COUNT = punkCounts[0] + punkCounts[1];
+function punkLayers(i) {
+  const head = i < punkCounts[0] ? 0 : 1,
+    { archetypes, categories } = PUNK_HEADS[head];
+  let n = head ? i - punkCounts[0] : i;
+  const layers = [archetypes[n % archetypes.length]];
+  n = Math.floor(n / archetypes.length);
+  for (const c of categories) {
+    if (n % (c.length + 1)) layers.push(c[(n % (c.length + 1)) - 1]);
+    n = Math.floor(n / (c.length + 1));
+  }
+  return layers;
+}
+// its name: its layers by their sprites' numbers in the sheet (a drawing's first), base 36, a dash apart (6-hv: a dot parts
+// the colours' punks in a link, pop=punk24.6-hv.n-9k): the same punk whatever the generator's categories and drawings
+// become; a name back to its number (any sprite of a drawing; a name of no punk here: the first)
+const punkName = (i) =>
+    punkLayers(i)
+      .map((d) => PUNK_SPRITES[d][0].toString(36))
+      .join('-'),
+  punkDrawingOf = new Map(PUNK_SPRITES.flatMap((ids, d) => ids.map((id) => [id, d])));
+function punkIndex(name) {
+  const [base, ...rest] = String(name)
+      .split('-')
+      .map((word) => punkDrawingOf.get(parseInt(word, 36))),
+    head = PUNK_HEADS.findIndex((h) => h.archetypes.includes(base));
+  if (head < 0) return 0;
+  const { archetypes, categories } = PUNK_HEADS[head];
+  let n = archetypes.indexOf(base),
+    unit = archetypes.length;
+  for (const c of categories) {
+    const k = rest.findIndex((d) => c.includes(d));
+    if (k >= 0) n += (c.indexOf(rest.splice(k, 1)[0]) + 1) * unit;
+    unit *= c.length + 1;
+  }
+  return rest.length ? 0 : (head ? punkCounts[0] : 0) + n;
+}
+// its picture: each layer's drawing (its lines, then its own pixels) over the ones under it, theirs gone where it has pixels
+const punkDrawings = [];
+function punkPixel(i) {
+  const lines = new Uint8Array(576);
+  for (const d of punkLayers(i)) {
+    const b = (punkDrawings[d] ??= Uint8Array.from(atob(PUNK_DRAWINGS[d]), (c) => c.charCodeAt(0)));
+    for (let k = 0; k < 576; k++) if (b[72 + (k >> 3)] & (128 >> (k & 7))) lines[k] = (b[k >> 3] >> (7 - (k & 7))) & 1;
+  }
+  return (x, y) => lines[24 * y + x] === 1;
+}
+// the Icon and Punk zones' pictures (pixelarticons.js, punkgen.js): 24 × 24 bits each, by number (see listedSet; a punk's,
+// its own name), what one is called, where they come from
 const ICON_SETS = {
   icon: {
     P: 24,
     pixel: (i) => iconPixel(ICON_BITS[i]),
-    names: ICON_NAMES,
+    ...listedSet(() => ICON_NAMES),
     word: 'icon',
     label: (i) => `“${ICON_NAMES[i]}”`,
     source: 'Pixelarticons',
   },
   punk: {
     P: 24,
-    pixel: (i) => iconPixel(PUNK_BITS[i]),
-    names: PUNK_BITS.map((_, i) => String(i)),
-    word: 'CryptoPunk',
-    label: (i) => `#${i}`,
-    source: 'CryptoPunks',
+    pixel: punkPixel,
+    count: () => PUNK_COUNT,
+    name: punkName,
+    index: punkIndex,
+    word: 'punk',
+    label: (i) => `#${punkName(i)}`,
+    source: 'CryptoPunks sprites, CC0, by openpunkart',
   },
   // (Emoji: those this browser draws, each as a picture of 48 pixels, see picturePixel)
   emoji: {
     P: 48,
-    pixel: (i) => picturePixel(ICON_SETS.emoji.names[i], 48),
-    get names() {
-      return (this.drawn ??= EMOJIS.filter(emojiDrawn));
-    },
+    pixel: (i) => picturePixel(emojisDrawn()[i], 48),
+    ...listedSet(() => emojisDrawn()),
     word: 'emoji',
-    label: (i) => ICON_SETS.emoji.names[i],
+    label: (i) => emojisDrawn()[i],
     source: 'Unicode',
   },
 };
@@ -32650,7 +32709,7 @@ const ICON_SETS = {
 const textSet = () => ({
   P: null,
   pixel: (n, P) => picturePixel(plane.text, P, plane.font),
-  names: [plane.text],
+  ...listedSet(() => [plane.text]),
   word: 'text',
   label: () => plane.text,
   source: `text ${plane.text} in ${plane.font}`,
@@ -32682,13 +32741,14 @@ const iconMax = (set = ICON_SETS.icon) => {
   return (iconMaxMemo = { key, N: k >= lo ? k * u : 24 }).N;
 };
 const iconSize = (zone) => (!isIcon(zone) ? 0 : zone === 'emoji' || zone.endsWith('Max') ? iconMax(iconSet(zone)) : 24); // (a picture's width in cells; max: greyed where none fits, 16 off squares)
-// a CryptoPunk's pixels as a picture's rows (see pixelIcon): Punk 24's and Punk max's, #27's (its mohawk)
+// a punk's pixels as a picture's rows (see pixelIcon): Punk 24's and Punk max's tiles, a man with a mohawk's (Human 2, Mohawk)
+const PUNK_TILE = '6-hv';
 const punkArt = (i) =>
   Array.from({ length: 24 }, (_, y) =>
     Array.from({ length: 24 }, (_, x) => (ICON_SETS.punk.pixel(i)(x, y) ? 'o' : '.')).join(''),
   ).join(',');
 const iconSet = (zone) => ICON_SETS[zone.startsWith('punk') ? 'punk' : zone === 'emoji' ? 'emoji' : 'icon'];
-const iconIndex = (name, set = iconSet(hunt.zone)) => Math.max(0, set.names.indexOf(name)); // (a link's name; unknown, the first)
+const iconIndex = (name, set = iconSet(hunt.zone)) => set.index(name); // (a link's name; unknown, the first)
 const HUNT_GENERATIONS = [50000, 4000]; // a hunt's start played up to so many gens: in Solo, in colours (a battle)
 const DENSITY = [0.1, 0.7]; // a random start's density, drawn between these
 const density = () => DENSITY[0] + Math.random() * (DENSITY[1] - DENSITY[0]);
@@ -34269,7 +34329,7 @@ function pickZone(zone) {
   plane.seed = 1 + Math.floor(Math.random() * 999999999);
   plane.picks = null; // (Famous, Anywhere: drawn again as laid, see zoneSeed)
   plane.number = drawNumber(Math.random); // (Formula: a number at random)
-  plane.icons = Array.from({ length: lifeParts() }, () => Math.floor(Math.random() * iconSet(hunt.zone).names.length)); // (an Icon or Punk zone: one at random a colour, as the hunt draws them)
+  plane.icons = Array.from({ length: lifeParts() }, () => Math.floor(Math.random() * iconSet(hunt.zone).count())); // (an Icon or Punk zone: one at random a colour, as the hunt draws them)
   if (zone === 'full')
     lifeReseed(); // the whole grid: a soup, in colours each in its part
   else layZone();
@@ -36436,7 +36496,7 @@ const zonePop = () =>
   famousZone(hunt.zone) && plane.picks
     ? `${wordOfZone(hunt.zone)}.${plane.picks.join('.')}` // (Famous, Anywhere: its patterns, a hunt's too)
     : isIcon(lifeStart?.zone ?? '')
-      ? `${zoneWord()}.${plane.icons.map((i) => iconSet(lifeStart.zone).names[i]).join('.')}` // (the icons laid, see iconCells: never the game's colours counted, another variant's while one is built)
+      ? `${zoneWord()}.${plane.icons.map((i) => iconSet(lifeStart.zone).name(i)).join('.')}` // (the icons laid, see iconCells: never the game's colours counted, another variant's while one is built)
       : lifeStart?.zone === 'numbers'
         ? `${zoneWord()}.${plane.number}`
         : `${zoneWord()}.${plane.density}.${plane.seed}`; // (Formula: its number, formula.16/9)
@@ -44383,7 +44443,7 @@ $('huntZones').replaceChildren(
           ? icon('smiley')
           : isIcon(zone)
             ? zone.startsWith('punk')
-              ? pixelIcon(punkArt(27), zone.endsWith('Max') ? 0 : 10)
+              ? pixelIcon(punkArt(punkIndex(PUNK_TILE)), zone.endsWith('Max') ? 0 : 10)
               : pixelIcon('.....,.o.o.,.....,o...o,.ooo.', zone.endsWith('Max') ? 0 : 2)
             : pixelIcon(
                 zone === 'centred'
@@ -44442,6 +44502,9 @@ function emojiDrawn(e) {
       return true;
   return false;
 }
+// the emojis this browser draws (Emoji's set, see ICON_SETS), looked for once
+let emojiList = null;
+const emojisDrawn = () => (emojiList ??= EMOJIS.filter(emojiDrawn));
 stage.addEventListener('pointerdown', (e) => {
   drawFrom = drawsHere() && e.button === 0 ? [e.clientX, e.clientY] : null;
 }); // (its start's cells: at gen 0 only)

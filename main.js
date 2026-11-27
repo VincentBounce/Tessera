@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.935';
+const VERSION = '0.5.936';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7286,7 +7286,7 @@ function cardWords(name, detail = '', rule = '') {
   return words;
 }
 // Trail: a dead cell fades through greys for a few gens (States and Age, in colours too; two states)
-const trailApplies = (w = walk.life && walk.variant, rule = $('lifeRule').value, look = $('colourMode').value) =>
+const trailApplies = (w = walk.life && walk.variant, rule = lifeRuleAsked(), look = $('colourMode').value) =>
   !!w &&
   !!VARIANTS[w].life &&
   !VARIANTS[w].margolus &&
@@ -11138,7 +11138,7 @@ const setupNow = () => ({
   startsWay: battleStartsWay,
   start: plane.start,
   zone: hunt.zone,
-  rule: $('lifeRule').value,
+  rule: lifeRuleAsked(),
   look: $('colourMode').value,
   steps: lengthAsked(),
   stacked: spaceTime,
@@ -21156,7 +21156,7 @@ const solidTeamCounts = (kind) =>
 // and the menu's graph's (see choicesAt)
 const teamsWhyNot = (k, v, size = null, j = startAsked()) =>
   k === 1 || (battleVariant(v) && battleFits(v, k, teamsSize(v, k, size ?? undefined), j)) ? '' : TEAMS_WHERE; // (at the size its walkers play, see teamsSize)
-const lifeTeamsWhyNot = (k, w, size = null, rule = $('lifeRule').value, f = pickedFigure(w, size)) =>
+const lifeTeamsWhyNot = (k, w, size = null, rule = lifeRuleAsked(), f = pickedFigure(w, size)) =>
   !teamsStatesFit(k, rule)
     ? TEAMS_STATES_WHERE
     : teamsFit(k, f, rule)
@@ -27848,7 +27848,7 @@ function renderPlaneRow() {
 // has: its cell only, no pattern): the rule's patterns, the colours and the eraser, the turns (greyed for a cell); a note where
 // the rule has none there
 function renderBrushes(kind) {
-  const rule = ruleBody(parseRule(ruleBody($('lifeRule').value))?.text ?? ''),
+  const rule = ruleBody(parseRule(ruleBody(lifeRuleAsked()))?.text ?? ''),
     mine = !ruleCard(rule, tabVariant());
   const fits = (p) =>
     !p[1] ||
@@ -28478,7 +28478,7 @@ function orientPattern(kind, rle, turn, flip) {
 let brushMemo = null;
 function brushCells() {
   const kind = patternKind(),
-    states = parseRule(ruleBody($('lifeRule').value))?.C ?? 2,
+    states = parseRule(ruleBody(lifeRuleAsked()))?.C ?? 2,
     k = `${kind}|${brush.id}|${brush.turn}|${brush.flip}|${states}|${DRAW_BY_ID.get(brush.id)[4]}`;
   if (brushMemo?.k !== k)
     brushMemo = {
@@ -29106,7 +29106,7 @@ const teamsMixed = (zone = hunt.zone) => teamsMix && lifeTeams > 1 && mixable(zo
 // Newcomer, a switch: the teams below's start (Trio's: Duel's, laid as Duel lays them), the last colour none at first, born only
 // of a tie between the others (the colour missing, see colourMissing); where a start lays teams (a soup's zones, Text); at
 // variant w and size, its figure made only when its teams' fit is asked (a mesh: the graph's search asks every variant round)
-const newcomerCan = (teams = lifeTeams, w, size = null, start = plane.start, rule = $('lifeRule').value) =>
+const newcomerCan = (teams = lifeTeams, w, size = null, start = plane.start, rule = lifeRuleAsked()) =>
   teams > 2 &&
   colourMissing(teams, rule) &&
   (start === 'random' || start === 'text') &&
@@ -29130,8 +29130,11 @@ function blockCells(M, n) {
 }
 const ruleColours = () => lifeTeams;
 const ruleBody = (rule) => rule.replace(/\/(Immigration|Colours\d+)$/i, ''); // births, survivals (and dying stages), no colours
+// Life's rule asked, as its field holds it (the next walk's, a menu's choice), while typed in the one it held as entered: a
+// rule half typed or refused never the setup's (its link, the menu's greyed choices)
+const lifeRuleAsked = () => $('lifeRule').dataset.inUse ?? $('lifeRule').value;
 const lifeRuleNow = () => {
-  const body = ruleBody($('lifeRule').value);
+  const body = ruleBody(lifeRuleAsked());
   return parseRule(lifeTeams === 1 ? body : `${body}${lifeTeams === 2 ? '/Immigration' : `/Colours${lifeTeams}`}`);
 };
 // The colours, as blocks: one (black), or 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 civilisations, each block its colours in
@@ -29204,9 +29207,9 @@ const teamBlocksAligned = (K, g, b) => {
 // its halves or quarters
 // k colours' states with a rule (a setup's, the field's by default): each colour its live and dying states, a cell's byte
 // at most (Faders' 25: ten colours)
-const teamsStatesFit = (k, rule = $('lifeRule').value) => k * ((parseRule(ruleBody(rule))?.C ?? 2) - 1) <= 255;
+const teamsStatesFit = (k, rule = lifeRuleAsked()) => k * ((parseRule(ruleBody(rule))?.C ?? 2) - 1) <= 255;
 const TEAMS_STATES_WHERE = "So many teams, each with this rule's dying states, pass a cell's 255 states.";
-function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value) {
+function teamsFit(k, f = pickedFigure(tabVariant()), rule = lifeRuleAsked()) {
   // f: the figure, its variant and its surface (a torus's sizes)
   if (k === 1) return true;
   if (!TEAM_COUNTS.includes(k)) return false; // (a count of teams one of the menu's: Newcomer's teams below 12, 11, none)
@@ -29215,7 +29218,7 @@ function teamsFit(k, f = pickedFigure(tabVariant()), rule = $('lifeRule').value)
 // the colours variant w takes (at size, or the one it opens at) coming from a setup with `from`: as many, else the nearest count
 // it places (colours still, never Solo; fewer on a tie; none: Solo, Klein Dual 16 at 4 and 24); Solo, Solo; blocks and
 // Elementary one. A click's, one rule: the app's (fitTeams) and the menu graph's edges (choicesAt)
-const teamsOn = (w, from, size = null, rule = $('lifeRule').value) => {
+const teamsOn = (w, from, size = null, rule = lifeRuleAsked()) => {
   const m = VARIANTS[w];
   if (!m.life) return from; // (a walk: Life's colours kept for the next)
   if (from === 1 || m.margolus || m.elementary) return 1;
@@ -29340,7 +29343,7 @@ const menuSizeOf = (w) =>
 // a count of colours whose battles can bring a colour back: the rule's birth with c live neighbours that K − 1 colours can share
 // with a tie for the most (the one missing born, see lifeStep): each at least one, the e = c − (K − 1) left over not 1 (2 of 3
 // colours: e even); with letters, any of theirs with c (rule: a setup's, the field's by default)
-const colourMissing = (K, rule = $('lifeRule').value) => {
+const colourMissing = (K, rule = lifeRuleAsked()) => {
   const r = parseRule(ruleBody(rule));
   if (K < 3 || !r) return false;
   return countsOn(r, r.B).some((c) => c >= K - 1 && (K === 3 ? (c - 2) % 2 === 0 : c - (K - 1) !== 1));
@@ -29456,7 +29459,7 @@ function renderTeams() {
         newcomer = !newcomer;
         compute();
       },
-      whyNot: ({ w, size, lifeTeams: teams = lifeTeams, start = plane.start, rule = $('lifeRule').value }) =>
+      whyNot: ({ w, size, lifeTeams: teams = lifeTeams, start = plane.start, rule = lifeRuleAsked() }) =>
         newcomerCan(teams, w, size, start, rule) ? '' : newcomerWhere(teams),
       title:
         lifeTeams > 2
@@ -30974,7 +30977,7 @@ function renderRuleSection() {
     return;
   } // (a walk's: it follows the walk; Credits stay)
   const mark = lifeMark(variant),
-    now = ruleBody($('lifeRule').value);
+    now = ruleBody(lifeRuleAsked());
   const listed = lifeRulesListed(tabVariant()),
     mine = listed.find((r) => r.rule === now);
   // Elementary's, in two tabs over How it works: Main, the known ones; Others, the rest (the rule in use's; one clicked, while that rule stays)
@@ -31279,7 +31282,7 @@ function fitRuleToShape() {
     variant = VARIANTS[w];
   if (!variant.life) return;
   // a rule known, even without its dying states (none with colours: B34/S123 is B34/S123/C3)
-  const rule = $('lifeRule').value,
+  const rule = lifeRuleAsked(),
     mark = lifeMark(variant);
   if (ruleFittedTo === w && ruleFits(rule, variant)) {
     shapeRules[mark] = rule;
@@ -36444,7 +36447,7 @@ function getSetup() {
   if (variantStarts() && startsWayNow() === 'symmetric') s.walkStart = startNo(); // (Symmetric's: Centred and Random place their own)
   if (TURNED[variant.surface]) s.gridTurned = torusTurned ? 1 : 0;
   if (ringFamily(w)) s[`${ringFamily(w)}Shape`] = shapeOn(ringFamily(w), w); // (its place in its family's shapes, the first 0)
-  if (life) s.playRule = ruleBody($('lifeRule').value);
+  if (life) s.playRule = ruleBody(lifeRuleAsked());
   if (life) s.teams = teamsPlayed(w); // (Solo's 1 too)
   if (walkTeamsHere(w)) s.teams = walkTeams; // (a walk's on a surface, Solo's 1 too; a battle's numbers below)
   if (battleOn()) {
@@ -43664,8 +43667,10 @@ for (const input of document.querySelectorAll('.field :is(input, textarea)')) {
   input.addEventListener('focus', () => {
     before = input.value;
     putBack();
+    input.dataset.inUse = input.value; // (while typed in, its value as entered: what the setup holds, see lifeRuleAsked)
     input.setSelectionRange(input.value.length, input.value.length);
   });
+  input.addEventListener('blur', () => delete input.dataset.inUse);
   // a click into the field focuses it without placing the cursor (the focus puts it at the end);
   // once in, clicks place it as usual
   input.addEventListener('mousedown', (e) => {
@@ -44173,7 +44178,7 @@ async function pasteBrush() {
     file = rleRead(await navigator.clipboard.readText().catch(() => '')),
     kind = patternKind(),
     room = walk.plane && pictureCells(),
-    states = parseRule(ruleBody($('lifeRule').value))?.C ?? 2;
+    states = parseRule(ruleBody(lifeRuleAsked()))?.C ?? 2;
   if (!file) return alertTip("No pattern copied, an RLE or a .cells (Golly's, LifeWiki's).", card);
   if (file.world) return alertTip("A whole world (a bounded grid's, or the app's own setup): Paste RLE lays it.", card);
   if (baseOf(kind) !== file.grid)
@@ -44740,7 +44745,7 @@ function lifeRle() {
         ? []
         : [`On the app's ${PLANE_CELLS[base]} (not Golly's squares): cells as its slanted grid numbers them`],
     pop,
-    gollyRule(K > 1 ? lifeRuleNow().text : ruleBody($('lifeRule').value), base === 'hex'),
+    gollyRule(K > 1 ? lifeRuleNow().text : ruleBody(lifeRuleAsked()), base === 'hex'),
     L.C === 2 && K === 1,
     sheet,
   );

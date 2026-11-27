@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.943';
+const VERSION = '0.5.944';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -18073,7 +18073,7 @@ const cameFrom = (g, alongEdges, state) => (alongEdges ? state[1] : g.nbr[g.side
 function placePoint(p) {
   const sh = walk.shape,
     R = walk.R,
-    G = walk.surface.edgeGraph,
+    G = walk.vert && edgeGraph(walk.surface), // (made once a mesh, at its first ask: a Klein bottle's other shape a mesh of its own, see reshapeKlein)
     X = walk.vert ? sh.corners : sh.cen;
   const c = walk.vert ? 3 * (walk.surface.sides * G.tileOf[p] + G.cornerOf[p]) : 3 * p;
   return [X[c] * R, X[c + 1] * R, X[c + 2] * R];
@@ -23827,11 +23827,12 @@ function surfaceLunes(g) {
 function cellsApart(g) {
   return g.cellFaces ? (t, u) => g.cellFaces[t] !== g.cellFaces[u] : null; // (a rosette sphere's: its halves, see rosetteSphereMesh)
 }
-const planeColouring = (kind, W) => {
+const planeColouring = (kind, W, torus = planeTorus(kind)) => {
+  // (torus: the menu's for a grid built, the grid shown's own as built for its ground, see groundLook's)
   const { n, xy } = planeGrid(kind, W),
-    walls = planeWallPlaces(kind, W, planeTorus(kind));
+    walls = planeWallPlaces(kind, W, torus);
   return {
-    kinds: tileKinds(planeMesh(kind, W, planeTorus(kind)), APERIODIC[kind]?.(W).kinds),
+    kinds: tileKinds(planeMesh(kind, W, torus), APERIODIC[kind]?.(W).kinds),
     alternated: alternatedBy(baseOf(kind), (t) => basePlace(kind, ...(t < n ? xy(t) : walls[t - n]))), // (a rectangle's by its base grid's places, its walls' too)
   };
 };
@@ -23881,7 +23882,7 @@ function groundColours() {
       { level: levels } = exploreLevels(
         M ? cellNeighbours(M.start, M.list, M.nv) : cornerNeighbours(g),
         M ? M.start.length - 1 : n,
-        P ? planeColouring(P.kind, P.W) : surfaceColouring(g),
+        P ? planeColouring(P.kind, P.W, P.torus) : surfaceColouring(g),
         distanceFrom,
         palette,
         look,
@@ -38259,7 +38260,7 @@ function walkersOf() {
   B.to(stepShown);
   return B.places.map((Q, s) => ({
     ...onPlaces((i) => placePoint(Q[i]), [Q[0], cameFrom(walk.surface, !!walk.vert, B.starts[s])]),
-    ...onTiles((i) => (walk.vert ? walk.surface.edgeGraph.tileOf[Q[i]] : Q[i])),
+    ...onTiles((i) => (walk.vert ? edgeGraph(walk.surface).tileOf[Q[i]] : Q[i])),
     colour: teamColour(s),
     living: B.dead[s] < 0 || B.dead[s] > stepShown,
   }));

@@ -1318,7 +1318,7 @@
         S.to(i);
         for (let s = 0; s < K; s++) {
           if (S.size[s] > before[s] + 1) fast++;
-          if (S.size[s] < before[s] - 1) bitten = true; // (a bite: cells eaten from then on)
+          if (S.size[s] < before[s]) bitten = true; // (a bite, one cell lost or more: cells eaten from then on)
           if (!bitten && S.size[s] > cap) over++;
           before[s] = S.size[s];
         }

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.948';
+const VERSION = '0.5.949';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -14114,15 +14114,15 @@ function finishMesh(verts, tiles, sides, size, outwardRef = (m) => m) {
         v = poly[sides * t + ((k + 1) % sides)];
       if (u === v) continue; // (a repeated corner's side, of length 0: no neighbour, as a pentagon's of the sphere of hexagons)
       const e = Math.min(u, v) * nv + Math.max(u, v);
-      const other = edges.get(e);
+      const other = edges.get(e); // (its first tile's side, as one number: sides × its tile + its side, no array a side)
       if (other === undefined) {
-        edges.set(e, [t, k]);
+        edges.set(e, sides * t + k);
         continue;
       }
-      nbr[sides * t + k] = other[0];
-      nbrEdge[sides * t + k] = other[1];
-      nbr[sides * other[0] + other[1]] = t;
-      nbrEdge[sides * other[0] + other[1]] = k;
+      nbr[sides * t + k] = Math.floor(other / sides);
+      nbrEdge[sides * t + k] = other % sides;
+      nbr[other] = t;
+      nbrEdge[other] = k;
     }
   }
   let extent = 0; // distance of the farthest vertex from the centre
@@ -19246,15 +19246,20 @@ function edgeGraph(g) {
   const edgeTiles = new Map(),
     normal = new Float64Array(3 * nv);
   const key = (a, b) => (a < b ? a * nv + b : b * nv + a);
-  const at = (v) => [V[3 * v], V[3 * v + 1], V[3 * v + 2]];
   for (let t = 0; t < g.n; t++) {
     // the tile's normal, its whole outline's (Newell's: the sum of its sides' cross products), whichever corner it starts
     // at: a tile bent across a solid's edge (a stella's of hexagons) has no plane, and its first three corners' turned
     // with the corner its list starts at, so a turned walk left its turned path
-    const n = [0, 0, 0];
+    // (in numbers, no array a side: a large solid's hundreds of thousands of sides, as cross would)
+    let nx = 0,
+      ny = 0,
+      nz = 0;
     for (let j = 0; j < k; j++) {
-      const side = cross(at(g.poly[k * t + j]), at(g.poly[k * t + ((j + 1) % k)]));
-      for (let d = 0; d < 3; d++) n[d] += side[d];
+      const a = 3 * g.poly[k * t + j],
+        b = 3 * g.poly[k * t + ((j + 1) % k)];
+      nx += V[a + 1] * V[b + 2] - V[a + 2] * V[b + 1];
+      ny += V[a + 2] * V[b] - V[a] * V[b + 2];
+      nz += V[a] * V[b + 1] - V[a + 1] * V[b];
     }
     for (let j = 0; j < k; j++) {
       const p = g.poly[k * t + j],
@@ -19272,7 +19277,9 @@ function edgeGraph(g) {
         tileOf[p] = t;
         cornerOf[p] = j;
       }
-      for (let d = 0; d < 3; d++) normal[3 * p + d] += n[d];
+      normal[3 * p] += nx;
+      normal[3 * p + 1] += ny;
+      normal[3 * p + 2] += nz;
     }
   }
   return (g.edgeGraph = { nv, nbrs, tileOf, cornerOf, edgeTiles, normal, key });

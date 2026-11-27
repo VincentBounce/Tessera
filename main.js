@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.957';
+const VERSION = '0.5.958';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -34597,14 +34597,18 @@ function cellPlace(t) {
   if (g.triFaces || (g.sides === 3 && !g.uncut) || g.kite)
     return triPlace(Math.floor((t - (g.triFirst ?? 0)) / g.perFace));
   if (g.hexagons) {
-    const k = g.cellFaces[t],
-      at = (c) => Array.from(g.cen.subarray(3 * c, 3 * c + 3)),
-      far = (c) => Math.hypot(...at(c).map((v, d) => v - g.faceMids[k][d])),
-      way = (c) => dot3(Array.from(g.nrm.subarray(3 * c, 3 * c + 3)), unit(g.faceMids[k])); // (how much it looks the face's way)
+    const k = g.cellFaces[t];
     g.faceMiddleCells ??= [];
     if (g.faceMiddleCells[k] === undefined) {
-      const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k),
-        most = own.reduce((m, c) => Math.max(m, way(c)), -Infinity), // (no spread: a large face's cells past the call stack's room)
+      // (in numbers, no array a cell: a large solid's million cells, each looked at once a face)
+      const [mx, my, mz] = g.faceMids[k],
+        [ux, uy, uz] = unit(g.faceMids[k]),
+        { cen, nrm } = g,
+        far = (c) => Math.hypot(cen[3 * c] - mx, cen[3 * c + 1] - my, cen[3 * c + 2] - mz),
+        way = (c) => nrm[3 * c] * ux + nrm[3 * c + 1] * uy + nrm[3 * c + 2] * uz, // (how much it looks the face's way)
+        own = [];
+      for (let c = 0; c < g.n; c++) if (g.cellFaces[c] === k) own.push(c);
+      const most = own.reduce((m, c) => Math.max(m, way(c)), -Infinity), // (no spread: a large face's cells past the call stack's room)
         inPlane = (c) => g.cellFaces[c] === k && way(c) > most - 1e-9,
         flat = own.filter((c) => inPlane(c) && liveEdges(g, c).every((e) => inPlane(g.nbr[g.sides * c + e]))); // (a whole hexagon, its neighbours in its plane too: one cut by a fold, a stella's arm's, smaller, its frame's step wrong)
       g.faceMiddleCells[k] = flat.length ? flat.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;

@@ -2,7 +2,7 @@
 //   await import(`/tools/check.js?${Date.now()}`); await tesseraCheck();   // the meshes, the sheets' rules (see checkSheets), a few links cold (see checkColdLinks), 35 to 50 s
 //   await tesseraCheck({ crawl: true });                                   // and every tab, shape and tiling, a few minutes
 //   await tesseraCheck({ clickAll: true, clickFrom: 0 });                  // and on each, every control clicked (a night's, ~25 minutes; from a look's number, localStorage.tesseraCrawlAt, after a crash)
-//   await tesseraCheck({ hovers: true });                                  // and on each, every greyed control's first hover under 100 ms, there and at its surface's largest size (a night's)
+//   await tesseraCheck({ hovers: true });                                  // and on each, every control hovered (no error), a greyed one's first hover under 100 ms, there and at its surface's largest size (a night's)
 //   await tesseraCheck({ fuzz: 400, seed: 7 });                            // 400 actions at random, menu to menu (transitions, smallest sizes)
 //   await tesseraCheck({ fuzz: 400, seed: 7, hovers: true });              // and after each, every greyed control hovered: its search builds nothing (see watchSearches)
 //   await tesseraCheck({ fuzz: 100, cold: true });                          // and after each, its link loaded cold beside: the same menus offered
@@ -703,9 +703,19 @@
   // (sized: each variant's largest size hovered too, the crawl's; not the fuzz's, its sizes its own)
   function hoverGreyed(fail, sized = true) {
     const name = (b) => (b.querySelector('.mode-name') ?? b).textContent.trim().slice(0, 30) || b.id;
-    const hoverAll = (where) => {
-      const watch = watchSearches();
-      for (const b of document.querySelectorAll('aside.panel button, #viewTools button, #animBar button'))
+    // every control shown hovered: a greyed one timed (its first hover, its search building nothing); the others hovered in
+    // and out, no error thrown (v0.5.902 to v0.5.939: Size's − and + hovered threw, the shape gone)
+    const hoverAll = async (where) => {
+      const watch = watchSearches(),
+        errors = [],
+        onError = (e) => errors.push(e.message);
+      addEventListener('error', onError);
+      for (const b of document.querySelectorAll('aside.panel button, #viewTools button, #animBar button')) {
+        if (b.offsetParent && !b.disabled) {
+          for (const type of ['mouseover', 'mouseenter', 'mouseout', 'mouseleave'])
+            b.dispatchEvent(new MouseEvent(type, { bubbles: type === 'mouseover' || type === 'mouseout' }));
+          if (errors.length) fail(`${where} › ${name(b)}: hovered, ${errors.splice(0).join('; ')} (${setupHash()})`);
+        }
         if (b.disabled && b.offsetParent) {
           localStorage.tesseraHoverAt = `${new Date().toTimeString().slice(0, 8)} ${where} › ${name(b)}`; // (the hover under way: one that never ends found, as clickAll's)
           const t = performance.now();
@@ -717,6 +727,10 @@
               `${where} › ${name(b)}: its first hover ${Math.round(ms)} ms${built ? `, its search built ${built}` : ''} (${setupHash()})`,
             ); // (its link: the setup to open it again at)
         }
+      }
+      await wait(100); // (what a hover drew in the frames after it: its errors too)
+      if (errors.length) fail(`${where}: after its hovers, ${errors.join('; ')} (${setupHash()})`);
+      removeEventListener('error', onError);
       watch.stop();
     };
     const resize = async (value) => {
@@ -728,7 +742,7 @@
     };
     const largeDone = new Set(); // (each variant once at its largest: a whyNot's cost is its mesh's, not the setup's)
     return async (where) => {
-      hoverAll(where);
+      await hoverAll(where);
       if (!sized) return;
       const F = $('gridSizeField'),
         largest = F.options[F.options.length - 1]?.value;
@@ -736,7 +750,7 @@
       largeDone.add(tabVariant());
       const was = F.value;
       await resize(largest);
-      hoverAll(`${where} at ${largest}`);
+      await hoverAll(`${where} at ${largest}`);
       await resize(was);
     };
   }

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.954';
+const VERSION = '0.5.955';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -32639,6 +32639,10 @@ function punkLayers(i) {
   }
   return layers;
 }
+// its name: its number in base 64, base64url's digits (5 at most); a name back to its number (none here: the first)
+const B64_DIGITS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',
+  punkName = (i) => (i >= 64 ? punkName(Math.floor(i / 64)) : '') + B64_DIGITS[i % 64],
+  punkIndex = (name) => (/^[\w-]{1,5}$/.test(name) ? [...name].reduce((n, c) => n * 64 + B64_DIGITS.indexOf(c), 0) : 0);
 // its picture: each layer's drawing (its lines, then its own pixels) over the ones under it, theirs gone where it has pixels
 const punkDrawings = [];
 function punkPixel(i) {
@@ -32664,10 +32668,10 @@ const ICON_SETS = {
     P: 24,
     pixel: punkPixel,
     count: () => PUNK_COUNT,
-    name: String,
-    index: (name) => (Number(name) >= 0 && Number(name) < PUNK_COUNT ? Math.floor(Number(name)) : 0),
+    name: punkName,
+    index: punkIndex,
     word: 'punk',
-    label: (i) => `#${formatNumber(i)}`,
+    label: (i) => `#${punkName(i)}`,
     source: 'CryptoPunks sprites, CC0, by openpunkart',
   },
   // (Emoji: those this browser draws, each as a picture of 48 pixels, see picturePixel)
@@ -32705,7 +32709,7 @@ const isIcon = (zone) => /^(?:icon|punk|emoji)/.test(zone); // (a picture: an ic
 // not always: a triangle's cells let 36 in, not 32); 24 where none (greyed)
 let iconMaxMemo = null;
 const iconMax = (set = ICON_SETS.icon) => {
-  const key = `${gridKey()}|${lifeParts()}|${patternKind()}|${set.P}`,
+  const key = `${gridKey()}|${lifeParts()}|${patternKind()}|${set.P}|${placementKey()}`, // (its parts' places too)
     u = set.P === 24 && patternKind() === 'square' ? 24 : 1,
     cells = walk.plane ? walk.plane.W * walk.plane.row : walk.surface.n;
   if (iconMaxMemo?.key === key) return iconMaxMemo.N;
@@ -32762,7 +32766,7 @@ const START_PLACES = [
 let startPlace = LINK_DEFAULTS.startPlace;
 const fillsPart = (start, zone) => start === 'random' && (zone === 'full' || zone === 'numbers'); // (a start over each colour's part)
 const placeIn = (s) => [startPlace, 0, 1, 2, 3].find((k) => !PART_CHOICES.startPlace.whyNot(s, k)) ?? -1,
-  placeNow = () => placeIn(setupNow()),
+  placeNow = () => placeJudged ?? placeIn(setupNow()), // (a place judged: that one, see fitsAtPlace)
   soupOnFaces = () => hunt.zone === 'full' && [0, 1].includes(placeNow()), // (Wild's soup on each colour's face; none off a solid: -1)
   startOpposite = () => !!walk.surface && placeNow() === 2;
 const spotsOf = (col) => (placeNow() === 1 ? col?.facing : col?.patch); // (a colouring's spots as the start's place lays them)
@@ -32857,6 +32861,15 @@ const PART_CHOICES = {
         return 'Only with an even count of colours whose faces can stand across the centre from one another, alike.';
       if (k === 2 && !oppositeAllowed(surface, K))
         return 'Only on a solid whose colours can each lie in two opposite pieces.';
+      if (
+        k < 3 &&
+        s.start === 'random' &&
+        s.w === walk.variant &&
+        s.size === null &&
+        setupParts(s) === lifeParts() &&
+        !fitsAtPlace(s.zone, k)
+      )
+        return zoneGreyed(s.zone); // (its start not laid whole there: on the figure shown, see fitsAtPlace)
       if (k === 3 && !fillsPart(s.start, s.zone))
         return "Only with Wild or Formula: a start that fills each colour's part.";
       return '';
@@ -33971,7 +33984,7 @@ const huntOn = () =>
 // the zones that fit the grid: a radius whose patches would overlap, or patterns with none here, greyed
 function huntFits() {
   const K = lifeParts(),
-    laid = `${gridKey()}|${K}|${walk.life.ruleText}`,
+    laid = `${gridKey()}|${K}|${walk.life.ruleText}|${placementKey()}`, // (its parts' places too: where a picture or a pattern is laid)
     key = `${laid}|${lifeParts() === 1 ? hunt.goal : teamsMixed('full')}|${plane.seedRadius}`; // (Seed's radius; Mixed as it counts in the soups' zones: their places)
   if (hunt.laidKey !== laid) {
     hunt.laidKey = laid;
@@ -33981,26 +33994,40 @@ function huntFits() {
   // (its key kept once its fits are made: before v0.3.98 kept first, a throw on the way left them none for every call after, the page
   // stuck: the globe in Nonet)
   hunt.fits = Object.fromEntries(
-    Object.keys(HUNT_ZONES).map((zone) => {
-      const r = zoneRadius(zone);
-      if (frameless(walk.surface) && isIcon(zone)) return [zone, false]; // (a globe, Boy's surface: no frame to lay a picture on, see patternPlace; its patterns from a tile's own heading, see headingHere; its patches round its parts' middles, see partMiddle)
-      if (famousZone(zone))
-        return [
-          zone,
-          (hunt.laid[zone] ??= patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0)),
-        ]; // (whether some, not them all)
-      if (isIcon(zone)) return [zone, iconFits(iconSize(zone), iconSet(zone).P)];
-      if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
-        const p = huntParts(0, K, false, teamsMixed(zone)),
-          unlike = hullColours(VARIANTS[walk.variant].surface, K).unlike; // (unlike by choice, see hullColourings)
-        return [zone, !peakHunt() && (unlike || p.every((x) => x.length === p[0].length))];
-      } // (a hull solid's Wild: its parts alike, else greyed)
-      if (!r) return [zone, !peakHunt()]; // (the whole grid: no peak to look for, a soup full already)
-      return [zone, patchesApart(zoneParts(zone, K))]; // (each its own cells, none without: a face for each colour)
-    }),
+    Object.keys(HUNT_ZONES).map((zone) => [
+      zone,
+      famousZone(zone) ? (hunt.laid[zone] ??= zoneFits(zone, K)) : zoneFits(zone, K),
+    ]), // (Famous, Anywhere: once a grid, its colours, rule and places)
   );
   hunt.fitKey = key;
   return hunt.fits;
+}
+// whether a zone's start is laid whole on the figure shown, its K colours each at its place (placeNow)
+function zoneFits(zone, K) {
+  if (frameless(walk.surface) && isIcon(zone)) return false; // (a globe, Boy's surface: no frame to lay a picture on, see patternPlace; its patterns from a tile's own heading, see headingHere; its patches round its parts' middles, see partMiddle)
+  if (famousZone(zone)) return patternsOn() && laidChoices(zone === 'centred', true).every((c) => c.length > 0); // (whether some, not them all)
+  if (isIcon(zone)) return iconFits(iconSize(zone), iconSet(zone).P);
+  if (zone === 'full' && hullColours(VARIANTS[walk.variant].surface, K)) {
+    const p = huntParts(0, K, false, teamsMixed(zone)),
+      unlike = hullColours(VARIANTS[walk.variant].surface, K).unlike; // (unlike by choice, see hullColourings)
+    return !peakHunt() && (unlike || p.every((x) => x.length === p[0].length));
+  } // (a hull solid's Wild: its parts alike, else greyed)
+  if (!zoneRadius(zone)) return !peakHunt(); // (the whole grid: no peak to look for, a soup full already)
+  return patchesApart(zoneParts(zone, K)); // (each its own cells, none without: a face for each colour)
+}
+// The judge of a start's place: whether its zone is laid whole there, the place judged as if picked (placeNow gives it
+// meanwhile); on the figure shown (a place's whyNot asks it of the setup shown only, see startPlace), each answer kept a grid
+let placeJudged = null,
+  placeFits = { grid: null };
+function fitsAtPlace(zone, k) {
+  placeJudged = k;
+  try {
+    if (placeFits.grid !== gridKey()) placeFits = { grid: gridKey() };
+    const key = `${lifeParts()}|${walk.life.ruleText}|${placementKey()}|${zone}`;
+    return (placeFits[key] ??= zoneFits(zone, lifeParts()));
+  } finally {
+    placeJudged = null;
+  }
 }
 // when a zone is greyed (as huntFits finds it), its tooltip's words
 const zoneGreyed = (zone) =>
@@ -44443,7 +44470,7 @@ $('huntZones').replaceChildren(
                   : zone === 'emoji'
                     ? "An emoji at random, of Unicode's 1,923 (Emoji 18.0), as wide as fits, its outline and dark marks alive, in the middle of each colour's part"
                     : isIcon(zone) && zone.startsWith('punk')
-                      ? `A CryptoPunk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 10,000 of Larva Labs (2017), its line drawing alive (its outline, dark marks and contrasts), in the middle of each colour's part`
+                      ? `A punk at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of ${formatNumber(PUNK_COUNT)} drawn from the CryptoPunks sprites (CC0, openpunkart): its layers' line drawings alive (each sprite's outline, dark marks and contrasts), in the middle of each colour's part`
                       : isIcon(zone)
                         ? `An icon at random, ${zone.endsWith('Max') ? 'as wide as fits, its width and height whole, cut off in its corners only (on squares 96, 72, 48 or 24 cells, elsewhere to the cell)' : '24 cells wide'}, one of the 1,036 of Pixelarticons (MIT), its pixels alive, in the middle of each colour's part`
                         : zoneRadius(zone)

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.937';
+const VERSION = '0.5.938';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -6622,6 +6622,8 @@ function applyDefaults(at) {
     if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
   }
+  renderHeadTiles(); // (the Display box's tiles as its settings now are: open under the pointer, it is drawn on entering only)
+  debugTuning(); // (the debug panel: the mode's numbers)
 }
 // a setting's default for variant w: its tab's, else all's, or by the variant
 const defaultOf = (key, w) => {
@@ -44425,8 +44427,6 @@ const themeSwitch = tile({
     }
     applyTheme(theme);
     applyDefaults('theme'); // (its defaults the theme's: Shine's, see DISPLAY_DEFAULTS)
-    renderHeadTiles(); // (the Display box it is in, open under the pointer: its tiles as they now are)
-    debugTuning(); // (the debug panel: the mode's numbers)
   },
 });
 function applyTheme(theme) {

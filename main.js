@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.955';
+const VERSION = '0.5.956';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -6516,7 +6516,7 @@ function describe(base) {
 const VIEW_3D = ['autoRotate', 'upright', 'perspective', 'light', 'glint']; // a 3D view's: Default, Free, Upright, Auto-rotate, Perspective, Side light, Glint (no row: the debug panel's Light; Space-time's too)
 const DISPLAY_BY_TAB = {
   '2D walks': ['heatmap', 'fill', 'translucent', 'cells', 'visits', 'digit', 'gridFinish', 'shine', 'tiles', 'ocean'], // (Shine: its Glow, and Halo on cells only, see lampWhyNot)
-  '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D],
+  '3D walks': ['colours', 'digit', 'gridFinish', ...VIEW_3D, 'shine'], // (Shine: Glow on its edges, Halo on its cells, see gpuCubes)
   'Walks on surfaces': [
     'shape',
     'heatmap',
@@ -6610,8 +6610,15 @@ const DISPLAY_DEFAULTS = {
   shine: [
     'shine',
     ['open', 'tab', 'theme'],
-    (variant, w) => (NAV[w][0] === 'Life' && themeName() === 'dark' ? SHINE.LED : glowWhyNot({ w }) ? 0 : SHINE.Glow),
-  ], // (Life on a dark page, in 2D as in 3D: LED; a walk on the edges: Glow; else Off)
+    (variant, w) =>
+      NAV[w][0] === 'Life' && themeName() === 'dark'
+        ? SHINE.LED
+        : !glowWhyNot({ w })
+          ? SHINE.Glow
+          : variantGroup(w) === '3D walks' && variant.cells
+            ? SHINE.Halo
+            : 0,
+  ], // (Life on a dark page, in 2D as in 3D: LED; a walk on the edges: Glow; a Lattice walk's cubes: Halo; else Off)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],
@@ -6949,11 +6956,7 @@ function renderHeadTiles() {
     $('shineRow'),
     'Shine',
     "The surface's tiles: how each one painted is lit; a walk's line on the edges: Glow",
-    SHINES.slice(0, SHINES_SHOWN).map(([name, words]) => [
-      name,
-      words,
-      name === 'Glow' ? glowWhyNot : name === 'Off' ? null : LAMPS[name].flat ? flatLampWhyNot : lampWhyNot,
-    ]), // (each its own greyed state)
+    SHINES.slice(0, SHINES_SHOWN).map(([name, words], k) => [name, words, ({ w }) => shineWhyNot(k, w)]), // (each its own greyed state)
     shineNow(),
     defaultOf('shine', tabVariant()),
     (k) => {
@@ -39289,16 +39292,29 @@ const SHINES = [
 ];
 // where a mode lights the tiles painted (all but Off and Glow, see LAMPS): Life's cells or a surface's tiles, not a 2D walk's
 // (their corners the plane's or a surface's, see lampAt); a flat lamp (Halo: its light its halo's only) a 2D walk's cells too
-const lampWhyNot = ({ w }) => (variantGroup(w) === '2D walks' ? 'Tiles lit in Life and on a surface only' : '');
+const lampWhyNot = ({ w }) =>
+  ['2D walks', '3D walks'].includes(variantGroup(w)) ? 'Tiles lit in Life and on a surface only' : '';
 const flatLampWhyNot = ({ w }) =>
-  variantGroup(w) === '2D walks' && NAV[w][4] !== 'cells'
-    ? 'Tiles in Life, on a surface or a 2D walk on cells only'
+  ['2D walks', '3D walks'].includes(variantGroup(w)) && NAV[w][4] !== 'cells'
+    ? 'Tiles in Life, on a surface or a walk on cells only'
     : '';
 // Glow: a walk on the edges only (its line glowing, see lineGlowOn)
 const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only');
 const SHINES_SHOWN = SHINES.length - TRIED.shines.length; // (Display › Shine' pills: the others tried in the debug panel's Shine, see debugTuning)
 const SHINE = Object.fromEntries(SHINES.map(([name], k) => [name, k]));
-const shineNow = () => Number($('shine').value); // (its box's, see DISPLAY_DEFAULTS)
+// a Shine's greyed words in a variant ('' where allowed): Glow a walk's on the edges, a flat lamp (Halo) where cells are, the
+// lamps where tiles are; Off anywhere
+const shineWhyNot = (k, w) => {
+  const name = SHINES[k]?.[0],
+    whyNot = name === 'Glow' ? glowWhyNot : !LAMPS[name] ? null : LAMPS[name].flat ? flatLampWhyNot : lampWhyNot;
+  return whyNot ? whyNot({ w }) : '';
+};
+// the Shine in use: the one picked where the mode shown allows it, else its default (a Lattice walk's Glow on its edges, its
+// Halo on its cubes; back to its edges, Glow again), as placeNow
+const shineNow = (w = walk.variant ?? tabVariant()) => {
+  const k = Number($('shine').value);
+  return shineWhyNot(k, w) ? defaultOf('shine', w) : k;
+};
 const shineLampsOn = () => !!LAMPS[SHINES[shineNow()][0]] && !$('shineRow').hidden && !lampWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
@@ -40385,9 +40401,11 @@ const SHINE_LIGHT_SOLO_3D = {
 const SHINE_LIGHT_SOLO_2D = { ...SHINE_LIGHT_SOLO_3D, panelLight: 0.47, panelColour: '#ffffff', panelCeiling: 1 };
 // a walk's and an ant's: Halo's halo lighter, as the user tuned it there (a walk's cells, 2D as on a surface); every other
 // number as SHINE_LIGHT's
-const SHINE_LIGHT_WALKS = { ...SHINE_LIGHT, haloHalo: 1 };
+const SHINE_LIGHT_WALKS = { ...SHINE_LIGHT, haloHalo: 1 },
+  SHINE_LIGHT_CUBES = { ...SHINE_LIGHT_WALKS, haloHalo: 0.3 }; // (a Lattice walk's cubes: their halo fainter, cube over cube)
 // the lamps' numbers now, the view's shader made with them (see gpuDrawSetup): four cases
 const shineLightNow = () => {
+  if (VARIANTS[walk.variant]?.cells && variantGroup(walk.variant) === '3D walks') return SHINE_LIGHT_CUBES; // (a Lattice walk's cubes)
   if (['Walk', 'Ant'].includes(NAV[walk.variant]?.[0])) return SHINE_LIGHT_WALKS; // (a walk's, an ant's: their own, any theme)
   if (lifeTeams !== 1 || themeName() !== 'light') return SHINE_LIGHT; // (a battle, or a dark page: 2D and 3D alike)
   return walk.plane ? SHINE_LIGHT_SOLO_2D : SHINE_LIGHT_SOLO_3D;
@@ -40757,6 +40775,7 @@ struct Col { @builtin(position) pos: vec4f, @location(0) col: vec4f }
 }
 @fragment fn colF(i: Col) -> @location(0) vec4f { return vec4f(mix(i.col.rgb, u.fadeTo * i.col.a, u.fade), i.col.a); }  // (premultiplied)
 @fragment fn colGlowF(i: Col) -> @location(0) vec4f { return vec4f(i.col.rgb * u.bright, 0.0); }  // (the 2D path's glow, as ribbonGlowF)
+@fragment fn litGlowF(i: Lit) -> @location(0) vec4f { return vec4f((i.dark + i.lit) * u.bright, 0.0); }  // (a 3D walk's bars or cubes: their light, see gpuCubes)
 // Life on the plane: world (x, y) turned (turnC, turnS), then to pixels; a cell's colour
 // its texel's word (clear: off the screen); the outlines in plain (premultiplied)
 fn planeTurned(p: vec2f) -> vec2f { return vec2f(u.turnC * p.x - u.turnS * p.y, u.turnS * p.x + u.turnC * p.y); }  // (the plane turned as the view shows it, see planeTurn)
@@ -42209,10 +42228,10 @@ function gpuCubes(count, of, make, reach) {
   new Uint8Array(D.words).fill(0);
   const enc = device.createCommandEncoder(),
     slot = gpuView(D.words, 0, depth, { halfW: BAR_HALF_WIDTH });
-  const drawBars = (p) => {
+  const drawBars = (p, at = slot) => {
     const walked = Math.min(Math.ceil(glideAt()), walk.n);
     if (!walked) return;
-    p.setBindGroup(0, gpuGroup(), [slot]);
+    p.setBindGroup(0, gpuGroup(), [at]);
     p.draw(verts, walked);
   }; // (the steps walked, its next on its way: each as its life draws it, see bar)
   const pointPairs = (p) => {
@@ -42248,50 +42267,53 @@ function gpuCubes(count, of, make, reach) {
     },
     null,
   );
-  const rp = gpuRenderPass(enc),
-    mesh = vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]);
-  if (bars) {
-    rp.setPipeline(
-      gpuDrawPipe('bar', {
-        vertex: 'barV',
-        fragment: 'shadowedF',
-        shadowed: true,
+  const mesh = vertexLayout(24, [vertexAttribute(0, 'float32x3', 0), vertexAttribute(1, 'float32x3', 12)]);
+  // its pieces, bars or cubes: in the view, lit and shadowed; or their own light alone into a halo's picture (glow: its slot,
+  // see gpuHalo)
+  const drawPieces = (p, glow = null) => {
+    const kind = bars ? 'bar' : 'cube';
+    p.setPipeline(
+      gpuDrawPipe(glow ? `${kind}Glow` : kind, {
+        vertex: `${kind}V`,
+        fragment: glow ? 'litGlowF' : 'shadowedF',
+        ...(glow ? { writes: false, format: 'rgba16float' } : { shadowed: true }),
         buffers: [
           mesh,
-          vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'),
-          vertexLayout(12, [vertexAttribute(3, 'float32x3')], 'instance'),
-          vertexLayout(4, [vertexAttribute(4, 'unorm8x4')], 'instance'),
+          ...(bars ? [vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance')] : []),
+          vertexLayout(12, [vertexAttribute(bars ? 3 : 2, 'float32x3')], 'instance'),
+          vertexLayout(4, [vertexAttribute(bars ? 4 : 3, 'unorm8x4')], 'instance'),
         ],
       }),
     );
-    rp.setBindGroup(1, D.shadow.group);
-    rp.setVertexBuffer(0, D.barMesh);
-    pointPairs(rp);
-    rp.setVertexBuffer(3, D.cubeCol, 4);
-    drawBars(rp); // (step k in its point k + 1's colour, as its cube's)
-  } else {
-    rp.setPipeline(
-      gpuDrawPipe('cube', {
-        vertex: 'cubeV',
-        fragment: 'shadowedF',
-        shadowed: true,
-        buffers: [
-          mesh,
-          vertexLayout(12, [vertexAttribute(2, 'float32x3')], 'instance'),
-          vertexLayout(4, [vertexAttribute(3, 'unorm8x4')], 'instance'),
-        ],
-      }),
-    );
-    rp.setBindGroup(0, gpuGroup(), [slot]);
-    rp.setBindGroup(1, D.shadow.group);
-    rp.setVertexBuffer(0, D.cube);
-    rp.setVertexBuffer(1, D.cubeAt);
-    rp.setVertexBuffer(2, D.cubeCol);
-    rp.draw(verts, count);
-  }
+    if (!glow) p.setBindGroup(1, D.shadow.group);
+    if (bars) {
+      p.setVertexBuffer(0, D.barMesh);
+      pointPairs(p);
+      p.setVertexBuffer(3, D.cubeCol, 4);
+      drawBars(p, glow ?? slot); // (step k in its point k + 1's colour, as its cube's)
+      return;
+    }
+    p.setBindGroup(0, gpuGroup(), [glow ?? slot]);
+    p.setVertexBuffer(0, D.cube);
+    p.setVertexBuffer(1, D.cubeAt);
+    p.setVertexBuffer(2, D.cubeCol);
+    p.draw(verts, count);
+  };
+  const rp = gpuRenderPass(enc);
+  drawPieces(rp);
   gpuHeads(D, rp, 0, slot); // (a 3D walk's head and start's flag, as a surface's)
   gpuHeads(D, rp, 0, slot, startHeads(), 'start');
   rp.end();
+  // their light round them, as a 2D walk's: its bars Glow (a walk on the edges), its cubes Halo (on cells); Space-time none
+  const halo = bars ? lineGlowOn() && { ...lineGlowHalo(), share: lineGlow.share } : !walk.stacked && flatLampHalo();
+  const glowHalfW = Math.max(BAR_HALF_WIDTH, bars ? GLOW_LEAST_WIDTH / 2 / view.scale : 0); // (a bar's glow at least GLOW_LEAST_WIDTH pixels wide, as a surface's path's)
+  if (halo)
+    gpuHalo(
+      enc,
+      (glow) => drawPieces(glow, gpuView(D.words, 1, depth, { halfW: glowHalfW, bright: halo.share })),
+      halo,
+      glowHalfW / BAR_HALF_WIDTH,
+    );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 1024);
   device.queue.submit([enc.finish()]);
   return true;
@@ -44686,7 +44708,7 @@ const DEBUG_TABS = [
   [
     'Shine',
     "Display › Shine: their light's numbers, the live cell's colour; Glow's",
-    (w) => (shows('shine', w) ? '' : 'Display › Shine shows in Life, on a 2D walk and on a surface only'),
+    (w) => (shows('shine', w) ? '' : 'Display › Shine shows in Life, on a walk and on a surface only'),
   ],
   ['Light', "A 3D view's light: its glint", (w) => (shows('glint', w) ? '' : 'A 3D view only')],
 ];

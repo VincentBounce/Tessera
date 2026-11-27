@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.928';
+const VERSION = '0.5.929';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -28609,11 +28609,13 @@ const discIcon = (kind, cells) => {
 function polysIcon(polys) {
   // (cells' corners and states; none: no picture, never one framed on nothing)
   if (!polys.length) return '';
-  const all = polys.flatMap((p) => p[0]);
-  const x0 = Math.min(...all.map((p) => p[0])),
-    y0 = Math.min(...all.map((p) => p[1])),
-    w = Math.max(...all.map((p) => p[0])) - x0,
-    h = Math.max(...all.map((p) => p[1])) - y0;
+  const all = polys.flatMap((p) => p[0]),
+    least = (d) => all.reduce((m, p) => Math.min(m, p[d]), Infinity),
+    most = (d) => all.reduce((m, p) => Math.max(m, p[d]), -Infinity); // (no spread: a large drawing's corners past the call stack)
+  const x0 = least(0),
+    y0 = least(1),
+    w = most(0) - x0,
+    h = most(1) - y0;
   const size = Math.max(w, h, 3); // (at least 3 cells: a small one as big as in the others), the cells in its middle
   return `<svg class="icon rule-icon" viewBox="${x0 - (size - w) / 2 - 0.2} ${y0 - (size - h) / 2 - 0.2} ${size + 0.4} ${size + 0.4}" aria-hidden="true">${polys
     .map(
@@ -33040,7 +33042,7 @@ function spotColours(col, g) {
 // slices, see planeSlices): each cell to its nearest colour with room left, the nearest pairs first (a cell's two nearest
 // colours: the others never nearer), each colour n / K cells, the first n % K one more
 function asManyCells({ items, colour }, g) {
-  const K = Math.max(...colour) + 1,
+  const K = colour.reduce((m, c) => Math.max(m, c), -1) + 1, // (no spread: a large mesh's cells past the call stack)
     C = g.cen,
     room = Array.from({ length: K }, (_, c) => Math.floor(g.n / K) + (c < g.n % K ? 1 : 0)),
     pairs = [];
@@ -34474,7 +34476,7 @@ function cellPlace(t) {
     g.faceMiddleCells ??= [];
     if (g.faceMiddleCells[k] === undefined) {
       const own = [...Array(g.n).keys()].filter((c) => g.cellFaces[c] === k),
-        most = Math.max(...own.map(way)),
+        most = own.reduce((m, c) => Math.max(m, way(c)), -Infinity), // (no spread: a large face's cells past the call stack's room)
         inPlane = (c) => g.cellFaces[c] === k && way(c) > most - 1e-9,
         flat = own.filter((c) => inPlane(c) && liveEdges(g, c).every((e) => inPlane(g.nbr[g.sides * c + e]))); // (a whole hexagon, its neighbours in its plane too: one cut by a fold, a stella's arm's, smaller, its frame's step wrong)
       g.faceMiddleCells[k] = flat.length ? flat.reduce((b, c) => (far(c) < far(b) ? c : b)) : -1;
@@ -44765,7 +44767,8 @@ function elementaryRle() {
 function rleFile(when, notes, pop, rule, two, sheet = null) {
   const x = { setup: getSetup() };
   const xs = [...pop.keys()].map((k) => cellXY(k)[0]),
-    ys = [...pop.keys()].map((k) => cellXY(k)[1]);
+    ys = [...pop.keys()].map((k) => cellXY(k)[1]),
+    span = (vs) => vs.reduce((m, v) => Math.max(m, v), -Infinity) - vs.reduce((m, v) => Math.min(m, v), Infinity) + 1; // (no spread: a large population past the call stack)
   let body = populationRle(pop).replace(/^[^:]*:/, '');
   if (two) body = body.replace(/\./g, 'b').replace(/A/g, 'o');
   const lines = [''];
@@ -44781,7 +44784,7 @@ function rleFile(when, notes, pop, rule, two, sheet = null) {
     ...(sheet ? [`#CXRLE Pos=${-Math.floor(sheet.w / 2)},${-Math.floor(sheet.h / 2)}`] : []),
     sheet
       ? `x = ${sheet.w}, y = ${sheet.h}, rule = ${rule}${sheet.grid && `:${sheet.grid}${sheet.w},${sheet.h}${sheet.grid === 'K' ? '*' : ''}`}`
-      : `x = ${Math.max(...xs) - Math.min(...xs) + 1}, y = ${Math.max(...ys) - Math.min(...ys) + 1}, rule = ${rule}`,
+      : `x = ${span(xs)}, y = ${span(ys)}, rule = ${rule}`,
     ...lines,
   ].join('\n');
 }
@@ -44885,8 +44888,8 @@ function rleRead(text) {
     [dx, dy] = grid ? [0, 1].map((d) => (pos ? Number(pos[d + 1]) + Math.floor([W, H][d] / 2) : 0)) : [0, 0], // (on a bounded grid, where its Pos lays it, else at its top left, as bgolly writes it)
     cells = [...populationOf(`${dx},${dy}:${body.join('')}`)].map(([k, v]) => [...cellXY(k), v]),
     [x, y] = ['x', 'y'].map((d) => Number(lines[head].match(new RegExp(`\\b${d}\\s*=\\s*(\\d+)`))?.[1] ?? 0)), // (its size said)
-    w = W ?? Math.max(x, 1 + Math.max(...cells.map(([cx]) => cx))),
-    h = H ?? Math.max(y, 1 + Math.max(...cells.map(([, cy]) => cy)));
+    w = W ?? cells.reduce((m, [cx]) => Math.max(m, 1 + cx), x), // (no spread: a large pattern's cells past the call stack)
+    h = H ?? cells.reduce((m, [, cy]) => Math.max(m, 1 + cy), y);
   if (!cells.length) return null;
   return {
     rule,

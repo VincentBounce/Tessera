@@ -221,11 +221,8 @@ main {
 } /* its cards 8 px apart */
 #paramsPane > section {
   padding: 10px 8px;
-  border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: var(--box-background);
-  backdrop-filter: blur(4px);
-} /* each settings section a card floating on the view, as its boxes (.stage-box), the view's gap from the window's edge (its tiles 4 a row) */
+} /* each settings section a card floating on the view, a box of the view's (.stage-box: its look), the view's gap from the window's edge (its tiles 4 a row) */
 #yourList > section {
   margin-top: 16px;
 } /* a Gallery group: its title over its tiles, no frame (its tiles are), apart from the one before */
@@ -1637,12 +1634,18 @@ button.active .bubble.active {
    drawing faded by its own shader, its figure only: the page behind as it was, see GPU_VIEW's fade) */
 /* The two boxes over the view (Play bottom left, Display top right): the same frame and
    translucency; hovering one opens the rest of it in the same frame (on touch screens, a tap) */
-.stage-box {
-  position: absolute;
-  padding: 8px;
+.stage-box,
+#paramsPane > section,
+#tip:not(:empty),
+#hint:not([hidden]) {
   background: var(--box-background);
   backdrop-filter: blur(4px);
   border: 1px solid var(--border-color);
+} /* the look of a box over the view, defined once: the view's boxes, the settings' cards, the tooltip and the hint (each its
+     own corners and place) */
+.stage-box {
+  position: absolute;
+  padding: 8px;
   border-radius: 8px;
   cursor: default;
 }
@@ -2133,9 +2136,6 @@ button.active .bubble.active {
   max-width: 420px;
   margin-left: auto;
   padding: 6px 10px;
-  background: var(--box-background);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-color);
   text-align: left;

@@ -3,6 +3,7 @@
   --tile-height: 55px; /* a tile's height, every tile alike */
   --button-height: 34px; /* a button of one line (a stepper's − +, a field) or of an icon alone (see .icon-tabs) */
   --short-gap: 4px; /* within a block: between two of its controls (tiles, rows, cards, a wide button) */
+  --middle-gap: 6px; /* between wide buttons laid in a line: a stepper's − and +, the player's, Draw's, the Gallery's */
   --long-gap: 10px; /* between two blocks one under the other: grids of tiles, rows, fields */
   --section-gap: 10px; /* round a section's line, over it and under it (see .form-section) */
   --track-background: color-mix(
@@ -10,7 +11,6 @@
     var(--text-color) 8%,
     transparent
   ); /* a pill group's track: a wash of the text's colour, seen on any box, in either theme */
-  --badged-tile-gap: 8px; /* between two tiles that carry a badge: its 7 px past their corner clear of the next (see .badge) */
   --panel-width: 271px; /* the settings' column (.panel): its cards (tiles 4 a row, see .panel section) the view's gap from the window's edge, the view's boxes as far on their right; its scroll thumb in that gap (see .scroll-thumb) */
   --view-left: var(
     --panel-width
@@ -145,7 +145,8 @@ header.stage-box {
   flex: none;
   border-radius: 8px;
 } /* the length asked: one width whatever it says (see compactCount); round, its highlight's ring too (see highlight) */
-#shareLink {
+#shareLink,
+.gallery-tools-row button {
   height: var(--button-height);
   white-space: nowrap;
 } /* as high as the length's − and + beside it, on one line */
@@ -554,7 +555,7 @@ button.primary {
 }
 .row {
   display: flex;
-  gap: 6px;
+  gap: var(--middle-gap);
   margin-bottom: var(--long-gap);
 }
 h3 {
@@ -565,7 +566,7 @@ h3 {
 .stepper {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--middle-gap);
   margin-bottom: var(--long-gap);
 }
 /* a size among the usual ones, across: the browser's slider in the page's gold (as the old seek bar, Flat ↔ Rolled), its
@@ -750,12 +751,16 @@ button.wide {
   width: 100%;
   margin-bottom: var(--long-gap);
 }
+.clean-storage .actions {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: var(--middle-gap);
+} /* (Actions: Sound and the debug panel side by side, buttons in a line) */
 .clean-storage .wide {
-  display: block;
+  grid-column: 1 / -1;
   width: max-content;
   min-width: var(--panel-width);
-  margin-top: var(--short-gap);
-} /* (Actions: its wide button under Sound, at least the settings' column's width, as How it works; longer for its words) */
+} /* (its wide button under them, at least the settings' column's width, as How it works; longer for its words) */
 button.wide.on-list {
   margin-bottom: var(--short-gap);
 } /* a wide button over a list (How it works): the list's gap */
@@ -1004,31 +1009,12 @@ button.switch:not(.active):hover:not(:disabled) {
 .gallery-tools-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--short-gap) var(--view-gap);
-} /* Open and Paste RLE, then Select and the Gallery's tools: one row from the left, each group past a line; too narrow (a
-     phone), the next group under */
-.gallery-tools-row > * + * {
-  padding-left: var(--view-gap);
-  border-left: 1px solid var(--border-color);
-}
-.gallery-tools {
-  display: flex;
-  align-items: center;
-  gap: var(--badged-tile-gap);
-} /* (Select as one more of them: their gap, the cards selected's badge) */
-.gallery-tools-row .nav-shapes {
-  display: flex;
-  gap: var(--short-gap);
-  margin: 0;
-} /* (each group's tiles side by side, each a tile's width, as the display box's head tiles; a group in a row, no block of the
-     panel: none of their gap under it, the band's own padding round them, its line as high as its tiles) */
-.gallery-tools > .nav-shapes {
-  gap: var(--badged-tile-gap);
-} /* (Select, Refresh, Delete, Export: the cards selected's badge) */
-.gallery-tools-row .nav-shapes button {
-  width: var(--tile-width);
-}
+  gap: var(--middle-gap);
+} /* one row of buttons, as Share link (see #shareLink); too narrow (a phone), the next under */
+#galleryPane:not(.selecting) [data-when='some'],
+#galleryPane.selecting [data-when='none'] {
+  display: none;
+} /* with no card selected, the Gallery's buttons; with some, those acting on them */
 #galleryPane:not([hidden]) {
   display: flex;
   flex-direction: column;
@@ -1139,7 +1125,7 @@ button.switch:not(.active):hover:not(:disabled) {
   fill: currentColor;
 }
 .gallery-grid button.selected,
-#yourList:not(.selecting) .gallery-grid button.active {
+#galleryPane:not(.selecting) .gallery-grid button.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
   background-color: var(--picked-background);
@@ -1283,13 +1269,13 @@ button.active .bubble.active {
 .number-grid .fraction > span + span {
   border-top: 1px solid currentColor;
 } /* a fraction, its numerator over its denominator, in the line's height (see cardSymbol in main.js) */
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
   background-color: var(--picked-background);
   --veil-color: var(--picked-veil-color);
 } /* (a Gallery card too: the setup in view, but while selecting: its star only) */
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
-:is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active .mode-name,
+:is(.mode-list, #galleryPane:not(.selecting) .gallery-grid) button.active .mode-icon {
   color: var(--accent-color);
 }
 .row button {
@@ -1384,7 +1370,7 @@ button.active .bubble.active {
 .draw-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--middle-gap);
   margin: 2px 0 var(--long-gap);
 } /* Draw's colours, a row of swatches */
 .start-panel {
@@ -1418,7 +1404,7 @@ button.active .bubble.active {
 }
 .colour-swatches {
   display: flex;
-  gap: 6px;
+  gap: var(--middle-gap);
   justify-content: flex-start;
   align-items: center;
   padding-left: 4px;
@@ -1984,7 +1970,7 @@ button.active .bubble.active {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 48px;
-  gap: 6px;
+  gap: var(--middle-gap);
 }
 /* ◀ and ▶ outlined in yellow, filled while playing their way (then the turtle and the rabbit, see playerButton) */
 .stage-bar :is([id='play'], [id='reverse']) {
@@ -1994,7 +1980,7 @@ button.active .bubble.active {
 /* open, on the buttons' right the speed */
 .player-controls {
   display: flex;
-  gap: 6px;
+  gap: var(--middle-gap);
   align-items: flex-end;
 } /* the buttons where they were, open or not; the speed after them as one more (their gap, see .play-row), to the card's right
    edge (250 px at least: a battle's ranking may widen the card) */
@@ -2551,7 +2537,7 @@ button.switch.active,
   right: 12px;
   z-index: 1;
   display: flex;
-  gap: 6px;
+  gap: var(--middle-gap);
 } /* (in its box's corner, as far from its top as from its right: its scroll thumb in the 9 px past it, see .middle-thumb) */
 .tut-tools button {
   width: 36px;
@@ -2594,24 +2580,6 @@ button.mark.active::after {
   background: linear-gradient(135deg, transparent 50%, var(--accent-color) 50%);
 }
 
-:has(> .badge) {
-  position: relative;
-}
-.badge {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--accent-color);
-  color: var(--on-accent-color);
-  font-size: var(--caption-text-size);
-  font-weight: 600;
-  line-height: 18px;
-  text-align: center;
-  pointer-events: none;
-} /* a count on a tile's top right corner (see setBadge): the Gallery's cards selected */
 .gen-link,
 .walker-link {
   color: inherit;

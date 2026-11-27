@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.945';
+const VERSION = '0.5.946';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7119,13 +7119,6 @@ const tile = ({
   if (click) b.addEventListener('click', click);
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
-// A badge: a count on a tile's top right corner (the cards selected: on Select and the tools acting on them), none at 0
-const setBadge = (el, count) => {
-  const badge = el.querySelector(':scope > .badge');
-  if (!count) return badge?.remove();
-  (badge ?? el.appendChild(Object.assign(document.createElement('span'), { className: 'badge' }))).textContent =
-    formatNumber(count);
-};
 // (byDefault: as the tooltip tells it, see tip: 'yes', the choice picked at first; 'on' or 'off', a switch's at first)
 // (greyed: why it is, as the tooltip tells it, a sentence: 'Not in Solo.', 'The Gallery is empty.'…; greyed by it, '' allowed:
 // a control whose state no setup holds, a stepper's end, the player's; else whyNot)
@@ -11042,7 +11035,7 @@ function renderAntRow() {
   const startHead = $(ant ? 'antStartSection' : 'walkStartSection').querySelector('h2'),
     lead = startHead.nextElementSibling === $('startWays') ? $('startWays') : startHead;
   if (lead.nextElementSibling !== $('startRow')) lead.after($('startRow'));
-  drawing = playsLife(w) && plane.start === 'draw' && !spaceTimeOn(); // Life draws in its Draw start, on the plane or a surface (not in Space-time, nor Explore: its Start Life's, kept)
+  drawing = drawsIn(w) && plane.start === 'draw' && !spaceTimeOn(); // Life draws in its Draw start, on the plane or a surface (not in Space-time, nor Explore: its Start Life's, kept)
   stage.classList.toggle('drawing', drawsHere()); // (the crosshair: a click draws, as renderDrawTools keeps it)
   // your own rule's field: right after its card (see ruleCards); back in the creatures' section, hidden, when no list has it
   if (!customRow.isConnected) $('walkRuleSection').append(customRow);
@@ -11958,6 +11951,8 @@ const workerOf = (main) =>
 const newFormulaWorker = () => workerOf(formulaWorker);
 // whether a rule is played on a variant's cells, Life's or another automaton's (Explore's: none, its cells coloured once)
 const playsLife = (w) => !!VARIANTS[w].life && !VARIANTS[w].explore;
+// whether Draw draws in a variant: a Life played, but Elementary's rows (see drawing, Draw it)
+const drawsIn = (w) => playsLife(w) && !VARIANTS[w].elementary;
 // Life's teams a variant plays, as its link holds them (see getSetup): Life's picked, 1 where none are played (a walk, Explore,
 // a reversible rule: lifeTeams kept for the next, see teamsOn); what its grid is made for (see widthForColours, ringColours)
 const teamsPlayed = (w = tabVariant()) => (playsLife(w) && !VARIANTS[w].margolus ? lifeTeams : 1);
@@ -12002,7 +11997,7 @@ function compute() {
   $('lifeStartRow').hidden = !variant.life;
   setTile($('saveRle'), { whyNot: ({ w }) => (rleLaid(w) ? '' : RLE_WHERE) }); // (the plane's cells, a sheet's)
   setTile($('drawIt'), {
-    whyNot: ({ w }) => (VARIANTS[w].life && !VARIANTS[w].elementary ? '' : 'Only in Life, where Draw draws.'),
+    whyNot: ({ w }) => (drawsIn(w) ? '' : 'Only in Life, where Draw draws.'),
   }); // its start: Hunt, Draw (the plane only), Digits
   if (variant.life)
     plane.start = variant.elementary
@@ -36908,28 +36903,14 @@ let galleryCards = [];
 const selectedNames = new Set();
 let selectAnchor = ''; // (the card last clicked while selecting: a Shift click's range from it)
 const selecting = () => selectedNames.size > 0;
-const NOT_WHILE_SELECTING = 'Not while selecting: Export, Delete and Refresh act on the cards selected.';
-const halfOrFewer = () => 2 * selectedNames.size <= galleryCards.length; // (Select's click: all; more, none)
 function syncSelection() {
   for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
-  $('yourList').classList.toggle('selecting', selecting());
+  $('galleryPane').classList.toggle('selecting', selecting()); // (its band's buttons, see data-when; its cards' checks)
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
-  for (const id of ['galleryImport', 'gallerySaveLink'])
-    setTile($(id), { greyed: selecting() ? NOT_WHILE_SELECTING : '' }); // (the tools acting on them the only ones lit)
-  setTile($('galleryDelete'), {
-    greyed: selecting() ? '' : 'None selected: tick a card (its box, on its hover).',
-  });
-  // Select: its picture how many are selected (none, some, all; the one tile whose picture tells its state, its name the
-  // same), on with any, its badge their count, as the tools acting on them (Export, Delete, Refresh)
   const n = selectedNames.size,
-    all = galleryCards.length,
-    b = $('gallerySelect');
-  b.querySelector('svg').outerHTML = icon(!n ? 'boxEmpty' : n < all ? 'boxPartial' : 'boxTicked');
-  b.title = !n
-    ? 'None selected: a click selects them all (or tick a card, its box on its hover)'
-    : `${formatNumber(n)} of ${formatNumber(all)} selected: a click ${halfOrFewer() ? 'selects them all' : 'lets them all go'}`;
-  setTile(b, { on: n > 0, greyed: all ? '' : 'The Gallery is empty.' });
-  for (const id of ['gallerySelect', 'galleryExport', 'galleryDelete', 'refreshThumbnails']) setBadge($(id), n);
+    all = galleryCards.length;
+  setTile($('gallerySelectAll'), { greyed: n < all ? '' : 'All selected.' });
+  $('galleryUnselect').lastChild.textContent = `${formatNumber(n)} selected`;
 }
 // Delete: the cards selected gone, their thumbnails with them (but one another card still shows)
 function deleteSelected() {
@@ -45813,67 +45794,15 @@ const selectCards = (all) => {
   syncSelection();
   syncRefreshTile();
 };
-$('gallerySelectTiles').replaceChildren(
-  tile({ id: 'gallerySelect', pic: icon('boxEmpty'), text: 'Select', click: () => selectCards(halfOrFewer()) }),
-);
-$('galleryTools').replaceChildren(
-  tile({
-    id: 'refreshThumbnails',
-    pic: icon('autoRotate'),
-    text: 'Refresh',
-    toggle: true,
-    title:
-      'Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done',
-    click: refreshThumbnails,
-  }),
-  tile({
-    id: 'galleryDelete',
-    pic: icon('trash'),
-    text: 'Delete',
-    title: 'The cards selected, with their thumbnails',
-    click: deleteSelected,
-  }),
-  tile({
-    id: 'galleryImport',
-    pic: icon('import'),
-    text: 'Import',
-    title:
-      'Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them',
-    click: () => $('galleryFile').click(),
-  }),
-  tile({
-    id: 'galleryExport',
-    pic: icon('export'),
-    text: 'Export',
-    title: 'The cards selected as a JSON file, else the whole Gallery',
-    click: () => exportGallery(),
-  }),
-);
-$('galleryOpenTiles').replaceChildren(
-  tile({
-    id: 'openRle',
-    pic: icon('import'),
-    text: 'Open RLE',
-    title:
-      "An RLE file (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
-    click: () => $('rleOpenFile').click(),
-  }),
-  tile({
-    id: 'pasteRle',
-    pic: icon('copy'),
-    text: 'Paste RLE',
-    title:
-      "The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule",
-    click: async () => openRle(await navigator.clipboard.readText(), $('pasteRle')),
-  }),
-  tile({
-    id: 'gallerySaveLink',
-    pic: icon('save'),
-    text: 'Save link',
-    title: 'Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)',
-    click: saveLink,
-  }),
-);
+$('gallerySelectAll').addEventListener('click', () => selectCards(true));
+$('galleryUnselect').addEventListener('click', () => selectCards(false));
+$('refreshThumbnails').addEventListener('click', refreshThumbnails);
+$('galleryDelete').addEventListener('click', deleteSelected);
+$('galleryImport').addEventListener('click', () => $('galleryFile').click());
+$('galleryExport').addEventListener('click', () => exportGallery());
+$('openRle').addEventListener('click', () => $('rleOpenFile').click());
+$('pasteRle').addEventListener('click', async () => openRle(await navigator.clipboard.readText(), $('pasteRle')));
+$('gallerySaveLink').addEventListener('click', saveLink);
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then
 // loaded again (the curated setups seeded, see seedCurated)
 async function resetApp() {
@@ -45989,7 +45918,7 @@ function credits(open) {
     `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table id="urlWords" class="tut-commands"></table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)
     `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
     `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
-    `<section class="clean-storage"><h3>Actions</h3><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button></section></div></div>`;
+    `<section class="clean-storage"><h3>Actions</h3><div class="actions"><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button></div></section></div></div>`;
   renderSoundButton();
   $('eraseAll').before(soundButton, debugSwitch); // (Actions: Sound, the debug panel, then Erase)
   $('eraseAll').addEventListener('click', (e) => {

@@ -111,21 +111,16 @@ body {
   font-variant-numeric: tabular-nums;
 } /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
 
-header {
-  position: absolute;
+header.stage-box {
   z-index: 6;
   top: var(--view-gap);
   left: calc(var(--view-left) + var(--view-gap));
   right: var(--view-gap);
   height: var(--header-height);
   padding: 0 8px;
-  background: var(--box-background);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-} /* one box floating over the view as its others (.stage-box), its gap from the window's top and right and from the settings'
-     cards: the tabs, then Share link and the length; the active tab's underline on its border */
-/* the tabs at the very top on the left, on a hairline; the app's tab on the right */
+} /* a box floating over the view as its others (.stage-box: their look), its gap from the window's top and right and from the
+     settings' cards: the tabs, then Share link and the length; the active tab's underline on its border */
+/* the tabs on the left; Share link and the length on the right */
 .header-row {
   height: 100%;
   display: flex;
@@ -199,8 +194,8 @@ main {
   background-color: var(--border-color);
   opacity: 0;
   transition: opacity 0.2s;
-} /* a pane's scroll thumb in the view's gap beside it, its top and height its scroll's (see scrollThumb): shown while the
-     pointer is over the pane or the thumb, it scrolls or it is dragged */
+} /* a pane's scroll thumb of its own (Chrome's takes the pane's width), its top and height its scroll's (see scrollThumb), its
+     place each its own (below): shown while the pointer is over the pane or the thumb, it scrolls or it is dragged */
 #panelThumb {
   left: calc(var(--panel-width) + var(--view-gap) / 2 - 3px);
 } /* (the settings': in the gap on their right) */
@@ -2222,7 +2217,7 @@ fades out, slowly then fast */
     --drawer-open-height: 60%;
   } /* (the view the whole screen, everything floating on it: the header's box two rows high over it, the settings a drawer
      at its foot, shut its first card's top in sight, open 60 % of it; its boxes from its own edges) */
-  header {
+  header.stage-box {
     height: var(--phone-header-height);
     padding-bottom: var(--short-gap);
   }

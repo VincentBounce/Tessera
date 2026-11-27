@@ -20,7 +20,7 @@
  *                                             onNumbers }: a figure's sizes), copied and reset with the others
  *     onClose,                                its cross clicked (How it works' cross, see tutTools)
  *     controls,                               the caller's own controls under its title (a switch: main.js's tile)
- *     showsDrawer,                            the code drawing what it tunes (drawnBy below), a greyed tab under its title
+ *     showsDrawer,                            the code drawing what it tunes (main.js's drawnBy), a greyed tab under its title
  *   })
  */
 
@@ -60,7 +60,6 @@ const DEBUG_STYLE = `
 /* ---- The panel ---------------------------------------------------------------------------------- */
 // the function that drew the view last, its Shine mode with it, each writing its name as it draws (main.js's gpuPlane,
 // gpuSurface, gpuLatticeWalk)
-let drawnBy = '';
 const debugFirst = new WeakMap(); // (each numbers object's values as it came first: its sliders' ranges, Reset's values)
 function debugPanel(spec) {
   let panel = document.getElementById('debugPanel');

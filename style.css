@@ -541,6 +541,15 @@ button {
     var(--veil-color, var(--track-background))
   );
 } /* a veil over its own fill, whatever it is (white, grey; a picked one's pale gold deeper, its --veil-color gold), darker in the light, lighter in the dark; its sides as they are (a digit's chip too: a click opens How it works). So a button's fill is its background-color, never the background shorthand (which takes the veil away), but where a hover of its own replaces it */
+.face-on,
+.face-off {
+  display: contents;
+}
+button.active > .face-off,
+button:not(.active) > .face-on {
+  display: none;
+} /* a switch's two faces, its picture and name on and off (the theme: Light, Dark; the account: Sign out, Sign in), both in it,
+     the one of its state shown; each laid as if the button's own (see tile) */
 button:disabled,
 input[type='text']:disabled {
   opacity: 0.45;
@@ -1009,6 +1018,9 @@ button.switch:not(.active):hover:not(:disabled) {
 #galleryPane.selecting [data-when='none'] {
   display: none;
 } /* with no card selected, the Gallery's buttons; with some, those acting on them */
+#galleryAccount {
+  margin-left: auto;
+} /* (the account apart from the Gallery's tools: at the band's right end) */
 #galleryPane:not([hidden]) {
   display: flex;
   flex-direction: column;

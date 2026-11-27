@@ -1,4 +1,4 @@
-# Publishes the repo as it is (a static site: index.html, main.js…) to GitHub Pages at each push to main.
+# Publishes the app (a static site: index.html, main.js…, without the dev's debug.js) to GitHub Pages at each push to main.
 # Needs Settings → Pages → Source: GitHub Actions (not "Deploy from a branch", whose deployments collide when pushes
 # come minutes apart: a finished one kept its lock, every next one refused, 2026-11-01).
 name: Pages
@@ -27,9 +27,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # the site as published: the app and its prototypes, not the dev's (debug.js and its line in index.html: no debug
+      # panel, no version in the address bar, see devPage) nor the repo's tools, notes and server
+      - run: |
+          rsync -a --exclude=.git --exclude=.github --exclude=debug.js --exclude=server --exclude=tools --exclude='*.md' ./ _site/
+          sed -i '/debug\.js/d' _site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       # GitHub's API now and then misses the artifact just uploaded ("Found 0 artifact(s)", 2026-11-17): once more,
       # half a minute later, before a failure (and its email)
       - id: deployment

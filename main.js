@@ -41,9 +41,18 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.947';
+const VERSION = '0.5.948';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
+// The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
+// .github/workflows/pages.yml)
+const devPage = typeof debugPanel === 'function';
+// what debug.js tries out, read here only (Display › Shine's modes on trial: their names, numbers and lamps, see SHINES,
+// SHINE_LIGHT, LAMPS); none on the site published
+const TRIED = devPage
+  ? { shines: SHINES_TRIED, light: SHINE_TRIED_LIGHT, solo3D: SHINE_TRIED_SOLO_3D, lamps: LAMPS_TRIED }
+  : { shines: [], light: {}, solo3D: {}, lamps: {} };
+let drawnBy = ''; // (the code drawing the view, its name: the debug panel's, see showsDrawer)
 
 /* ==============================================================================================
  * PART 1 — DIGITS: THE FORMULA WORKER
@@ -7082,7 +7091,8 @@ function rangeSlider({ spans, title, show, change }) {
 // if marked (a count of colours whose battles can bring a colour back); again: on, a click on it still does something (a zone
 // draws another start, a shape's switches walls and a torus): its hover gold; toggle: a switch on or off (Trail, Walls,
 // Turned, the theme…), said once when made and kept: its hover gold on, a pale gold off (as a choice picked); offPic, offText: a
-// switch's picture and name while off, if it has its own (the theme: Light on, Dark off); turn: its picture turned by so many
+// switch's picture and name while off, if it has its own (the theme: Light on, Dark off: both faces in it, the style showing
+// one by its state, see .face-on); turn: its picture turned by so many
 // degrees (a second state a click again gives: a torus's tiles turned); row: low, its picture left of its name, the tiles of
 // its row sharing it (as Draw's turns, see .row-tile)
 const tile = ({
@@ -7114,8 +7124,11 @@ const tile = ({
   if (toggle) b.dataset.toggle = '';
   if (row) b.classList.add('row-tile');
   if (title) b.title = title;
-  b.innerHTML = html ?? `${pic}<span>${text}</span>`;
-  if (offPic) b.faces = { on: b.innerHTML, off: `${offPic}<span>${offText}</span>` }; // (see setTile)
+  b.innerHTML =
+    html ??
+    (offPic
+      ? `<span class="face-on">${pic}<span>${text}</span></span><span class="face-off">${offPic}<span>${offText}</span></span>`
+      : `${pic}<span>${text}</span>`);
   if (click) b.addEventListener('click', click);
   return setTile(b, { on, can, mark, again, turn, byDefault, greyed, whyNot, at });
 };
@@ -7156,7 +7169,6 @@ const setTile = (
   const pic = b.querySelector('svg');
   if (pic) pic.style.transform = turn ? `rotate(${turn}deg)` : '';
   b.disabled = !can;
-  if (b.faces && b.dataset.face !== (b.dataset.face = on ? 'on' : 'off')) b.innerHTML = b.faces[b.dataset.face]; // (a switch's own picture and name while off)
   b.classList.toggle('active', on);
   b.classList.toggle('mark', mark && can);
   b.classList.toggle('switch', can && ((again && on) || 'toggle' in b.dataset)); // (its hover: on, gold; off, a pale gold)
@@ -12663,7 +12675,12 @@ const showInTip = (text) => setTip(...tipWords(text));
 const controlName = (el) =>
   (
     el.getAttribute('aria-label') ??
-    (el.querySelector('.mode-name, .tab-name') ?? el.querySelector('span:not(.visually-hidden)') ?? el).textContent
+    (
+      el.querySelector('.mode-name, .tab-name') ??
+      el.querySelector(':scope.active > .face-on, :scope:not(.active) > .face-off') ?? // (a switch's face shown)
+      el.querySelector('span:not(.visually-hidden)') ??
+      el
+    ).textContent
   ).trim();
 // an alert told by the tooltip itself a few seconds, red, fading out (see #tip.alert), till then no tooltip over it; its fade's
 // end ends it (an RLE that does not open, a file refused, states flattened): the control's name that told it (control: its
@@ -36717,7 +36734,7 @@ function parseHash(hash = location.hash) {
 // written there a row of the browser's history: 73,641 of them, 4 kB each, slowed Chrome's address bar till v0.5.841)
 const setupHash = () => `#${toHash(getSetup())}`;
 // the address bar's: the page's, its version after its # (always in sight, the setup itself kept in the history, see syncLink)
-const pageAddress = () => `${location.pathname}${location.search}#v${VERSION}`;
+const pageAddress = () => `${location.pathname}${location.search}${devPage ? `#v${VERSION}` : ''}`; // (the dev's page: its version always seen)
 // The setup is kept in the browser's history entry (history.state: { link }, the address bar the page's alone) when what it
 // holds changes: a walk built (see buildWalk), a Life start (setLifeSeed), a Gallery setup clicked; a reload and a tab
 // restored open it again, Back and Forward go from one to the other (see popstate); never over a link come from outside
@@ -36782,9 +36799,12 @@ function seedCurated() {
     /* not kept: the next visit tries again */
   }
 }
-function writeGallery(list) {
+// (merged: the account's merge written, see syncGallery; else a change of this browser's: its deletions noted, then synced)
+function writeGallery(list, merged = false) {
   try {
+    if (!merged) noteGone(readGallery(), list);
     localStorage.setItem(GALLERY_KEY, JSON.stringify(list));
+    if (!merged) syncSoon();
     return true;
   } catch {
     return false;
@@ -37235,6 +37255,129 @@ async function adoptShown(x, row) {
   } // (its picture under its new key)
   syncSaveButton();
 }
+
+/* ---- 10.4c The Gallery online: an account by passkey -------------------------------------- */
+// An account is a passkey alone (no e-mail, no password), kept by the app's Worker (server/worker.js) with the account's
+// Gallery; signed in, each browser's Gallery and the account's merged at once, then at each card added or deleted. A card is
+// only ever added or deleted: the deleted ones kept as tombstones (their key and when), so a deletion reaches the other
+// browsers (see writeGallery)
+const SERVER = 'https://tessera.tessera-server.workers.dev',
+  SESSION_KEY = 'tessera.session',
+  ACCOUNT_KEY = 'tessera.account', // (an account known in this browser: its Sign in asks for its passkey first)
+  GONE_KEY = 'tessera.gone';
+const readStored = (key, none) => {
+  try {
+    return JSON.parse(localStorage.getItem(key)) ?? none;
+  } catch {
+    return none;
+  }
+};
+const session = () => readStored(SESSION_KEY, null); // ({ token, name } while signed in)
+// the cards a Gallery write deleted, as tombstones; those it brings back, none
+function noteGone(before, after) {
+  const gone = readStored(GONE_KEY, {}),
+    kept = new Set(after.map((x) => thumbnailKey(x.setup))),
+    now = new Date().toISOString();
+  for (const x of before) if (!kept.has(thumbnailKey(x.setup))) gone[thumbnailKey(x.setup)] = now;
+  for (const key of kept) delete gone[key];
+  localStorage.setItem(GONE_KEY, JSON.stringify(gone));
+}
+// a route of the Worker: its answer, or its error thrown in its words
+async function serverCall(route, body = {}) {
+  const token = session()?.token,
+    r = await fetch(SERVER + route, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    }),
+    answer = await r.json().catch(() => ({}));
+  if (r.status === 401) signedOut();
+  if (!r.ok) throw new Error(answer.error ?? `The server answered ${r.status}.`);
+  return answer;
+}
+// The Gallery and the account's merged, both kept so: the cards in this browser's order, the new ones after them
+let syncTimer = null;
+const syncSoon = () => {
+  clearTimeout(syncTimer);
+  if (session()) syncTimer = setTimeout(syncGallery, 1000);
+}; // (a burst of writes, one sync)
+async function syncGallery() {
+  const list = readGallery(),
+    merged = await serverCall('/sync', {
+      cards: Object.fromEntries(list.map((x) => [thumbnailKey(x.setup), x])),
+      gone: readStored(GONE_KEY, {}),
+    }).catch((e) => alertTip(e.message, $('galleryAccount')));
+  if (!merged?.cards) return;
+  const known = new Set(list.map((x) => thumbnailKey(x.setup)));
+  writeGallery(
+    [
+      ...list.filter((x) => merged.cards[thumbnailKey(x.setup)]),
+      ...Object.entries(merged.cards)
+        .filter(([key]) => !known.has(key))
+        .map(([, x]) => x),
+    ],
+    true,
+  );
+  localStorage.setItem(GONE_KEY, JSON.stringify(merged.gone));
+  fillGalleryList();
+}
+// Sign in: by the passkey this browser has known (its account's mark), else a new account made with a new one; its
+// browser's dialog closed (or none there), the other way (both closed: nothing)
+async function signIn() {
+  const ways = localStorage.getItem(ACCOUNT_KEY) ? [passkeyLogin, passkeyAccount] : [passkeyAccount, passkeyLogin];
+  for (const way of ways) {
+    try {
+      return signedIn(await way());
+    } catch (e) {
+      if (e.name !== 'NotAllowedError') return alertTip(e.message, $('galleryAccount'));
+    }
+  }
+}
+// a passkey's account, its session's answer: one the browser holds, or a new one
+async function passkeyLogin() {
+  const { options, flow } = await serverCall('/login/options'),
+    credential = await navigator.credentials.get({
+      publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(options),
+    });
+  return serverCall('/login/verify', { flow, response: credential.toJSON() });
+}
+async function passkeyAccount() {
+  const { options, flow } = await serverCall('/register/options', {
+      name: `Tessera ${new Date().toISOString().slice(0, 10)}`,
+    }),
+    credential = await navigator.credentials.create({
+      publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(options),
+    });
+  return serverCall('/register/verify', { flow, response: credential.toJSON() });
+}
+function signedIn(answer) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(answer));
+  localStorage.setItem(ACCOUNT_KEY, '1');
+  syncAccountButtons();
+  syncGallery();
+}
+function signedOut() {
+  localStorage.removeItem(SESSION_KEY);
+  syncAccountButtons();
+}
+// A switch, its two faces as the theme's (see .face-on): off Sign in (an account made if none), on Sign out (the account's name
+// in its tooltip); Delete account (About ›
+// Actions) greyed while signed out; greyed where no passkey works (a bundle opened as a file)
+function syncAccountButtons() {
+  const s = session(),
+    none = window.PublicKeyCredential?.parseRequestOptionsFromJSON ? '' : 'Not here: passkeys need the app online.';
+  const account = $('galleryAccount');
+  account.title = s
+    ? `Signed in as ${s.name}: this Gallery and your account kept the same in every browser you sign in`
+    : 'With a passkey: this Gallery kept online, the same in every browser you sign in (no passkey for Tessera yet: your account made)';
+  setTile(account, { on: !!s, greyed: none });
+  if ($('deleteAccount')) setTile($('deleteAccount'), { greyed: s ? '' : 'Signed out.' }); // (About's, when open)
+}
+$('galleryAccount').addEventListener('click', () => {
+  if (!session()) return signIn();
+  serverCall('/logout').catch(() => {});
+  signedOut();
+});
 
 /* ==============================================================================================
  * PART 11 — ANIMATION, VIEW AND RENDERING
@@ -39055,7 +39198,7 @@ const glassOn = () => $('glass').checked && !$('glassRow').hidden;
 // Shine: the surface's tiles plain (Off), or each painted one lit pixel by pixel from its own corners (see tesseraF): as
 // it is with a halo round it (Halo, see gpuHalo), a lamp glowing from its middle, its light spilling round it (LED), a
 // ceiling's LED panel (Panel), a piece of mosaic (Tessera), or on a walk on the edges, its line glowing, the tiles plain
-// (Glow, see lineGlow); then those tried in the debug panel's Shine (SHINES_TRIED,
+// (Glow, see lineGlow); then those tried in the debug panel's Shine (TRIED,
 // debug.js's: LED+, Tube, Debug); its number its place (written in no link), the shaders' by its name (SHINE)
 const SHINES = [
   ['Off', 'The tiles plain, each one colour'],
@@ -39067,7 +39210,7 @@ const SHINES = [
   ],
   ['Tessera', 'Each tile painted a piece of mosaic: rounded down to its edges'],
   ['Glow', "A walk's line on the edges glowing round it, its tiles plain"],
-  ...SHINES_TRIED, // (debug.js's)
+  ...TRIED.shines,
 ];
 // where a mode lights the tiles painted (all but Off and Glow, see LAMPS): Life's cells or a surface's tiles, not a 2D walk's
 // (their corners the plane's or a surface's, see lampAt); a flat lamp (Halo: its light its halo's only) a 2D walk's cells too
@@ -39078,7 +39221,7 @@ const flatLampWhyNot = ({ w }) =>
     : '';
 // Glow: a walk on the edges only (its line glowing, see lineGlowOn)
 const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only');
-const SHINES_SHOWN = SHINES.length - SHINES_TRIED.length; // (Display › Shine' pills: the others tried in the debug panel's Shine, see debugTuning)
+const SHINES_SHOWN = SHINES.length - TRIED.shines.length; // (Display › Shine' pills: the others tried in the debug panel's Shine, see debugTuning)
 const SHINE = Object.fromEntries(SHINES.map(([name], k) => [name, k]));
 const shineNow = () => Number($('shine').value); // (its box's, see DISPLAY_DEFAULTS)
 const shineLampsOn = () => !!LAMPS[SHINES[shineNow()][0]] && !$('shineRow').hidden && !lampWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
@@ -40149,7 +40292,7 @@ const SHINE_LIGHT = {
   ledHalo: 1.6,
   panelHalo: 1.6,
   shineDarkInk: 0.2, // (an ink darker than this lights in its inverse: black's white)
-  ...SHINE_TRIED_LIGHT, // (debug.js's)
+  ...TRIED.light,
 };
 // Panel and Debug in Solo on a light page, in 3D: a pale yellow panel in a grey ceiling, its halo weaker and cast on the
 // tiles round it (the ground near white: a light added on it cut off to white), as the user tuned it there; every other
@@ -40161,7 +40304,7 @@ const SHINE_LIGHT_SOLO_3D = {
   panelColour: '#f7ffb8',
   panelCast: true,
   panelHalo: 0.84,
-  ...SHINE_TRIED_SOLO_3D, // (debug.js's)
+  ...TRIED.solo3D,
 };
 // the same in 2D: Panel's light white and dimmer, as the user tuned it there, its ceiling none (Debug's alone in 2D)
 const SHINE_LIGHT_SOLO_2D = { ...SHINE_LIGHT_SOLO_3D, panelLight: 0.47, panelColour: '#ffffff', panelCeiling: 1 };
@@ -40191,7 +40334,7 @@ const LAMPS = {
     halo: (L) => ({ share: L.panelHalo, steps: L.panelCast ? [1, 2, 4] : [1, 2], cast: L.panelCast }),
   },
   Tessera: { mosaic: (L) => ({ slope: L.tesseraSlope, bevel: Math.max(L.tesseraBevel, 0.01) }) },
-  ...LAMPS_TRIED, // (debug.js's)
+  ...TRIED.lamps,
 };
 // what every lamp reads besides its own: a lit tile's own colour, dimmed, and the sky's lamp on it (its light not flat); a
 // dark ink's light its inverse (any light)
@@ -42155,7 +42298,7 @@ function gpuPlane(paint) {
   const bg = getComputedStyle(document.documentElement).getPropertyValue('--page-background') || '#fff',
     blankCell = oceanOn() ? OCEAN : bg.trim(), // (a cell none has painted: Earth's sea, as a surface's (see blankTile), else the page's)
     ceiling = ceilingNow(); // (those none has painted darkened by its mode's ceiling, as a surface's: see ceiling)
-  const wallShown = !walk.life?.palette; // (Explore: no wall, its cells alone on the view)
+  const wallShown = !walk.life?.palette && !thumbnailWanted; // (Explore: no wall, its cells alone on the view; a thumbnail's frame: none, as no grid's lines)
   const ground = groundColours();
   if (D.keys.planeBase !== `${blankCell}|${wallShown}|${ceiling}` || D.planeGround !== ground) {
     const page = texelRgba(blankCell, GROUND_ALPHA),
@@ -44459,6 +44602,7 @@ const debugSwitch = tile({
     debugTuning();
   },
 });
+debugSwitch.hidden = !devPage; // (the dev's page only)
 // the debug panel's tabs, each greyed where it has nothing to tune (whyNot: '' where allowed)
 const DEBUG_TABS = [
   [
@@ -44469,6 +44613,7 @@ const DEBUG_TABS = [
   ['Light', "A 3D view's light: its glint", (w) => (shows('glint', w) ? '' : 'A 3D view only')],
 ];
 function debugTuning() {
+  if (!devPage) return;
   const w = tabVariant(),
     allowed = DEBUG_TABS.filter(([, , whyNot]) => !whyNot(w)).map(([name]) => name);
   if (!debugOpen || !allowed.length) return debugPanel(null);
@@ -45913,6 +46058,14 @@ function paintUrl() {
       .map(([word, said]) => `<tr><td>${word}</td><td>${htmlText(String(said))}</td></tr>`)
       .join('');
 }
+// a button that acts only at its second click, asked again in its place (its words then `confirm`)
+function confirmedClick(b, confirm, act) {
+  b.addEventListener('click', () => {
+    if (b.dataset.armed) return act();
+    b.dataset.armed = '1';
+    b.innerHTML = `${icon('trash')} ${confirm}`;
+  });
+}
 function credits(open) {
   ruleTutorial(null);
   if (!open) return;
@@ -45926,17 +46079,20 @@ function credits(open) {
     `<div class="form-section"><h2>Stats/debug</h2><h3>URL</h3><table id="urlWords" class="tut-commands"></table><h3>Times for this view</h3><table id="timings" class="tut-commands"></table>` + // (the walk shown's times, see timings)
     `<h3>Screen: ${screenHz()} Hz</h3><table class="tut-commands"><tr><td class="number">Speed asked</td><td class="number">played</td></tr>${SPEEDS.map((v) => `<tr><td class="number">${formatNumber(v)}/s</td><td class="number">${speedWords(v)}</td></tr>`).join('')}</table>` + // (its refresh, and each speed as it plays there: see evenSpeed)
     `<h3>Computed this session</h3><table class="tut-commands">${memoriesRows()}</table>` + // (what the memories keep, see remember)
-    `<section class="clean-storage"><h3>Actions</h3><div class="actions"><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button></div></section></div></div>`;
+    `<section class="clean-storage"><h3>Actions</h3><div class="actions"><button id="eraseAll" type="button" class="wide" title="All Tessera keeps in this browser erased (the Gallery, its thumbnails, the theme): the app as at a first visit, the curated setups back; the Gallery saved first as a JSON file (a click, then Confirm erase in its place)">${icon('trash')} Erase Tessera's storage in this browser</button><button id="deleteAccount" type="button" class="wide" title="Your account and the Gallery it keeps online deleted, its passkey of no more use (remove it from your passwords' keychain); this browser's Gallery kept (a click, then Confirm delete in its place)">${icon('trash')} Delete your account</button></div></section></div></div>`;
   renderSoundButton();
-  $('eraseAll').before(soundButton, debugSwitch); // (Actions: Sound, the debug panel, then Erase)
-  $('eraseAll').addEventListener('click', (e) => {
-    const b = e.currentTarget;
-    if (b.dataset.armed) resetApp();
-    else {
-      b.dataset.armed = '1';
-      b.innerHTML = `${icon('trash')} Confirm erase`;
-    } // (asked again in its place: its second click erases)
-  });
+  $('eraseAll').before(soundButton, debugSwitch); // (Actions: Sound, the debug panel, then Erase, Delete your account)
+  confirmedClick($('eraseAll'), 'Confirm erase', resetApp);
+  confirmedClick($('deleteAccount'), 'Confirm delete', () =>
+    serverCall('/delete').then(
+      () => {
+        localStorage.removeItem(ACCOUNT_KEY);
+        signedOut();
+      },
+      (e) => alertTip(e.message, $('deleteAccount')),
+    ),
+  );
+  syncAccountButtons();
   paintTimings();
   paintUrl();
   $('ruleTuto').prepend(tutTools({ close: () => credits(false) }));
@@ -45945,6 +46101,8 @@ $('appTab').addEventListener('click', () => credits(!creditsShown()));
 for (const b of document.querySelectorAll('[data-icon]')) b.insertAdjacentHTML('afterbegin', icon(b.dataset.icon));
 play(false); // the Play button with its icon
 seedCurated();
+syncAccountButtons();
+syncSoon(); // (signed in: this browser's Gallery and the account's merged as the page opens)
 fillGalleryList();
 // the card first (its device asked once, see gpuSetup); then a link with a setup opens that setup, else this entry's (a
 // reload, a tab restored: see syncLink); otherwise the Walk tab, as a click on it opens it (its defaults, its setup kept)

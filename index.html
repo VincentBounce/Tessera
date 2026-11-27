@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.947">
+  <link rel="stylesheet" href="style.css?v=0.5.948">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -243,6 +243,7 @@
           <button id="galleryDelete" data-icon="trash" data-when="some" type="button" title="The cards selected, with their thumbnails">Delete</button>
           <button id="galleryImport" data-icon="import" data-when="none" type="button" title="Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them">Import</button>
           <button id="galleryExport" data-icon="export" type="button" title="The cards selected as a JSON file, else the whole Gallery">Export</button>
+          <button id="galleryAccount" data-toggle data-when="none" type="button"><span class="face-off" data-icon="smiley">Sign in</span><span class="face-on" data-icon="smiley">Sign out</span></button>  <!-- a switch: off Sign in (an account made if none), on Sign out (its faces, see .face-on); at the band's right end -->
           <button id="galleryUnselect" data-when="some" type="button" title="Let them all go (Escape)">✕ <span></span></button>  <!-- ✕ as a page's cross (see tutTools), its words how many are selected -->
         </div>
         <input id="galleryFile" type="file" accept="application/json,.json" hidden><input id="rleOpenFile" type="file" accept=".rle,.txt,text/plain" hidden>
@@ -351,11 +352,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.947"></script>
-  <script src="punks.js?v=0.5.947"></script>
-  <script src="loops.js?v=0.5.947"></script>
-  <script src="emoji.js?v=0.5.947"></script>
-  <script src="debug.js?v=0.5.947"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.947"></script>
+  <script src="pixelarticons.js?v=0.5.948"></script>
+  <script src="punks.js?v=0.5.948"></script>
+  <script src="loops.js?v=0.5.948"></script>
+  <script src="emoji.js?v=0.5.948"></script>
+  <script src="debug.js?v=0.5.948"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.948"></script>
 </body>
 </html>

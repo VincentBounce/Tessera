@@ -1,0 +1,9 @@
+name = "tessera"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# each account's passkeys, sessions and Gallery (see worker.js)
+[[kv_namespaces]]
+binding = "GALLERIES"
+id = "680c0471defc4bf0827b044953b38efc"

@@ -79,11 +79,10 @@ def drawing(s):  # a sprite's lines and its own pixels, 72 bytes each, row by ro
                 lines[(SIZE * y + x) >> 3] |= bit
     return bytes(lines + own)
 
-drawings, drawingOf, spritesOf = [], {}, []
-def drawingId(s):  # its drawing's number: sprites drawn alike, one (its sprites' numbers in the sheet kept, the first its name's)
+drawings, drawingOf = [], {}
+def drawingId(s):  # its drawing's number: sprites drawn alike, one
     d = drawing(s)
-    if d not in drawingOf: drawingOf[d] = len(drawings); drawings.append(d); spritesOf.append([])
-    if s['id'] not in spritesOf[drawingOf[d]]: spritesOf[drawingOf[d]].append(s['id'])
+    if d not in drawingOf: drawingOf[d] = len(drawings); drawings.append(d)
     return drawingOf[d]
 
 heads, count = {}, 0
@@ -108,6 +107,5 @@ with open('punkgen.js', 'w') as o:
             + ', '.join(c for c, _ in CATEGORIES) + f"); {count:,} punks")
     o.write(''.join('// ' + line + '\n' for line in textwrap.wrap(head, 117)))
     o.write('const PUNK_DRAWINGS = "' + ' '.join(base64.b64encode(d).decode() for d in drawings) + '".split(" ");\n')
-    o.write('const PUNK_SPRITES = ' + str([sorted(ids) for ids in spritesOf]).replace(' ', '') + ';\n')
     o.write('const PUNK_HEADS = ' + str([heads['l'], heads['s']]).replace("'", '"').replace(' ', '') + ';\n')
 print(len(drawings), 'drawings,', f'{count:,}', 'punks')

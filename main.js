@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.953';
+const VERSION = '0.5.954';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -32639,30 +32639,6 @@ function punkLayers(i) {
   }
   return layers;
 }
-// its name: its layers by their sprites' numbers in the sheet (a drawing's first), base 36, a dash apart (6-hv: a dot parts
-// the colours' punks in a link, pop=punk24.6-hv.n-9k): the same punk whatever the generator's categories and drawings
-// become; a name back to its number (any sprite of a drawing; a name of no punk here: the first)
-const punkName = (i) =>
-    punkLayers(i)
-      .map((d) => PUNK_SPRITES[d][0].toString(36))
-      .join('-'),
-  punkDrawingOf = new Map(PUNK_SPRITES.flatMap((ids, d) => ids.map((id) => [id, d])));
-function punkIndex(name) {
-  const [base, ...rest] = String(name)
-      .split('-')
-      .map((word) => punkDrawingOf.get(parseInt(word, 36))),
-    head = PUNK_HEADS.findIndex((h) => h.archetypes.includes(base));
-  if (head < 0) return 0;
-  const { archetypes, categories } = PUNK_HEADS[head];
-  let n = archetypes.indexOf(base),
-    unit = archetypes.length;
-  for (const c of categories) {
-    const k = rest.findIndex((d) => c.includes(d));
-    if (k >= 0) n += (c.indexOf(rest.splice(k, 1)[0]) + 1) * unit;
-    unit *= c.length + 1;
-  }
-  return rest.length ? 0 : (head ? punkCounts[0] : 0) + n;
-}
 // its picture: each layer's drawing (its lines, then its own pixels) over the ones under it, theirs gone where it has pixels
 const punkDrawings = [];
 function punkPixel(i) {
@@ -32688,10 +32664,10 @@ const ICON_SETS = {
     P: 24,
     pixel: punkPixel,
     count: () => PUNK_COUNT,
-    name: punkName,
-    index: punkIndex,
+    name: String,
+    index: (name) => (Number(name) >= 0 && Number(name) < PUNK_COUNT ? Math.floor(Number(name)) : 0),
     word: 'punk',
-    label: (i) => `#${punkName(i)}`,
+    label: (i) => `#${formatNumber(i)}`,
     source: 'CryptoPunks sprites, CC0, by openpunkart',
   },
   // (Emoji: those this browser draws, each as a picture of 48 pixels, see picturePixel)
@@ -32742,7 +32718,7 @@ const iconMax = (set = ICON_SETS.icon) => {
 };
 const iconSize = (zone) => (!isIcon(zone) ? 0 : zone === 'emoji' || zone.endsWith('Max') ? iconMax(iconSet(zone)) : 24); // (a picture's width in cells; max: greyed where none fits, 16 off squares)
 // a punk's pixels as a picture's rows (see pixelIcon): Punk 24's and Punk max's tiles, a man with a mohawk's (Human 2, Mohawk)
-const PUNK_TILE = '6-hv';
+const PUNK_TILE = 276481;
 const punkArt = (i) =>
   Array.from({ length: 24 }, (_, y) =>
     Array.from({ length: 24 }, (_, x) => (ICON_SETS.punk.pixel(i)(x, y) ? 'o' : '.')).join(''),
@@ -44443,7 +44419,7 @@ $('huntZones').replaceChildren(
           ? icon('smiley')
           : isIcon(zone)
             ? zone.startsWith('punk')
-              ? pixelIcon(punkArt(punkIndex(PUNK_TILE)), zone.endsWith('Max') ? 0 : 10)
+              ? pixelIcon(punkArt(PUNK_TILE), zone.endsWith('Max') ? 0 : 10)
               : pixelIcon('.....,.o.o.,.....,o...o,.ooo.', zone.endsWith('Max') ? 0 : 2)
             : pixelIcon(
                 zone === 'centred'

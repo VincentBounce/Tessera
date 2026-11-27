@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.944';
+const VERSION = '0.5.945';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -44335,7 +44335,7 @@ stage.addEventListener('pointerup', (e) => {
 
 // The keys: each a click on the first control shown and not greyed of its list (E: End, else Life's
 // green link, else +10k; Escape: a page's cross, see tutTools, else the open pane's tab, Gallery's, else Draw's View while
-// a click draws), or its own action
+// a click draws), or its own action, its list when it gives false (Escape: the Gallery's cards selected let go first)
 // (Space: Stop while it plays, else Play; F: the view fitted again; D: the debug panel opened or shut; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
 // its name written after its control's in its tooltip (see shortcutOf); a key with ⌘ or Ctrl by its name Mod+…
 const onMac = /Mac|iPhone|iPad/.test(navigator.platform),
@@ -44348,7 +44348,12 @@ const KEYS = [
   ['e', 'E', ['#end', '#barNum .gen-link', '#jump10k']],
   ['f', 'F', ['#autoFitTile'], recentre],
   ['d', 'D', ['#debugSwitch'], () => debugSwitch.click()], // (the debug panel, its switch in Credits › Actions: never shown there)
-  ['Escape', 'Escape', ['.tabs-more.open > button', '.tut-close', '.pane-tab.open', '#drawView:not(.active)']],
+  [
+    'Escape',
+    'Escape',
+    ['.tabs-more.open > button', '.tut-close', '.pane-tab.open', '#drawView:not(.active)'],
+    () => (selectedNames.size && !document.querySelector('.tabs-more.open') ? selectCards(false) : false),
+  ],
   ['Mod+z', `${MOD_KEY}Z`, ['#drawUndo']],
   ['Mod+Shift+z', `${MOD_KEY}${SHIFT_KEY}Z`, ['#drawRedo']],
 ];
@@ -44362,7 +44367,7 @@ document.addEventListener('keydown', (e) => {
   if (!found) return;
   const [key, , controls, action] = found;
   if (key === ' ' || mod) e.preventDefault(); // (not the page scrolled, nor the browser's own Undo)
-  if (action) return action();
+  if (action && action() !== false) return; // (false: its controls then, see Escape)
   controls
     .flatMap((c) => [...document.querySelectorAll(c)])
     .find((b) => (b.offsetParent || moreMenu.contains(b)) && !b.disabled) // (shown: a tab in the "…" tab's list too)
@@ -45677,7 +45682,11 @@ function setupRow(name, detail, x, inView) {
       on: isInUse(setup, inView),
     }); // (its shape's picture, as the Grid's; its tooltip its name (what it reads and its rule) in bold, the rest under it)
   b.append(
-    Object.assign(document.createElement('span'), { className: 'card-check', innerHTML: icon('check') }),
+    Object.assign(document.createElement('span'), {
+      className: 'card-check',
+      role: 'button',
+      innerHTML: icon('check'),
+    }),
     Object.assign(document.createElement('span'), { className: 'card-star', innerHTML: icon('star') }),
   ); // (its check, seen while selecting; its star, the card in view's, see .card-star)
   b.setAttribute('role', 'option');

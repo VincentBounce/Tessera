@@ -42,11 +42,11 @@
     rgb(240 180 41) 14%,
     var(--panel-background)
   ); /* a choice picked, a switch's hover: the gold on the panel, opaque */
-  --picked-strong-background: color-mix(
+  --picked-veil-color: color-mix(
     in srgb,
-    rgb(240 180 41) 32%,
-    var(--panel-background)
-  ); /* (the same whatever lies under it: a box over the sky too) */
+    rgb(240 180 41) 20%,
+    transparent
+  ); /* the hover's veil over a choice picked: its pale gold deeper, never greyed (see button:hover) */
   --motif-color: #bc8cff; /* a grid's motif, outlined while its size is hovered (see drawMotif), its words in the size's tooltip */
   --face-color: #e5484d; /* a solid's face round it */
   --alert-background: #e5484d; /* the tooltip telling an alert (see alertTip): red */
@@ -72,7 +72,6 @@
   --link-color: #0969da;
   --box-background: rgba(255, 255, 255, 0.82);
   --picked-background: color-mix(in srgb, rgb(240 180 41) 8%, var(--panel-background));
-  --picked-strong-background: color-mix(in srgb, rgb(240 180 41) 22%, var(--panel-background));
   --motif-color: #8250df;
   --face-color: #c4161c;
   --alert-background: #c4161c;
@@ -109,7 +108,12 @@ body {
   display: flex;
   flex-direction: column;
   font-variant-numeric: tabular-nums;
-} /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump */
+  user-select: none;
+} /* every digit as wide as the others, everywhere: numbers that change (a step, a count) never jump; the interface's words
+     never selected by a click, a Shift click or a drag (a range of cards, a stroke) */
+:is(.rule-tuto, input, textarea) {
+  user-select: text;
+} /* (the words read and copied: the pages over the view, the fields) */
 
 header.stage-box {
   z-index: 6;
@@ -457,6 +461,7 @@ input[type='range'] {
 }
 .pill-group button.active {
   background-color: var(--picked-background);
+  --veil-color: var(--picked-veil-color);
   color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (picked as a tile is, see .nav-shapes button.active) */
@@ -528,10 +533,13 @@ button {
   font: inherit;
   cursor: pointer;
 }
-button:hover:not(:disabled),
+:is(button, [role='button']):hover:not(:disabled),
 .rule-chip:hover {
-  background-image: linear-gradient(var(--track-background), var(--track-background));
-} /* a veil over its own fill, whatever it is (white, grey, a picked one's pale gold), darker in the light, lighter in the dark; its sides as they are (a digit's chip too: a click opens How it works). So a button's fill is its background-color, never the background shorthand (which takes the veil away), but where a hover of its own replaces it */
+  background-image: linear-gradient(
+    var(--veil-color, var(--track-background)),
+    var(--veil-color, var(--track-background))
+  );
+} /* a veil over its own fill, whatever it is (white, grey; a picked one's pale gold deeper, its --veil-color gold), darker in the light, lighter in the dark; its sides as they are (a digit's chip too: a click opens How it works). So a button's fill is its background-color, never the background shorthand (which takes the veil away), but where a hover of its own replaces it */
 button:disabled,
 input[type='text']:disabled {
   opacity: 0.45;
@@ -974,12 +982,10 @@ too); a long word on two lines in it (Face together), the one-line ones centred 
 .tile-group > button.active + button {
   border-left-color: transparent;
 } /* (the line beside the picked one, its own gold: its neighbours' grey none behind its round corners) */
-button.switch:hover:not(:disabled) {
+button.switch:not(.active):hover:not(:disabled) {
   background: var(--picked-background);
-} /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper (Dawn sky) */
-button.switch.active:hover:not(:disabled) {
-  background: var(--picked-strong-background);
-}
+} /* a switch (a button that a click changes again) answers the hover: off, in the pale gold of a choice picked; on, deeper as
+     every choice picked (Dawn sky) */
 #yourList {
   display: contents;
 } /* (its sections the pane's, as Life's: see .panel section) */
@@ -1014,8 +1020,9 @@ button.switch.active:hover:not(:disabled) {
 .gallery-tools-row .nav-shapes {
   display: flex;
   gap: var(--short-gap);
-  margin-bottom: var(--short-gap);
-} /* (each group's tiles side by side, each a tile's width, as the display box's head tiles) */
+  margin: 0;
+} /* (each group's tiles side by side, each a tile's width, as the display box's head tiles; a group in a row, no block of the
+     panel: none of their gap under it, the band's own padding round them, its line as high as its tiles) */
 .gallery-tools > .nav-shapes {
   gap: var(--badged-tile-gap);
 } /* (Select, Refresh, Delete, Export: the cards selected's badge) */
@@ -1028,7 +1035,7 @@ button.switch.active:hover:not(:disabled) {
 } /* (its tools' band fixed at its top, its setups scrolling under it) */
 .gallery-band {
   flex: none;
-  padding: 12px 16px 6px;
+  padding: var(--view-gap);
   border-bottom: 1px solid var(--border-color);
 } /* (a band at its box's top, a line under it) */
 #galleryScroll {
@@ -1036,10 +1043,10 @@ button.switch.active:hover:not(:disabled) {
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none; /* its thumb its own, in the view's gap (see .scroll-thumb), as the settings' */
-  padding: 0 16px 16px;
-}
-/* its setups, a grid of square cards: the picture all of it (else the shape's icon), its name over its foot on the view's
-   boxes' translucent band (.stage-box: the picture seen through it), the × on the picture */
+  padding: 0 var(--view-gap) var(--view-gap);
+} /* (the view's gap from its box's sides and foot, as the boxes from each other; its first title right under the band's line) */
+/* its setups, a grid of square cards: the picture fit between two heights of its name (else the shape's icon), its name under it on the card's
+   fill, the × on the picture */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -1058,19 +1065,16 @@ button.switch.active:hover:not(:disabled) {
   position: relative;
   text-align: left;
   line-height: 1.25;
-  background-color: var(--panel-background);
+  background-color: var(--page-background);
 }
-.gallery-grid button:hover {
-  border-color: var(--muted-text-color);
-} /* a dark frame on hover, as every picture's (.tut-shapes figure): its fill under its picture, a veil there unseen */
 .gallery-grid .mode-icon {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--page-background);
-}
+  padding: calc(1lh + 3px) 0;
+} /* (its picture fit between its name's band and as much over it: centred in the card, its name never on it) */
 .gallery-grid .mode-icon svg {
   width: 32px;
   height: 32px;
@@ -1085,9 +1089,7 @@ button.switch.active:hover:not(:disabled) {
   position: relative;
   padding: 1px 8px 2px;
   min-width: 0;
-  background: var(--box-background);
-} /* (its name on a translucent band over its picture, no blur: a blur takes in the card's border under it, its round corners
-     smeared) */
+} /* (its name on the card's fill, as its picture: never over it, see .mode-icon) */
 .gallery-grid .mode-detail {
   display: none;
 } /* (its name only, on its picture: its rule and words in its tooltip) */
@@ -1140,7 +1142,10 @@ button.switch.active:hover:not(:disabled) {
 #yourList:not(.selecting) .gallery-grid button.active {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
-} /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same) */
+  background-color: var(--picked-background);
+  --veil-color: var(--picked-veil-color);
+} /* (a card selected or in view: its gold 2 px, a ring round its border, the card's size the same; the pale gold of a choice
+     picked) */
 .gallery-grid button.selected .card-check {
   border-color: var(--accent-color);
   background: var(--accent-color);
@@ -1281,6 +1286,7 @@ button.active .bubble.active {
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active {
   border-color: var(--accent-color);
   background-color: var(--picked-background);
+  --veil-color: var(--picked-veil-color);
 } /* (a Gallery card too: the setup in view, but while selecting: its star only) */
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-name,
 :is(.mode-list, #yourList:not(.selecting) .gallery-grid) button.active .mode-icon {
@@ -2446,6 +2452,7 @@ button.switch.active,
   border-color: var(--accent-color);
   color: var(--accent-color);
   background-color: var(--picked-background);
+  --veil-color: var(--picked-veil-color);
 }
 .tut-shapes figure.active figcaption {
   color: var(--accent-color);

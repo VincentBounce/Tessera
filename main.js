@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.946';
+const VERSION = '0.5.947';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -7180,6 +7180,7 @@ document.addEventListener('pointerup', (e) => {
   const b = e.target.closest?.('button, input');
   if (!b?.disabled || !b.enablers) return;
   const them = b.enablers();
+  if (them.some((el) => moreMenu.contains(el))) openMoreMenu(true); // (a tab that does not fit the row: the "…" menu opened, left open)
   them[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   them.forEach(highlight);
 }); // (the first scrolled into sight, as little as it takes)
@@ -11599,7 +11600,7 @@ function setAntRule(w, rule) {
 }
 // The mode tabs that do not fit the header's row, from the last: moved into a "…" tab's menu, a list under it (the same
 // buttons, their clicks and active state as in the row), Gallery the last; the "…" lit when the tab shown is in it (style.css)
-const moreMenu = Object.assign(document.createElement('div'), { className: 'tab-menu', hidden: true }),
+const moreMenu = Object.assign(document.createElement('div'), { className: 'tab-menu stage-box', hidden: true }),
   moreTabs = Object.assign(document.createElement('div'), { className: 'tabs-more', hidden: true });
 moreTabs.append(
   tile({
@@ -11986,7 +11987,6 @@ function compute() {
   const n = digitsNeeded(),
     want = variant.life ? n : n + LOOP_AHEAD; // a walk also reads the digits ahead
   syncDigitsStepper();
-  relabelColours(variant);
   for (const [id, used] of Object.entries(sectionsOf(tabVariant()))) $(id).hidden = !used;
   if (variant.explore && exploreRuleWhyNot(exploreLook.rule, tabVariant())) {
     exploreLook.rule = EXPLORE_RULES[0][0]; // (a colouring greyed on the grid clicked: the default, as a link's, see setupFrom)
@@ -12294,6 +12294,8 @@ function buildWalkOf() {
   gpuClear(); // a surface drawn before (see 11.4d)
   areaFill = null; // a new walk: its enclosed areas are computed again, and its layer starts empty
   Object.assign(walk, freshWalk(), { variant: digitsComputed.variant }); // (all its fields fresh; the variant it is built for: its colours by it, current.variant ahead of it while another is made, see compute)
+  if (variantPicked) variantDisplay(); // (a variant picked: its view's settings with it, see variantDisplay)
+  relabelColours(VARIANTS[walk.variant]); // (its looks' names and the one picked: the walk shown's, never before it is)
   $('fillTooBig').hidden = true;
   layers.fill.clearRect(0, 0, canvasWidth, canvasHeight);
   const { head, frac } = digitsInUse();
@@ -45427,13 +45429,19 @@ function displayDefaults() {
 }
 applyDefaults('open'); // (the page's first settings, DISPLAY_DEFAULTS': its boxes none of their own)
 glintTuning.glint = defaultOf('glint', tabVariant());
-$('variant').addEventListener('change', () => {
+// a variant picked: its view's settings come with its walk, not before (the walk shown drawn as it was meanwhile, see
+// buildWalkOf); another tab's Display from its defaults, and the form of the view, which belongs to the walk variant: its
+// perspective, the camera's starting angle (auto-fit may have turned it to follow a walker) and its flat or round form (see
+// initShape)
+let variantPicked = false;
+function variantDisplay() {
+  variantPicked = false;
   if (modeTabOf() !== displayTab) displayDefaults();
-  // the form of the view belongs to the walk variant: its perspective, the camera's starting angle
-  // (auto-fit may have turned it to follow a walker) and its flat or round form (see initShape)
-  // come back with every new variant
   applyDefaults('variant'); // (its perspective, the view free and framed)
   Object.assign(camera, CAMERA_START);
+}
+$('variant').addEventListener('change', () => {
+  variantPicked = true;
   $('startNo').value = 1;
   compute();
 });

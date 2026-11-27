@@ -242,6 +242,12 @@ While the checks run unattended (a night, a meal), also audit what they cannot s
   fill its `background-color`, never the `background` shorthand, which takes the hover's veil away; the short gap within a
   block, the long gap between blocks…), and every kind of button hovered with its hover forced (`CSS.forcePseudoState`):
   each shows its veil or its own hover (v0.5.550: no row tile, picked tile, picked card nor rule chip had one).
+- **Each time away, copies of the components**: for each component defined once (`.stage-box`, `button` and its veil, tile,
+  tile group, card), style.css searched for rules rewriting its look (a background, border, radius, shadow, a hover of their
+  own), each brought back to its component in its own commit (v0.5.947: the "…" menu its own opaque box and shadow, its rows
+  a pale gold hover that took the veil away).
+- **Each time away, every control hovered**: `tesseraCheck({ hovers: true })` on every visible control, not the greyed only:
+  no console error, the shape still drawn (v0.5.902 to v0.5.939: Size − / + hovered, the shape gone).
 - **Each time away, the CSS variables' names** (style.css's `:root`, each prototype page's own): each says what it holds and
   its kind, in words (`--text-color`, `--text-size`, `--page-background`, `--border-color`), never a bare `--text`, `--bg`,
   `--muted` or `--c` (v0.4.564: `--text-size` came beside a colour named `--text`): renamed at its definition and every

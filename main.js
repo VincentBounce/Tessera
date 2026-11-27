@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.938';
+const VERSION = '0.5.939';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -41501,9 +41501,10 @@ function gpuSurface(paint, path) {
       haloOf(SHINES[shineNow()][0]),
       surfaceTileOnScreen() / HALO_TILE,
     );
-  const under = drawsHere() &&
-      pointerPixel &&
-      !D.picking && [...(stroke?.path.splice(0, STROKE_POINTS) ?? []), pointerPixel], // (Draw on a surface: the tiles under a stroke's path, then the pointer's)
+  const under =
+      drawsHere() && pointerPixel && !D.picking
+        ? [...(stroke?.path.splice(0, STROKE_POINTS) ?? []), pointerPixel]
+        : null, // (Draw on a surface: the tiles under a stroke's path, then the pointer's; none, null: a list or nothing)
     picking =
       (motifShown || under) &&
       gpuPick(
@@ -41641,7 +41642,7 @@ function gpuPick(D, enc, slot, tileBufs, cull, middle, at) {
     enc.copyBufferToBuffer(P.best, 0, P.read, 0, 8);
   }
   // (at: pixels, a stroke's path's points then the pointer's: each its tile read, in order)
-  const pixels = at && at.map(([x, y]) => [Math.min(w - 1, Math.max(0, x)), Math.min(h - 1, Math.max(0, y))]);
+  const pixels = at?.map(([x, y]) => [Math.min(w - 1, Math.max(0, x)), Math.min(h - 1, Math.max(0, y))]);
   pixels?.forEach((pixel, i) =>
     enc.copyTextureToBuffer({ texture: P.ids, origin: pixel }, { buffer: P.under, offset: 4 * i }, [1, 1]),
   );

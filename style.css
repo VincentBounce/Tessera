@@ -193,8 +193,7 @@ main {
 }
 .scroll-thumb {
   position: absolute;
-  z-index: 2;
-  left: calc(var(--panel-width) + var(--view-gap) / 2 - 3px);
+  z-index: 6;
   width: 6px;
   border-radius: 3px;
   background-color: var(--border-color);
@@ -202,8 +201,14 @@ main {
   transition: opacity 0.2s;
 } /* a pane's scroll thumb in the view's gap beside it, its top and height its scroll's (see scrollThumb): shown while the
      pointer is over the pane or the thumb, it scrolls or it is dragged */
-.panel:hover ~ .scroll-thumb,
-.scroll-thumb:is(:hover, .scrolled, .dragged) {
+#panelThumb {
+  left: calc(var(--panel-width) + var(--view-gap) / 2 - 3px);
+} /* (the settings': in the gap on their right) */
+.middle-thumb {
+  --thumb-inset: 3px;
+  right: calc(var(--view-gap) + var(--thumb-inset));
+} /* (the Gallery's, a page's: in its box, as far from its right side as from its scrolling part's top and foot) */
+.scroll-thumb:is(:hover, .near, .scrolled, .dragged) {
   opacity: 1;
 }
 .scroll-thumb:is(:hover, .dragged) {
@@ -1035,11 +1040,9 @@ button.switch.active:hover:not(:disabled) {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent; /* (as the settings' column's) */
-  padding: 0 5px 16px 16px;
-} /* (its scrollbar in its right margin: 5px and a thin scrollbar's 11px, the left's 16px) */
+  scrollbar-width: none; /* its thumb its own, in the view's gap (see .scroll-thumb), as the settings' */
+  padding: 0 16px 16px;
+}
 /* its setups, a grid of square cards: the picture all of it (else the shape's icon), its name over its foot on the view's
    boxes' translucent band (.stage-box: the picture seen through it), the × on the picture */
 .gallery-grid {
@@ -2338,6 +2341,7 @@ main:has(.middle-box:not([hidden])) :is(.display-menu, .stage-bar) {
   position: absolute;
   inset: 0;
   overflow: auto;
+  scrollbar-width: none; /* its thumb its own, in the view's gap (see .scroll-thumb) */
   padding: 20px 24px 24px;
 } /* what scrolls, under its buttons (pinned to the top right) */
 .tut-body > h2 {
@@ -2542,11 +2546,11 @@ button.switch.active,
 .tut-tools {
   position: absolute;
   top: 12px;
-  right: 24px;
+  right: 12px;
   z-index: 1;
   display: flex;
   gap: 6px;
-} /* (as high as Display's box; on the right, room for the scroll bar) */
+} /* (in its box's corner, as far from its top as from its right: its scroll thumb in the 9 px past it, see .middle-thumb) */
 .tut-tools button {
   width: 36px;
   height: 36px;

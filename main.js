@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.941';
+const VERSION = '0.5.942';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -29708,11 +29708,12 @@ const pixelIcon = (art, pad = 0) => {
 // changing then those kept, by their live cells; the state before shown a moment, fading
 // a page's tools over it (how a rule or a walk works, the number): a switch (Letters, Base 10: its text, title, on, click), play
 // it again, copy it, back; each its click
-// One page over the view at a time (.rule-tuto: how a rule or a walk works, the credits, Full number): page shown, any
-// other closed by its own cross (its buttons unlit, as Escape does, see KEYS)
+// One box in the middle at a time (.middle-box: how a rule or a walk works, the credits, Full number, the Gallery): page
+// shown, any other closed its own way (a page by its cross, its buttons unlit, as Escape does, see KEYS; the Gallery by
+// showPane)
 function showPage(page) {
-  for (const other of document.querySelectorAll('.rule-tuto:not([hidden])'))
-    if (other !== page) other.querySelector('.tut-close')?.click();
+  for (const other of document.querySelectorAll('.middle-box:not([hidden])'))
+    if (other !== page) other === $('galleryPane') ? showPane(false) : other.querySelector('.tut-close')?.click(); // (the Gallery shut by its own way: its selection, its refresh)
   page.hidden = false;
 }
 function tutTools({ toggle = null, words = [], replay = null, copy = null, close }) {
@@ -45453,14 +45454,22 @@ $('variant').addEventListener('change', () => {
 // further from the view than from the window): as high as the pane's share in sight, at its place in the pane's scroll,
 // shown while the pointer is over the pane or it scrolls (see .scroll-thumb), dragged to scroll
 function scrollThumb(pane, thumb) {
+  thumb.pane = pane; // (a page's thumb on its page shown: each a pane of its own, see pageThumbs)
   const place = () => {
-    const track = pane.clientHeight - 2 * parseFloat(getComputedStyle(pane).paddingTop),
+    const inset = parseFloat(getComputedStyle(thumb).getPropertyValue('--thumb-inset')), // (its own margin in its pane, else its pane's paddings: the settings' cards')
+      { paddingTop, paddingBottom } = getComputedStyle(pane),
+      [above, below] = Number.isNaN(inset) ? [paddingTop, paddingBottom].map(parseFloat) : [inset, inset],
+      track = pane.clientHeight - above - below,
       share = pane.clientHeight / pane.scrollHeight,
       height = Math.max(24, track * share);
-    thumb.hidden = share >= 1;
+    let top = above;
+    for (let e = pane; e && e !== thumb.offsetParent; e = e.offsetParent) top += e.offsetTop; // (in the thumb's own frame)
+    thumb.hidden = !pane.offsetParent || share >= 1; // (its pane shut, or all of it in sight: none)
     thumb.style.height = `${height}px`;
-    thumb.style.top = `${pane.offsetTop + parseFloat(getComputedStyle(pane).paddingTop) + (pane.scrollTop / (pane.scrollHeight - pane.clientHeight)) * (track - height)}px`;
+    thumb.style.top = `${top + (pane.scrollTop / (pane.scrollHeight - pane.clientHeight)) * (track - height)}px`;
   };
+  pane.addEventListener('pointerenter', () => thumb.classList.add('near'));
+  pane.addEventListener('pointerleave', () => thumb.classList.remove('near'));
   let fade = 0;
   pane.addEventListener('scroll', () => {
     place();
@@ -45470,8 +45479,11 @@ function scrollThumb(pane, thumb) {
   });
   const watch = new ResizeObserver(place);
   for (const part of [pane, ...pane.children]) watch.observe(part); // (its content grown or shrunk: a section shown or hidden)
+  if (thumb.dataset.ready) return; // (its own drag once, of the pane it is on)
+  thumb.dataset.ready = '1';
   thumb.addEventListener('pointerdown', (e) => {
-    const from = e.clientY,
+    const { pane } = thumb,
+      from = e.clientY,
       top = pane.scrollTop,
       rate = (pane.scrollHeight - pane.clientHeight) / (pane.clientHeight - thumb.offsetHeight);
     thumb.setPointerCapture(e.pointerId);
@@ -45489,6 +45501,13 @@ function scrollThumb(pane, thumb) {
   });
 }
 scrollThumb(document.querySelector('.panel'), $('panelThumb'));
+scrollThumb($('galleryScroll'), $('galleryThumb'));
+// the pages' (How it works, About, Full number): their text made anew at each opening, the thumb on it as it comes
+for (const page of document.querySelectorAll('.rule-tuto'))
+  new MutationObserver(() => {
+    const body = page.querySelector('.tut-body');
+    if (body && $('pageThumb').pane !== body) scrollThumb(body, $('pageThumb'));
+  }).observe(page, { childList: true });
 // a phone's settings, a drawer over the view's foot (style.css): shut, a tap on it opens it (that tap no click of what it
 // touched); its handle shuts it or opens it
 const PHONE = matchMedia('(max-width: 720px)');
@@ -45719,7 +45738,9 @@ function showPane(gallery) {
     refreshing = false; // (the pictures being refreshed: stopped, the last built shown)
     selectedNames.clear(); // (no card selected when it opens again)
   }
-  $('galleryPane').hidden = !gallery; // (a box over the view, the settings beside it: see .middle-box)
+  if (gallery)
+    showPage($('galleryPane')); // (the middle's one box: a page there shut, see showPage)
+  else $('galleryPane').hidden = true;
   galleryTab().classList.toggle('open', gallery); // (the "…" lit if Gallery is in it: style.css)
   if (gallery) {
     showInViewPicture(); // (the last one let go before the cards are drawn: taken anew)
@@ -45948,7 +45969,6 @@ function paintUrl() {
 function credits(open) {
   ruleTutorial(null);
   if (!open) return;
-  showPane(false); // (over the view: the Gallery shut, not half covered)
   $('appTab').classList.add('open');
   showPage($('ruleTuto'));
   $('ruleTuto').dataset.shown = 'credits';

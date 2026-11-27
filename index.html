@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.941">
+  <link rel="stylesheet" href="style.css?v=0.5.942">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -230,6 +230,8 @@
       </div>
     </aside>
     <div id="panelThumb" class="scroll-thumb" hidden></div>  <!-- the settings' scroll thumb, in the view's gap beside them (see scrollThumb) -->
+    <div id="galleryThumb" class="scroll-thumb middle-thumb" hidden></div>  <!-- the Gallery's, in the gap on its right (see scrollThumb) -->
+    <div id="pageThumb" class="scroll-thumb middle-thumb" hidden></div>  <!-- a page's (About, How it works), the same place -->
     <div id="galleryPane" class="stage-box middle-box" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
       <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
         <div class="gallery-tools-row">  <!-- Open and Paste RLE, Save link, then the selection's tools and the Gallery's (the setup in view: the first card of its tab's section, see inViewCard) -->
@@ -345,11 +347,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.941"></script>
-  <script src="punks.js?v=0.5.941"></script>
-  <script src="loops.js?v=0.5.941"></script>
-  <script src="emoji.js?v=0.5.941"></script>
-  <script src="debug.js?v=0.5.941"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.941"></script>
+  <script src="pixelarticons.js?v=0.5.942"></script>
+  <script src="punks.js?v=0.5.942"></script>
+  <script src="loops.js?v=0.5.942"></script>
+  <script src="emoji.js?v=0.5.942"></script>
+  <script src="debug.js?v=0.5.942"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.942"></script>
 </body>
 </html>

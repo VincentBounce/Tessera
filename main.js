@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.958';
+const VERSION = '0.5.959';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -39327,7 +39327,7 @@ const flatLampWhyNot = ({ w }) =>
     : '';
 // Glow: a walk on the edges only (its line glowing, see lineGlowOn)
 const glowWhyNot = ({ w }) => (NAV[w][0] === 'Walk' && NAV[w][4] === 'edges' ? '' : 'A walk on the edges only');
-const SHINES_SHOWN = SHINES.length - TRIED.shines.length; // (Display › Shine' pills: the others tried in the debug panel's Shine, see debugTuning)
+const SHINES_SHOWN = SHINES.length - TRIED.shines.length; // (Display › Shine's pills: the others tried in the debug panel's Shine, see debugTuning)
 const SHINE = Object.fromEntries(SHINES.map(([name], k) => [name, k]));
 // a Shine's greyed words in a variant ('' where allowed): Glow a walk's on the edges, a flat lamp (Halo) where cells are, the
 // lamps where tiles are; Off anywhere
@@ -44716,7 +44716,7 @@ const debugSwitch = tile({
   pic: icon('onCells'),
   text: 'Debug panel',
   toggle: true,
-  title: "Numbers tried by eye: Display › Shine' light and Glow, the live cell's colour, a 3D view's glint",
+  title: "Numbers tried by eye: Display › Shine's light and Glow, the live cell's colour, a 3D view's glint",
   click: () => {
     debugOpen = !debugOpen;
     setTile(debugSwitch, { on: debugOpen });

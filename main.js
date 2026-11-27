@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.956';
+const VERSION = '0.5.957';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -6551,11 +6551,10 @@ const DISPLAY_BY_TAB = {
   'Explore on the plane': ['gridFinish'],
   'Explore on surfaces': ['shape', 'gridFinish', ...VIEW_3D, 'glass', 'shine', 'cut'], // (its view's only: its colours its own, see renderExplore)
 };
-// The Display settings' defaults, one table: each its control (a box's id), when it comes back (open: the page's opening
-// only, kept from tab to tab; tab: another tab; variant: every variant; lifeTeams: Life's count of teams; battle: a battle's
-// state, as long as none picks it; ant: an ant coming in; theme: the page's switched), its value: one for all, or each tab's ({ all, Life… }:
-// a tab's own, else all's), or by the variant or a battle (a function); displayDefaults and the variant's change set them, and
-// the tiles' marks read them (see defaultOf, defaultMark)
+// The Display settings' defaults, one table: each its control (a box's id, or a function setting it; none: read where it is
+// used), its scope (the parts of the setup shown whose change brings its default back, see SCOPE_PARTS; none: the page's
+// opening only, kept from tab to tab), its value: one for all, or each tab's ({ all, Life… }: a tab's own, else all's), or by
+// the variant or a battle (a function); syncDefaults sets them, the tiles' marks read them (see defaultOf, defaultMark)
 // Each shape's view at first, by the menu's name, in every mode: inflated, its Shape (Flat 0 ── Inflated 1: the balls and
 // the sheets rolled up round, Ico sph; Dode sph and the rhombic solids half way; the others flat); perspective, Perspective on (the cubes,
 // the torus and the Möbius strip, the 3D lattices; the others off)
@@ -6581,7 +6580,7 @@ const SHAPE_DEFAULTS = {
 const DISPLAY_DEFAULTS = {
   look: [
     'colourMode',
-    'tab',
+    ['tab'],
     {
       Walk: 'gradient',
       Ant: 'gradient',
@@ -6592,24 +6591,28 @@ const DISPLAY_DEFAULTS = {
       Explore: 'mono',
     },
   ], // (Cells: a walk's Rainbow, Life's States, Elementary's Age: the simplest)
-  area: ['area', 'tab', (variant, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')],
-  path: ['showPath', 'tab', false], // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
-  centered: ['centered', 'tab', true],
-  autoRotate: ['autoRotate', 'tab', false],
-  autoFit: ['autoFit', 'variant', true],
-  upright: ['upright', 'variant', false],
-  shape: ['shapeM', 'variant', (variant, w) => SHAPE_DEFAULTS[NAV[w][2]]?.inflated ?? 0], // (Flat 0 ── Inflated 1: by its shape, see SHAPE_DEFAULTS)
+  area: ['area', ['tab'], (variant, w) => (NAV[w][0] !== 'Walk' ? 'empty' : NAV[w][1] === '2D' ? 'light' : 'plain')],
+  path: ['showPath', ['tab'], false], // (Area: Empty, a walk's Light in 2D, Plain in 3D; on cells the cells alone)
+  centered: ['centered', ['tab'], true],
+  autoRotate: ['autoRotate', ['tab'], false],
+  autoFit: ['autoFit', ['variant'], true],
+  upright: ['upright', ['variant'], false],
+  shape: ['shapeM', ['variant'], (variant, w) => SHAPE_DEFAULTS[NAV[w][2]]?.inflated ?? 0], // (Flat 0 ── Inflated 1: by its shape, see SHAPE_DEFAULTS)
   perspective: [
     'perspective',
-    'variant',
+    ['variant'],
     (variant, w) => perspectiveFor(w, defaultOf('shape', w), spaceTime && spaceTimeApplies(w)),
   ], // (by its shape, see SHAPE_DEFAULTS)
-  light: ['light', 'open', true],
-  glint: [null, ['open', 'tab'], (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5)], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
-  glass: ['glass', 'open', false],
+  light: ['light', [], true],
+  glint: [
+    (v) => (glintTuning.glint = v),
+    ['tab'],
+    (variant, w) => (NAV[w][0] === 'Walk' && NAV[w][1] === '3D' ? 1 : 0.5),
+  ], // (halfway: its own colour and white added, see light; a lattice's walk white, its bars' glint bright)
+  glass: ['glass', [], false],
   shine: [
     'shine',
-    ['open', 'tab', 'theme'],
+    ['tab', 'net', 'theme'],
     (variant, w) =>
       NAV[w][0] === 'Life' && themeName() === 'dark'
         ? SHINE.LED
@@ -6618,7 +6621,8 @@ const DISPLAY_DEFAULTS = {
           : variantGroup(w) === '3D walks' && variant.cells
             ? SHINE.Halo
             : 0,
-  ], // (Life on a dark page, in 2D as in 3D: LED; a walk on the edges: Glow; a Lattice walk's cubes: Halo; else Off)
+  ], // (Life on a dark page, in 2D as in 3D: LED; a walk on the edges: Glow; a Lattice walk's cubes: Halo; else Off: again on
+  // its edges or its cells, net)
   gridFinish: [
     'gridFinish',
     ['tab', 'exploreRule'],
@@ -6629,22 +6633,42 @@ const DISPLAY_DEFAULTS = {
       return NAV[w][1].startsWith('2D') || NAV[w][1] === '3D' ? 1 : 2; // (11% in 2D and in a lattice, 20% on a solid)
     },
   ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, distances', hemispheres' and lunes', Strong: see GRID_LINES)
-  trail: ['lifeTrail', 'open', true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
-  ocean: ['ocean', 'battle', () => battleOn() && NAV[tabVariant()][0] === 'Walk'], // (on in a walk's battle on a surface, as long as none picks it)
-  cut: [null, 'open', 0],
-  blocks: [null, 'open', false],
-  sound: [null, 'open', false],
-  speed: [null, 'open', 60], // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
-  antLook: [null, 'ant', 'digit'], // (an ant's look as it comes in: States, its cells by their state)
+  trail: ['lifeTrail', [], true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
+  ocean: ['ocean', ['tab', 'battle'], (variant, w) => battleAt(w) && NAV[w][0] === 'Walk'], // (on in a walk's battle on a surface; picked, kept till the battle starts or ends)
+  cut: [null, [], 0],
+  blocks: [null, [], false],
+  sound: [null, [], false],
+  speed: [null, [], 60], // (Cut Off; Life's Blocks hidden; no sound; 60 steps a second: their own state, read where it is kept)
+  antLook: [null, ['tab'], 'digit'], // (an ant's look as it comes in: States, its cells by their state)
 };
-// its settings that come back at `at`: each box set, checked or valued
-function applyDefaults(at) {
-  for (const [key, [id, when]] of Object.entries(DISPLAY_DEFAULTS)) {
-    if (![when].flat().includes(at) || !id) continue; // (one with no box: read where it is used, see defaultOf; when: one moment or several)
-    const v = defaultOf(key, tabVariant());
-    if (typeof v === 'boolean') $(id).checked = v;
+// A default's scope, its parts read on the setup shown (variant w): its tab (the mode and its space: Life or Elementary, 2D
+// or 3D), its variant (and each link opened: a fresh view of it), its net (along the edges or on cells), the page's theme, a
+// battle or Solo, Explore's colouring
+let viewsOpened = 0;
+const SCOPE_PARTS = {
+  tab: (w) => `${NAV[w]?.[0]}|${variantGroup(w)}`,
+  variant: (w) => `${w}|${viewsOpened}`,
+  net: (w) => NAV[w]?.[4] ?? '',
+  theme: () => themeName(),
+  battle: (w) => battleAt(w),
+  exploreRule: () => exploreLook.rule,
+};
+// each setting whose scope changed since it was last set: its default again (a box set, checked or valued; a function
+// called); the others as picked
+let scopesSet = {};
+function syncDefaults(w = tabVariant()) {
+  let changed = false;
+  for (const [key, [id, scope]] of Object.entries(DISPLAY_DEFAULTS)) {
+    const at = scope.map((part) => SCOPE_PARTS[part](w)).join('|');
+    if (!id || scopesSet[key] === at) continue;
+    scopesSet[key] = at;
+    changed = true;
+    const v = defaultOf(key, w);
+    if (typeof id === 'function') id(v);
+    else if (typeof v === 'boolean') $(id).checked = v;
     else $(id).value = v;
   }
+  if (!changed) return;
   renderHeadTiles(); // (the Display box's tiles as its settings now are: open under the pointer, it is drawn on entering only)
   debugTuning(); // (the debug panel: the mode's numbers)
 }
@@ -12012,7 +12036,7 @@ function compute() {
   for (const [id, used] of Object.entries(sectionsOf(tabVariant()))) $(id).hidden = !used;
   if (variant.explore && exploreRuleWhyNot(exploreLook.rule, tabVariant())) {
     exploreLook.rule = EXPLORE_RULES[0][0]; // (a colouring greyed on the grid clicked: the default, as a link's, see setupFrom)
-    applyDefaults('exploreRule');
+    syncDefaults();
   }
   if (variant.explore) renderExplore();
   $('planeRow').hidden = !variant.plane || !!variant.elementary; // Life on the plane: its grid (Elementary's: none, see elementaryRows)
@@ -20556,7 +20580,7 @@ const walkTeamsHere = (w) => NAV[w]?.[0] === 'Walk' && !!VARIANTS[w].surface; //
 function renderWalkTeams() {
   const w = tabVariant(),
     here = walkTeamsHere(w);
-  if (!oceanPicked) applyDefaults('battle'); // (Ocean on in a walk's battle, till it is clicked: see DISPLAY_DEFAULTS)
+  syncDefaults(); // (Ocean on in a walk's battle, see DISPLAY_DEFAULTS)
   // a battle: its numbers in its Start section, A's formula field moved there from the number's (hidden then), then B's on
   $('battleStart').hidden = $('startWays').hidden = $('battleHunt').hidden = !battleOn();
   RIVALS.forEach((id, j) => {
@@ -24019,7 +24043,7 @@ const exploreRuleWhyNot = (key, w) =>
 function renderExplore() {
   const pick = (key, value) => () => {
     exploreLook[key] = value;
-    if (key === 'rule') applyDefaults('exploreRule'); // (its grid: see DISPLAY_DEFAULTS)
+    if (key === 'rule') syncDefaults(); // (its grid: see DISPLAY_DEFAULTS)
     compute();
   };
   // (its colours under its cards, a notched slider always there: 2 to its rule's most on the grid shown, its last all of them
@@ -36691,12 +36715,11 @@ function applySetup(s) {
       seek(kind);
     }
   }
-  // the display is not part of a setup: it takes the defaults of the walk variant's tab, when the tab
-  // changes (as picking a walk does); within a tab, what was chosen stays
-  if (modeTabOf() !== displayTab) displayDefaults();
-  $('perspective').checked = defaultOf('perspective', w);
+  // the display is not part of a setup: each setting by its scope (see syncDefaults), the link a fresh view of its variant
+  // (its perspective, the view free and framed); within its tab, what was chosen stays
+  viewsOpened++;
+  syncDefaults(w);
   Object.assign(camera, CAMERA_START);
-  $('upright').checked = false; // (the default view: free, on each surface)
   pendingChampion = s.popFound || null;
   compute(); // a champion follows once the walk is built
   return true;
@@ -39309,16 +39332,10 @@ const shineWhyNot = (k, w) => {
     whyNot = name === 'Glow' ? glowWhyNot : !LAMPS[name] ? null : LAMPS[name].flat ? flatLampWhyNot : lampWhyNot;
   return whyNot ? whyNot({ w }) : '';
 };
-// the Shine in use: the one picked where the mode shown allows it, else its default (a Lattice walk's Glow on its edges, its
-// Halo on its cubes; back to its edges, Glow again), as placeNow
-const shineNow = (w = walk.variant ?? tabVariant()) => {
-  const k = Number($('shine').value);
-  return shineWhyNot(k, w) ? defaultOf('shine', w) : k;
-};
+const shineNow = () => Number($('shine').value); // (its box's, see DISPLAY_DEFAULTS)
 const shineLampsOn = () => !!LAMPS[SHINES[shineNow()][0]] && !$('shineRow').hidden && !lampWhyNot({ w: walk.variant }); // (a mode with a lamp, where tiles are lit)
 const oceanFits = (w = tabVariant(), lifeCount = lifeTeams, walkCount = walkTeams) =>
   (VARIANTS[w].life ? lifeCount : battleAt(w, walkCount) ? walkCount : 1) <= LANDS.length; // (its lands a Sextet's at most, Life's teams or a battle's walkers: beyond, greyed; at a setup, see whyNot)
-let oceanPicked = false; // (Ocean clicked since its default was set: kept, else it follows its default, see DISPLAY_DEFAULTS)
 const oceanOn = () => $('ocean').checked && shows('ocean', tabVariant()) && oceanFits(); // (its row's rule, not its row: drawn later)
 const blankTile = () => (oceanOn() ? OCEAN : UNLIT); // (a surface's tile none has painted: Ocean's sea blue, or the theme's)
 // a colour for text on the page: one too light to read on the light theme (Earth's white land) darkened, else as it is
@@ -44653,7 +44670,7 @@ const themeSwitch = tile({
       /* not kept */
     }
     applyTheme(theme);
-    applyDefaults('theme'); // (its defaults the theme's: Shine's, see DISPLAY_DEFAULTS)
+    syncDefaults(); // (its defaults the theme's: Shine's, see DISPLAY_DEFAULTS)
   },
 });
 function applyTheme(theme) {
@@ -44736,7 +44753,7 @@ function debugTuning() {
     );
   if (tab === 'Light')
     return debugPanel({
-      key: `light|${modeTabOf()}|${allowed}`, // (its mode's default, again at each tab: see displayDefaults)
+      key: `light|${SCOPE_PARTS.tab(tabVariant())}|${allowed}`, // (its mode's default, again at each tab: see syncDefaults)
       tabs,
       title: 'Light › Glint',
       numbers: glintTuning,
@@ -44835,7 +44852,6 @@ $('glass').addEventListener('change', () => {
   needsFull = true;
 });
 $('ocean').addEventListener('change', () => {
-  oceanPicked = true;
   needsFull = statsDirty = true;
   tintBattleFormulas();
   if (walk.n) describe(walk.base);
@@ -45663,26 +45679,14 @@ function computeFramed() {
   $('autoFit').checked = true;
   compute();
 }
-// Another variant in the same tab keeps the Display settings; another tab starts from its defaults
-let displayTab = null;
-const modeTabOf = () => `${NAV[tabVariant()]?.[0]}|${variantGroup(tabVariant())}`; // (the menu's tab, Life or Elementary, and its space: the select's group holds several tabs)
-function displayDefaults() {
-  applyDefaults('tab');
-  glintTuning.glint = defaultOf('glint', tabVariant());
-  oceanPicked = false;
-  displayTab = modeTabOf();
-}
-applyDefaults('open'); // (the page's first settings, DISPLAY_DEFAULTS': its boxes none of their own)
-glintTuning.glint = defaultOf('glint', tabVariant());
+syncDefaults(); // (the page's first settings, DISPLAY_DEFAULTS': its boxes none of their own)
 // a variant picked: its view's settings come with its walk, not before (the walk shown drawn as it was meanwhile, see
-// buildWalkOf); another tab's Display from its defaults, and the form of the view, which belongs to the walk variant: its
-// perspective, the camera's starting angle (auto-fit may have turned it to follow a walker) and its flat or round form (see
-// initShape)
+// buildWalkOf): each by its scope (see syncDefaults), and the camera's starting angle (auto-fit may have turned it to follow
+// a walker)
 let variantPicked = false;
 function variantDisplay() {
   variantPicked = false;
-  if (modeTabOf() !== displayTab) displayDefaults();
-  applyDefaults('variant'); // (its perspective, the view free and framed)
+  syncDefaults();
   Object.assign(camera, CAMERA_START);
 }
 $('variant').addEventListener('change', () => {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.930';
+const VERSION = '0.5.931';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -34616,7 +34616,7 @@ function patternFrame(i, K, place = patternPlace(i, K)) {
           : !one && wallSlices(K)
             ? mid(planeSlices(K).spots[i])
             : !one
-              ? planeTorus(kind)
+              ? torus && !APERIODIC[kind] // (the grid shown's, as built: the menu's may be the next walk's, see planeTorus)
                 ? planeFrame().lattice(K).middles[i]
                 : planeFrame().middle(i, cols, rows)
               : APERIODIC[kind]

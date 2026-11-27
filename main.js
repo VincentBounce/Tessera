@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.940';
+const VERSION = '0.5.941';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -23846,7 +23846,8 @@ const tilesPalettes = () => TILES_PALETTES[themeName()];
 const tilesPalette = () =>
   EXPLORE_PALETTES.find(([name]) => name === tilesPalettes()[Number($('gridFinish').value) - GRID_LINES.length])?.[1] ??
   null;
-const tilesOn = () => !!tilesPalette() && shows('tiles', tabVariant());
+const tilesOn = () =>
+  !!tilesPalette() && shows('tiles', tabVariant()) && !(thumbnailWanted && !walk.plane && !walk.surface); // (a thumbnail of a walk or a creature on the infinite plane: its path alone, no ground, as no grid's lines)
 // Display › Grid's ground outside Explore (Blush, Mist…): Distance's rings in 2 colours on the spheres whose rings go round
 // them (rosettes, the globe, the icosahedron's: bands), the cube's pits and bumps (round each) and the 2D circles, but those
 // whose Tiles the user keeps (Hexa 3k, Flower 4k, Hats, Spectre, Pinwheel and its triangle); else Tiles; never Explore's own
@@ -37147,13 +37148,12 @@ function stageThumbnail(size) {
     [right, bottom] = size
       ? onScreen(bounds.maxX + room, bounds.maxY + room).map((v, i) => Math.min(v, [x + W, canvasHeight][i]))
       : [x + W, canvasHeight],
-    [w, h] = size ?? [Math.round((right - left) * dpr), Math.round((bottom - top) * dpr)],
-    k = Math.max(w / (right - left), h / (bottom - top)), // (cut to its size from its middle, as a picture covering its card)
-    into = [(w - (right - left) * k) / 2, (h - (bottom - top) * k) / 2, (right - left) * k, (bottom - top) * k],
+    k = size ? Math.min(size[0] / (right - left), size[1] / (bottom - top)) : dpr, // (a thumbnail: the figure whole, its longer side size's)
+    [w, h] = [Math.round((right - left) * k), Math.round((bottom - top) * k)],
     c = Object.assign(document.createElement('canvas'), { width: w, height: h }),
     g = c.getContext('2d');
   for (const id of ['gridLayer', 'fillLayer', 'gpuLayer', 'pathLayer', 'lineLayer', 'overlayLayer'])
-    g.drawImage($(id), left * dpr, top * dpr, (right - left) * dpr, (bottom - top) * dpr, ...into);
+    g.drawImage($(id), left * dpr, top * dpr, (right - left) * dpr, (bottom - top) * dpr, 0, 0, w, h);
   return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.85));
 }
 // The thumbnails as this session knows them, each key's picture URL: read from the store all at once (the Gallery's first

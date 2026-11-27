@@ -1080,7 +1080,7 @@ button.switch.active:hover:not(:disabled) {
 .gallery-grid .mode-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 .gallery-grid button > span:not(.mode-icon):not(.card-check):not(.card-star) {
@@ -1621,14 +1621,17 @@ button.active .bubble.active {
 } /* the whole stage, under the settings' column too */
 #stagePreview {
   position: absolute;
-  inset: 0 0 0 var(--view-left);
-  width: calc(100% - var(--view-left));
-  height: 100%;
-  object-fit: cover;
-  background: var(--page-background);
-} /* (an image is not stretched by its insets: its width and height the view's, from the same --view-left; the thumbnail as taken: the figure's frame, see stageThumbnail, on its card's background, the theme's: whole in the frame
-   painted before the setup is built, the figure before never seen through it; no fade: a fade does not play while the page
-   builds) */
+  inset: var(--view-top) var(--view-gap) var(--view-gap) calc(var(--view-left) + var(--view-gap));
+  width: calc(100% - var(--view-left) - 2 * var(--view-gap));
+  height: calc(100% - var(--view-top) - var(--view-gap));
+  object-fit: contain;
+} /* (a card's thumbnail over the view while its setup is built: the figure's own frame (see stageThumbnail), transparent
+   round it, laid whole in the frame a fit frames it in (the view's, its gap round it, see viewFor); an image is not stretched by
+   its insets: its width and height given; no fade: a fade does not play while the page builds) */
+.stage:has(> #stagePreview:not([hidden])) > canvas {
+  visibility: hidden;
+} /* (while it shows, the figure before hidden under it: the sky alone behind it, 2D and 3D alike; a 2D grid drawn with the
+     figure built, at its own zoom) */
 .stage > canvas:not(#hoverLayer):not(#gpuLayer) {
   transition: opacity var(--fade-seconds) linear;
 }

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.950';
+const VERSION = '0.5.951';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -929,13 +929,20 @@ const typedOf = (Type, source, f) => {
   return out;
 };
 const formatNumber = (v) => v.toLocaleString('en'); // (its thousands by commas: 39,193)
+// v with so many decimals, always (1.0, 2.5), its thousands by commas: one formatter a count of decimals, made once (one
+// made at each call cost a frame's third of a millisecond: the gauges' numbers, see formatNumberAsWide)
+const decimalFormats = [];
+const formatDecimals = (v, decimals) =>
+  (decimalFormats[decimals] ??= new Intl.NumberFormat('en', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })).format(v);
 // v written as wide as widest: the digits and commas it lacks in front, hidden zeros (every digit as wide, see body's
 // tabular-nums): a count that changes keeps its place (sign: written next to its digits, after them; decimals: so many
 // always)
 const formatNumberAsWide = (v, widest, sign = '', decimals = 0) => {
-  const f = (x) => x.toLocaleString('en', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
-    s = f(v),
-    w = f(Math.max(v, widest));
+  const s = formatDecimals(v, decimals),
+    w = formatDecimals(Math.max(v, widest), decimals);
   return `<span class="digits-pad">${w.slice(0, w.length - s.length).replace(/\d/g, '0')}</span>${sign}${s}`;
 };
 const DIRS = [
@@ -32158,13 +32165,15 @@ function foldPast(L) {
   L.peaks = null; // (its marks, again from its generations: see peaks)
 }
 // a generation's record (see lifeStep, lifeBack): its live cells, each colour's, its births and deaths so far; one before the
-// start (a reversible one's past) its own; one not played, by its loop once found (g and g ± P the same state: forth or back)
-function traced(L, g) {
+// start (a reversible one's past) its own; one not played, by its loop once found (g and g ± P the same state: forth or back);
+// field: that one alone, no record made (the activity's curve reads every generation's live cells at each frame)
+function traced(L, g, field = null) {
   const own = (h) => {
     const T = h < 0 ? L.past : L.trace,
       i = Math.abs(h);
-    return T.alive[i] === undefined
-      ? null
+    if (T.alive[i] === undefined) return null;
+    return field
+      ? T[field][i]
       : { alive: T.alive[i], by: T.by[i], born: T.born[i], order: T.order[i], ever: T.ever[i] };
   };
   return own(g) ?? (L.stable ? own(g < 0 ? g + L.stable.P : g - L.stable.P) : null);
@@ -36772,14 +36781,17 @@ const GALLERY_KEY = 'tessera.setups',
 // old version), its last saved only
 // (an entry whose words say no variant of the menu: not read)
 const readEntry = (x) => (x?.setup && setupVariant(x.setup) ? x : null);
-function readGallery() {
-  let list;
+// a value this browser keeps (localStorage), as JSON: none, or not read, `none`
+const readStored = (key, none) => {
   try {
-    list = (JSON.parse(localStorage.getItem(GALLERY_KEY)) || []).map(readEntry).filter(Boolean);
+    return JSON.parse(localStorage.getItem(key)) ?? none;
   } catch {
-    return [];
+    return none;
   }
-  const last = new Map();
+};
+function readGallery() {
+  const list = readStored(GALLERY_KEY, []).map(readEntry).filter(Boolean),
+    last = new Map();
   for (const x of list) {
     const key = thumbnailKey(x.setup),
       y = last.get(key);
@@ -37272,13 +37284,6 @@ const SERVER = 'https://tessera.tessera-server.workers.dev',
   SESSION_KEY = 'tessera.session',
   ACCOUNT_KEY = 'tessera.account', // (an account known in this browser: its Sign in asks for its passkey first)
   GONE_KEY = 'tessera.gone';
-const readStored = (key, none) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)) ?? none;
-  } catch {
-    return none;
-  }
-};
 const session = () => readStored(SESSION_KEY, null); // ({ token, name } while signed in)
 // the cards a Gallery write deleted, as tombstones; those it brings back, none
 function noteGone(before, after) {
@@ -42891,7 +42896,7 @@ function drawActivity() {
     series = [[columns(n, (i) => E[i] - (i ? E[i - 1] : -1)), rainbow()]];
   } else if (walk.life) {
     const L = walk.life;
-    series = [[columns(n, (i) => traced(L, first + i)?.alive ?? 0), accent]];
+    series = [[columns(n, (i) => traced(L, first + i, 'alive') ?? 0), accent]];
   } else {
     if (!walk.n || !walk.wx) return;
     const { wx } = walk;
@@ -43208,7 +43213,7 @@ function renderWalkGauges() {
 const endShown = (L) => (L.stable && (stepShown >= L.stable.T || stepShown < 0) ? L.stable : null); // (a reversible one's past: in its loop too)
 const loopMeans = (L) => endShown(L) && L.loopAvg;
 // a loop's mean, as written: ≈, to a tenth, its tenth always (≈ 3,120.0 beside ≈ 2,881.5)
-const meanText = (v) => `≈ ${v.toLocaleString('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+const meanText = (v) => `≈ ${formatDecimals(v, 1)}`;
 const colourGone = (L, k) =>
   loopMeans(L) ? L.loopMax[k] === 0 : L.extinctAt?.[k] !== null && L.extinctAt?.[k] !== undefined;
 // the ranking's column titles (a tip: what it counts), Life's and a battle's
@@ -45601,7 +45606,7 @@ $('variant').addEventListener('change', () => {
 // further from the view than from the window): as high as the pane's share in sight, at its place in the pane's scroll,
 // shown while the pointer is over the pane or it scrolls (see .scroll-thumb), dragged to scroll
 function scrollThumb(pane, thumb) {
-  thumb.pane = pane; // (a page's thumb on its page shown: each a pane of its own, see pageThumbs)
+  thumb.pane = pane; // (the pane it is on: the pages' thumb moved to each page's text as it comes, see .rule-tuto's observer)
   const place = () => {
     const inset = parseFloat(getComputedStyle(thumb).getPropertyValue('--thumb-inset')), // (its own margin in its pane, else its pane's paddings: the settings' cards')
       { paddingTop, paddingBottom } = getComputedStyle(pane),

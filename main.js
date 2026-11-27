@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.939';
+const VERSION = '0.5.940';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 
@@ -40818,9 +40818,9 @@ const gpuTargets = () => {
 };
 // LED's halo: the painted tiles' lamps (drawLamps, into a picture of half the frame's size, its own depths), blurred across
 // then down, its taps steps' pixels apart (its mode's, see LAMPS: 1 then 2, LED+'s 1 alone, Tube's 4 and 8 too), added on the canvas, or cast on it
-// (its steps in tiles, scale: a tile's size on screen over HALO_TILE, a line's width over GLOW_LEAST_WIDTH for a glow: as
-// wide round a tile, near or far)
-function gpuHalo(enc, drawLamps, { steps, cast }, scale) {
+// (its steps in the halo picture's pixels, as tuned, at any zoom: a blur never under one of its pixels, its light else kept
+// in clumps, tiles far away; scale: a glow's, its line's width over GLOW_LEAST_WIDTH, as wide round a line of any width)
+function gpuHalo(enc, drawLamps, { steps, cast }, scale = 1) {
   const D = GPU.draw,
     S = gpuTargets(),
     { device } = D;
@@ -41499,7 +41499,6 @@ function gpuSurface(paint, path) {
           { cut: cutOn() ? 1 : 0 },
         ),
       haloOf(SHINES[shineNow()][0]),
-      surfaceTileOnScreen() / HALO_TILE,
     );
   const under =
       drawsHere() && pointerPixel && !D.picking
@@ -41941,7 +41940,6 @@ function gpuLatticeWalk(to) {
       enc,
       (glow) => tiles(D.walkCells, D.walkCellsAt, D.cellTpl, cellCount, 1, walkFadeSteps(), glow, halo.share),
       halo,
-      (polygonsWidth(CELL_TEMPLATES[walk.lattice]) * view.scale) / HALO_TILE,
     );
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * Math.max(1, slot));
   device.queue.submit([enc.finish()]);
@@ -42253,12 +42251,7 @@ function gpuPlane(paint) {
   }
   rp.end();
   if (lamps && haloOf(SHINES[shineNow()][0]))
-    gpuHalo(
-      enc,
-      (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3),
-      haloOf(SHINES[shineNow()][0]),
-      (cellWidth(walk.plane.kind) * view.scale) / HALO_TILE,
-    );
+    gpuHalo(enc, (lampsPass) => drawPlaneLamps(D, lampsPass, 'planeLampsF', 3), haloOf(SHINES[shineNow()][0]));
   device.queue.writeBuffer(D.uni, 0, D.words, 0, 512 * 4);
   device.queue.submit([enc.finish()]);
 }
@@ -44450,9 +44443,6 @@ const lineGlow = { share: 0.3, reach: 2 };
 // (its line drawn into the halo's picture 4 pixels wide at least: 2 of that picture's half size, never between its pixels,
 // a fine line else lit at some and missed at others, a waffle)
 const GLOW_LEAST_WIDTH = 4;
-// a tile's size on screen (CSS pixels) whose halo's steps are its mode's as written (see LAMPS: 1 and 2 pixels of the halo's
-// picture); a halo is as many tiles wide at any size (see gpuHalo's scale)
-const HALO_TILE = 12;
 const HALO_PASSES = 32; // (the blur's passes a frame's halos take at most: 8 steps each way, all the halos drawn)
 // Glint (the debug panel's Light, a 3D view's): the light's glint from each tile's own colour (0: never past it) to white
 // added (1: a pale face facing it washed white, as before v0.5.236); its mode's default at each tab (see DISPLAY_DEFAULTS)

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.964">
+  <link rel="stylesheet" href="style.css?v=0.5.965">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -26,7 +26,7 @@
           <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button><span id="waitGauge" hidden><span class="wait-fill"></span><span class="wait-words"></span></span></span>  <!-- waitGauge: a long wait's, over the length (see showWaits) -->
           <button id="digitsUp" type="button" title="More steps">+</button>
         </div>
-        <button id="galleryAccount" data-toggle type="button"><span class="face-off" data-icon="smiley">Sign in</span><span class="face-on" data-icon="smiley">Sign out</span></button>  <!-- a switch: off Sign in (an account made if none), on Sign out (its faces, see .face-on); right of the length -->
+        <button id="account" data-toggle type="button"><span class="face-off" data-icon="smiley">Sign in</span><span class="face-on" data-icon="smiley">Sign out</span></button>  <!-- a switch: off Sign in (an account made if none), on Sign out (its faces, see .face-on); right of the length -->
       </div>
     </div>
   </header>
@@ -351,11 +351,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.964"></script>
-  <script src="punkgen.js?v=0.5.964"></script>
-  <script src="loops.js?v=0.5.964"></script>
-  <script src="emoji.js?v=0.5.964"></script>
-  <script src="debug.js?v=0.5.964"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.964"></script>
+  <script src="pixelarticons.js?v=0.5.965"></script>
+  <script src="punkgen.js?v=0.5.965"></script>
+  <script src="loops.js?v=0.5.965"></script>
+  <script src="emoji.js?v=0.5.965"></script>
+  <script src="debug.js?v=0.5.965"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.965"></script>
 </body>
 </html>

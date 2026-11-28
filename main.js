@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.964';
+const VERSION = '0.5.965';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -37417,7 +37417,7 @@ async function syncGallery() {
     merged = await serverCall('/sync', {
       cards: Object.fromEntries(list.map((x) => [thumbnailKey(x.setup), x])),
       gone: readStored(GONE_KEY, {}),
-    }).catch((e) => alertTip(e.message, $('galleryAccount')));
+    }).catch((e) => alertTip(e.message, $('account')));
   if (!merged?.cards) return;
   const known = new Set(list.map((x) => thumbnailKey(x.setup)));
   writeGallery(
@@ -37440,7 +37440,7 @@ async function signIn() {
     try {
       return signedIn(await way());
     } catch (e) {
-      if (e.name !== 'NotAllowedError') return alertTip(e.message, $('galleryAccount'));
+      if (e.name !== 'NotAllowedError') return alertTip(e.message, $('account'));
     }
   }
 }
@@ -37477,14 +37477,14 @@ function signedOut() {
 function syncAccountButtons() {
   const s = session(),
     none = window.PublicKeyCredential?.parseRequestOptionsFromJSON ? '' : 'Not here: passkeys need the app online.';
-  const account = $('galleryAccount');
+  const account = $('account');
   account.title = s
     ? `Signed in as ${s.name}: this Gallery and your account kept the same in every browser you sign in`
     : 'With a passkey: this Gallery kept online, the same in every browser you sign in (no passkey for Tessera yet: your account made)';
   setTile(account, { on: !!s, greyed: none });
   if ($('deleteAccount')) setTile($('deleteAccount'), { greyed: s ? '' : 'Signed out.' }); // (About's, when open)
 }
-$('galleryAccount').addEventListener('click', () => {
+$('account').addEventListener('click', () => {
   if (!session()) return signIn();
   serverCall('/logout').catch(() => {});
   signedOut();

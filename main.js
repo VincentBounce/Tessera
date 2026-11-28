@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.967';
+const VERSION = '0.5.968';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -19149,7 +19149,9 @@ const howCounted = (kind, f) => {
     const F = (2 * (n - 2)) / (f * f),
       sectors = F / facesCount(kind),
       faces =
-        sectors > 1 ? `${F / sectors} ${FACE_ADJECTIVES[sectors]} faces × ${sectors} sectors` : `${F} triangular faces`;
+        sectors > 1
+          ? `{r:${F / sectors} ${FACE_ADJECTIVES[sectors]} faces} × ${sectors} sectors`
+          : `{r:${F} triangular faces}`; // (red as drawn: its faces in steps, see redFaces)
     // (a sum on lines: its faces, a triangle f steps a side as big as f² / 2 hexagons; + 2: its corners, 5 faces round a
     // pentagon, not 6, each counted 5/6 by them, 12 × 1/6 (Euler's 2 on any of them); its cells, its corners' and its hexagons)
     return `${faces} × (Edge=${formatNumber(f)})² / 2 = ${formatNumber(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${formatNumber(n)} cells`; // (its hexagons and its corners' cells: in the title, see sizeCells)
@@ -28987,7 +28989,7 @@ function faceOf(g, t) {
 }
 const redFaces = (g) => {
   const solid = g?.uncut ?? g; // (a cut's: the solid it cuts, see HULL_CUTS)
-  return !!solid?.perFace;
+  return !!(solid?.perFace || (solid?.cornerCells && solid.cellFaces)); // (a solid of hexagons: its face as its cells make it, in steps)
 }; // (the solids whose faces are drawn red, as their tooltip says them)
 // a solid of squares and triangles, its squares blue among its triangles (none: a solid of squares alone, violet as a cube's)
 const squaresAmongTriangles = (g) => (g.uncut ?? g).triFaces?.length > 0;

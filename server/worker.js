@@ -21,11 +21,14 @@ import {
 } from '@simplewebauthn/server';
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
 
-// the pages allowed, each with its passkeys' domain (a passkey made on one works there only)
-const ORIGINS = {
-  'https://vincentbounce.github.io': 'vincentbounce.github.io',
-  'http://localhost:8321': 'localhost',
-};
+// the pages allowed, each with its passkeys' domain (a passkey made on one works there only): the site, and the app served on
+// any port of this computer (8321, an old version's 8322: one domain, localhost, its passkeys the same)
+const rpIdOf = (origin) =>
+  origin === 'https://vincentbounce.github.io'
+    ? 'vincentbounce.github.io'
+    : /^http:\/\/localhost:\d+$/.test(origin ?? '')
+      ? 'localhost'
+      : undefined;
 const SESSION_SECONDS = 30 * 24 * 3600,
   FLOW_SECONDS = 300;
 
@@ -34,7 +37,7 @@ const randomId = () => isoBase64URL.fromBuffer(crypto.getRandomValues(new Uint8A
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin'),
-      rpID = ORIGINS[origin];
+      rpID = rpIdOf(origin);
     const cors = rpID
       ? {
           'Access-Control-Allow-Origin': origin,

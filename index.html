@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.963">
+  <link rel="stylesheet" href="style.css?v=0.5.964">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -26,6 +26,7 @@
           <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button><span id="waitGauge" hidden><span class="wait-fill"></span><span class="wait-words"></span></span></span>  <!-- waitGauge: a long wait's, over the length (see showWaits) -->
           <button id="digitsUp" type="button" title="More steps">+</button>
         </div>
+        <button id="galleryAccount" data-toggle type="button"><span class="face-off" data-icon="smiley">Sign in</span><span class="face-on" data-icon="smiley">Sign out</span></button>  <!-- a switch: off Sign in (an account made if none), on Sign out (its faces, see .face-on); right of the length -->
       </div>
     </div>
   </header>
@@ -233,17 +234,15 @@
     <div id="galleryThumb" class="scroll-thumb middle-thumb" hidden></div>  <!-- the Gallery's, in the gap on its right (see scrollThumb) -->
     <div id="pageThumb" class="scroll-thumb middle-thumb" hidden></div>  <!-- a page's (About, How it works), the same place -->
     <div id="galleryPane" class="stage-box middle-box" hidden>  <!-- its tools in a band at its top, fixed; its setups scrolling under it (#galleryScroll) -->
-      <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Import and Export; Save: the ☆ of Gallery's tab -->
+      <div class="gallery-band">  <!-- the Gallery (kept in this browser only): its tools; its files Open JSON and Save JSON; Save: the ☆ of Gallery's tab -->
         <div class="gallery-tools-row">  <!-- one row of buttons as Share link's: with no card selected, the Gallery's; with some, those acting on them (data-when, see syncSelection) -->
-          <button id="openRle" data-icon="import" data-when="none" type="button" title="An RLE file (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Open RLE</button>
-          <button id="pasteRle" data-icon="copy" data-when="none" type="button" title="The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Paste RLE</button>
-          <button id="gallerySaveLink" class="important" data-icon="save" data-when="none" type="button" title="Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)">Save link</button>
-          <button id="gallerySelectAll" data-icon="boxTicked" data-when="some" type="button" title="Every card of every tab: to Export, Delete or Refresh them">Select all</button>
+          <button id="galleryImport" data-icon="open" data-when="none" type="button" title="Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them">Open JSON</button>
+          <button id="galleryExport" data-icon="save" type="button" title="The cards selected as a JSON file, else the whole Gallery">Save JSON</button>
+          <button id="gallerySelectAll" data-icon="boxTicked" data-when="some" type="button" title="Every card of every tab: to Save JSON, Delete or Refresh them">Select all</button>
           <button id="refreshThumbnails" class="important" data-icon="autoRotate" data-toggle type="button" title="Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done">Refresh</button>
           <button id="galleryDelete" data-icon="trash" data-when="some" type="button" title="The cards selected, with their thumbnails">Delete</button>
-          <button id="galleryImport" data-icon="import" data-when="none" type="button" title="Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them">Import</button>
-          <button id="galleryExport" data-icon="export" type="button" title="The cards selected as a JSON file, else the whole Gallery">Export</button>
-          <button id="galleryAccount" data-toggle data-when="none" type="button"><span class="face-off" data-icon="smiley">Sign in</span><span class="face-on" data-icon="smiley">Sign out</span></button>  <!-- a switch: off Sign in (an account made if none), on Sign out (its faces, see .face-on); at the band's right end -->
+          <button id="openRle" data-icon="import" data-when="none" type="button" title="An RLE file (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Import RLE</button>
+          <button id="pasteRle" data-icon="copy" data-when="none" type="button" title="The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Paste RLE</button>
           <button id="galleryUnselect" data-when="some" type="button" title="Let them all go (Escape)">✕ <span></span></button>  <!-- ✕ as a page's cross (see tutTools), its words how many are selected -->
         </div>
         <input id="galleryFile" type="file" accept="application/json,.json" hidden><input id="rleOpenFile" type="file" accept=".rle,.txt,text/plain" hidden>
@@ -352,11 +351,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.963"></script>
-  <script src="punkgen.js?v=0.5.963"></script>
-  <script src="loops.js?v=0.5.963"></script>
-  <script src="emoji.js?v=0.5.963"></script>
-  <script src="debug.js?v=0.5.963"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.963"></script>
+  <script src="pixelarticons.js?v=0.5.964"></script>
+  <script src="punkgen.js?v=0.5.964"></script>
+  <script src="loops.js?v=0.5.964"></script>
+  <script src="emoji.js?v=0.5.964"></script>
+  <script src="debug.js?v=0.5.964"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.964"></script>
 </body>
 </html>

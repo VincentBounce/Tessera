@@ -531,10 +531,9 @@ button {
   font: inherit;
   cursor: pointer;
 }
-/* an important button: its name in bold, in gold (Share link, Save link, Refresh) */
+/* an important button: its name in bold (Share link, Refresh) */
 button.important {
   font-weight: 600;
-  color: var(--accent-color);
 }
 :is(button, [role='button']):hover:not(:disabled),
 .rule-chip:hover {
@@ -1013,9 +1012,6 @@ button.switch:not(.active):hover:not(:disabled) {
 #galleryPane.selecting [data-when='none'] {
   display: none;
 } /* with no card selected, the Gallery's buttons; with some, those acting on them */
-#galleryAccount {
-  margin-left: auto;
-} /* (the account apart from the Gallery's tools: at the band's right end) */
 #galleryPane:not([hidden]) {
   display: flex;
   flex-direction: column;

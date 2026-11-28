@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.963';
+const VERSION = '0.5.964';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -8452,6 +8452,7 @@ const ICONS = (() => {
       svgPath('M15.5 8.5V5.5A2 2 0 0 0 13.5 3.5H5.5A2 2 0 0 0 3.5 5.5V13.5A2 2 0 0 0 5.5 15.5H8.5'),
     import: svgPath('M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
     export: svgPath('M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'),
+    open: svgPath('M3 19V6A1 1 0 0 1 4 5H9L11 7H18A1 1 0 0 1 19 8V11') + svgPath('M3 19L6 11H22L19 19Z'), // (a folder opening)
     save:
       svgPath('M5 3H16L21 8V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V5A2 2 0 0 1 5 3Z') +
       svgPath('M7.5 3V8H15V3M7 21V14H17V21'), // (a floppy: its shutter, its label)
@@ -27804,7 +27805,7 @@ const startWhyNot = (start, v) =>
           : TEXT_WHERE
       : '';
 const TEXT_WHERE = 'No picture can be laid here, as with Emoji (the grid too small, or a solid with no face for it).';
-// the Life grids an RLE file lays as rows of cells (Save RLE, Paste RLE, Open RLE): the plane's (its cells as its grid numbers
+// the Life grids an RLE file lays as rows of cells (Save RLE, Paste RLE, Import RLE): the plane's (its cells as its grid numbers
 // them, see lifeRle), a sheet's of squares straight, its rows the sheet's (a torus's, a Möbius strip's, a Klein bottle's, a
 // cell a place: see pictureCells; turned, its squares across its sheet's rows: no place of its own each)
 const RLE_WHERE =
@@ -37033,13 +37034,13 @@ const cardPicture = (row, url) => {
 // the cards shown, in their order: { setup, row } (Refresh takes them so, see refreshThumbnails)
 let galleryCards = [];
 // The cards selected, by their names: a card's check (seen on its hover) selects it; while one is, every check shows and a
-// click on a card selects it or lets it go, its setup not shown; Export, Delete and Refresh then act on them; the last let go,
+// click on a card selects it or lets it go, its setup not shown; Save JSON, Delete and Refresh then act on them; the last let go,
 // back to cards that open
 const selectedNames = new Set();
 let selectAnchor = ''; // (the card last clicked while selecting: a Shift click's range from it)
 const selecting = () => selectedNames.size > 0;
 function syncSelection() {
-  for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Import… no more selected)
+  for (const name of selectedNames) if (!galleryCards.some(({ x }) => x.name === name)) selectedNames.delete(name); // (cards shown only: one gone by its ★, Delete, Open JSON… no more selected)
   $('galleryPane').classList.toggle('selecting', selecting()); // (its band's buttons, see data-when; its cards' checks)
   for (const { x, row } of galleryCards) row.classList.toggle('selected', selectedNames.has(x.name));
   const n = selectedNames.size,
@@ -44590,8 +44591,7 @@ stage.addEventListener('pointerup', (e) => {
 // a click draws), or its own action, its list when it gives false (Escape: the Gallery's cards selected let go first)
 // (Space: Stop while it plays, else Play; F: the view fitted again; D: the debug panel opened or shut; ⌘Z, ⌘⇧Z, Ctrl elsewhere: Draw's Undo and Redo);
 // its name written after its control's in its tooltip (see shortcutOf); a key with ⌘ or Ctrl by its name Mod+…
-const onMac = /Mac|iPhone|iPad/.test(navigator.platform),
-  [MOD_KEY, SHIFT_KEY] = onMac ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
+const [MOD_KEY, SHIFT_KEY] = /Mac|iPhone|iPad/.test(navigator.platform) ? ['⌘', '⇧'] : ['Ctrl+', 'Shift+'];
 const KEYS = [
   [' ', 'Space', ['#play', '#stop'], () => playOrStop()],
   ['ArrowRight', '→', ['#step']],
@@ -45047,7 +45047,7 @@ function rleFile(when, notes, pop, rule, two, sheet = null) {
   ].join('\n');
 }
 // the rules in colours Golly knows by a name, each the app's rule it is (their tables: tools/golly/colours-rule.js, put in
-// Golly's rules folder); both ways, Save RLE's and Open RLE's
+// Golly's rules folder); both ways, Save RLE's and Import RLE's
 const GOLLY_NAMES = { Immigration: 'B3/S23/Immigration', QuadLife: 'B3/S23/Colours4' };
 // a rule in Golly's words (its Help: QuickLife, Generations): one in colours by its name (see GOLLY_NAMES); a Life-like one
 // as it is, B…/S…; a Generations one its way, survival/birth/states; on hexagons H after (Golly's leave out a cell's NE and
@@ -45088,18 +45088,6 @@ function copyFlash(b, text) {
 const pageLink = () => `${location.origin}${location.pathname}${setupHash()}`;
 function shareView(b) {
   copyFlash(b, pageLink());
-}
-// Save link: that link as a file its system opens in the browser, named as the setup: a Mac's .webloc, else a Windows .url
-function saveLink() {
-  const link = pageLink();
-  saveBlob(
-    new Blob([
-      onMac
-        ? `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>URL</key><string>${htmlText(link)}</string></dict></plist>\n`
-        : `[InternetShortcut]\r\nURL=${link}\r\n`,
-    ]),
-    `${setupTitle({ setup: getSetup() })}.${onMac ? 'webloc' : 'url'}`,
-  );
 }
 $('shareLink').addEventListener('click', (e) => shareView(e.currentTarget)); // (the header's, left of the length)
 // Draw it: the generation shown as the cells drawn, in Draw (there already: an edit, Undo's; else Draw opened with them, Undo
@@ -45184,7 +45172,7 @@ function plaintextRead(lines) {
       }
     : null;
 }
-// Paste RLE, Open RLE: an RLE file as Draw's cells, in its own setup (the app's file: its link's, its start the file's
+// Paste RLE, Import RLE: an RLE file as Draw's cells, in its own setup (the app's file: its link's, its start the file's
 // cells at gen 0), else in the nearest setup that plays it (see pathsTo): Life (not Explore) in Draw, on a grid
 // the file lays (its squares or hexagons, flat: see rleLaid), in its colours, its rule playable there; reached by the
 // menu's own clicks, each in turn; its rule then, its cells once built (see layCells)
@@ -46052,8 +46040,8 @@ function galleryTab() {
 }
 
 // The Gallery's tools, tiles (the cards selected, see selectedNames): Refresh (Erase Tessera's storage in this browser: Tessera's
-// page, Actions), Delete (the cards selected), Import (added to them, a name already used numbered), Export,
-// then Share link (the link to what is shown)
+// page, Actions), Delete (the cards selected), Open JSON (added to them, a name already used numbered), Save JSON,
+// then Import RLE and Paste RLE
 // Select: half or fewer selected, a click selects every card shown; more, it lets them all go (see syncSelection)
 const selectCards = (all) => {
   selectedNames.clear();
@@ -46069,7 +46057,6 @@ $('galleryImport').addEventListener('click', () => $('galleryFile').click());
 $('galleryExport').addEventListener('click', () => exportGallery());
 $('openRle').addEventListener('click', () => $('rleOpenFile').click());
 $('pasteRle').addEventListener('click', async () => openRle(await navigator.clipboard.readText(), $('pasteRle')));
-$('gallerySaveLink').addEventListener('click', saveLink);
 // Confirm erase: the app as at a first visit, all it keeps in this browser gone (its localStorage keys, its thumbnails' store), then
 // loaded again (the curated setups seeded, see seedCurated)
 async function resetApp() {

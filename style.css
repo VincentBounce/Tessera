@@ -2199,6 +2199,9 @@ fades out, slowly then fast */
 .tip-e {
   color: var(--edge-cells-color);
 } /* a size's words in the colours drawn (see sizeTips) */
+:is(.tip-y, .tip-r, .tip-s, .tip-k, .tip-o, .tip-e) {
+  white-space: nowrap;
+} /* (a term coloured never cut: the line breaks between terms) */
 
 @media (max-width: 720px) {
   :root {

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.968';
+const VERSION = '0.5.969';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -18252,7 +18252,7 @@ const SURFACES = {
     tiles: (n) => (66 * n * n) / 9,
     unit: 'squares',
     how: (n) =>
-      `(Edge=${formatNumber(n)}) / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a pit (its floor, 4 walls half a block deep): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}`,
+      `Edge ${formatNumber(n)} / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a pit (its floor, 4 walls half a block deep): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}`,
   },
   bumps: {
     mesh: (n) => cubePits(n, true),
@@ -18261,7 +18261,7 @@ const SURFACES = {
     tiles: (n) => (66 * n * n) / 9,
     unit: 'squares', // (its bumps a sixth out: 4/3 of its half side)
     how: (n) =>
-      `(Edge=${formatNumber(n)}) / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a bump (its top, 4 walls half a block high): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}`,
+      `Edge ${formatNumber(n)} / 3 = ${formatNumber(n / 3)}: each face 3 × 3 blocks of ${formatNumber(n / 3)}², its middle a bump (its top, 4 walls half a block high): 11 blocks a face, 6 × 11 × {y:${formatNumber(n / 3)}² squares}`,
   },
   frame: {
     mesh: (m) => mengerMesh(1, m),
@@ -18271,7 +18271,7 @@ const SURFACES = {
     edge: (m) => 3 * m, // a cube's frame: its branches m squares wide, its edge 3m
     startPeriod: 2, // (a face's middle a corner at an even width, a hole's side at an odd one: start 1 two kinds of point)
     how: (m) =>
-      `a cube's frame, (Edge=${formatNumber(3 * m)}) / 3 = ${formatNumber(m)} its branches' width: 72 × {y:${formatNumber(m)}² squares}`,
+      `a cube's frame, Edge ${formatNumber(3 * m)} / 3 = ${formatNumber(m)} its branches' width: 72 × {y:${formatNumber(m)}² squares}`,
   },
   menger: {
     mesh: (L) => mengerMesh(L),
@@ -18281,7 +18281,7 @@ const SURFACES = {
     unit: 'squares',
     edge: (L) => 3 ** L,
     how: (L) =>
-      `Menger's sponge, (Edge=${formatNumber(3 ** L)}) = 3^${L}, divided by 3 ${L} times (level ${L}): {y:2 × 20^${L} + 4 × 8^${L} squares}`,
+      `Menger's sponge, Edge ${formatNumber(3 ** L)} = 3^${L}, divided by 3 ${L} times (level ${L}): {y:2 × 20^${L} + 4 × 8^${L} squares}`,
   }, // Menger's sponge: its size, its steps L (side 3^L)  // the cube with pits (a sixth deep: n a multiple of 6)
   // flat polyhedra: radius = f / (edge of the solid) so that a small triangle's edge is 1 unit
   // a torus's size: its rows (see torusDims); perRow: tiles per column across a row; steps: what rows
@@ -18339,7 +18339,7 @@ const SURFACES = {
     tiles: (f) => 30 * f * f + 2,
     unit: 'cells',
     how: (f) =>
-      `20 triangular faces × (Edge=${formatNumber(f)})² triangles: a triangle each\n+ ${formatNumber(10 * f * f + 2)} hexagons and pentagons: one a corner (12 pentagons)`, // (its icosahedron's, see twistedSphereMesh: 20f² triangles, 10f² + 2 corners)
+      `20 triangular faces × Edge ${formatNumber(f)}² triangles: a triangle each\n+ ${formatNumber(10 * f * f + 2)} hexagons and pentagons: one a corner (12 pentagons)`, // (its icosahedron's, see twistedSphereMesh: 20f² triangles, 10f² + 2 corners)
     tiling: 'twisttri',
     chiral: true,
   }, // (tiling: a surface of a tiling's cells, its rules; chiral: no mirror maps it onto itself)
@@ -18447,7 +18447,7 @@ const SURFACES = {
     radius: (f) => (f * PHI) / 2, // edge 2/φ
     tiles: (f) => 60 * f * f,
     unit: 'triangles',
-    how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${formatNumber(f)})² triangles}`,
+    how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:Edge ${formatNumber(f)}² triangles}`,
   }, // (each pentagon 5 triangles round its middle)
   stellaKite: {
     mesh: (f) => flatPolyhedron('stella', f, true),
@@ -18480,7 +18480,7 @@ const SURFACES = {
     radius: (f) => (f * PHI) / 2,
     tiles: (f) => 180 * f * f,
     unit: 'kites',
-    how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:(Edge=${formatNumber(f)})² triangles} × {k:3 kites each}`,
+    how: (f) => `{r:12 pentagonal faces} × {s:5 sectors} × {y:Edge ${formatNumber(f)}² triangles} × {k:3 kites each}`,
   },
 };
 // the hull solids (see HULL_SOLIDS): their sizes their edges' cells, their radius an edge of f cells (its edge's length from
@@ -19020,16 +19020,12 @@ const facesCount = (kind) => {
 };
 // its cells as a rectangle as wide as the grid lies, for an idea of its resolution (grey, as the walk's description): the plane's a
 // square, a ring's or a strip's its sheet laid flat (a Möbius strip's loop, 2L × W; a ring's, its least mesh's proportions, its columns
-// and rows as many); a solid's, a face's as a square (its cells shared out among its faces: a carved cube's, its walls' too)
+// and rows as many); a solid's none (its formula tells a face already, see sizeHow)
 const sizeSides = (kind, f) => {
   const d = gridSize(kind, f),
     S = SURFACES[kind];
   if (S?.disc) return `{g:${formatNumber(f)} × ${formatNumber(f)} cells a disc, as the plane's}`; // (a rosette surface: its two discs, its faces)
-  if (!d) {
-    const F = facesCount(kind), // (none: a globe's, no face to share out)
-      a = F && formatNumber(Math.round(Math.sqrt(S.tiles(f) / F)));
-    return F ? `{g:≈ ${a} × ${a} ${S.unit} a face}` : '';
-  }
+  if (!d) return ''; // (a solid: its formula tells a face already)
   let r = 1;
   if (kind.startsWith('mobius')) {
     const { L, W } = mobiusCount(kind, f);
@@ -19058,8 +19054,8 @@ const sizeSides = (kind, f) => {
 // (its total out of it, in the tooltip's title, see sizeTips: = its count, a formula's; else its words, capitalised)
 const sizeHow = (kind, f) => {
   const how = howCounted(kind, f).replace(/ = [\d,]+ [a-z ]+$/, '');
-  return /^[\d{(]/.test(how) ? `= ${how.replace(/ ([×+]) /g, '\n$1 ')}` : how.replace(/^./, (c) => c.toUpperCase());
-}; // (a formula: each factor, each term on its line)
+  return /^([\d{(]|Edge )/.test(how) ? `= ${how.replace(/ \+ /g, '\n+ ')}` : how.replace(/^./, (c) => c.toUpperCase());
+}; // (a formula: each term on its line, its factors on it)
 // a sheet's motif, so many tiles: a tiling's torus, Möbius strip or Klein bottle, its lattice cell (g.latticeCells: each tile's, see
 // tilingStrip); Cairo's torus's, its sheet cell; the others', the plane's
 const latticeCellSize = (g) =>
@@ -19112,14 +19108,14 @@ const howCounted = (kind, f) => {
       L = d[2] / d[0] / m,
       whole = Number.isInteger(L),
       det = TORUS_SHEETS[kind]?.rows ?? 1; // (a torus's row, so many of its lattice's: see TORUS_SHEETS)
-    return `(Edge=${formatNumber(d[0])}) rows × {y:${whole ? '' : '≈ '}${formatNumber(Math.round(L * 10) / 10)} ${m > 1 ? 'lattice cells' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(cellKind(g))}` : ''} = ${formatNumber(d[2])} ${d[3]}`;
+    return `Edge ${formatNumber(d[0])} rows × {y:${whole ? '' : '≈ '}${formatNumber(Math.round(L * 10) / 10)} ${m > 1 ? 'lattice cells' : d[3]}} a row${whole ? '' : ' (its edges cut them)'}${det > 1 ? ` (${det} a rectangle of the sheet: its cell slanted, the sheet straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(cellKind(g))}` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   }
   // the plane's: its rows × its lattice cells (its motif, violet) × their cells (green), less its wall's
   // (a slanted grid's rectangle, det lattice cells of its tiling: each one its motif, see planeMotifCells)
   const m = PLANE_CELLS[kind] ? gridCells(baseOf(kind)) : 1,
     det = per / m;
   if (d)
-    return `(Edge=${formatNumber(d[0])}) rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
+    return `Edge ${formatNumber(d[0])} rows × {y:${formatNumber(d[1] * det)} ${m > 1 ? 'lattice cells' : d[3]}} a row${det > 1 ? ` (${det} a rectangle of the grid: its cell slanted, the grid straight)` : ''}${m > 1 ? ` × {k:${m} ${d[3]} each}${turnedCellNote(kind)}` : ''}${all > d[2] ? ` − ${formatNumber(all - d[2])} in the wall` : ''} = ${formatNumber(d[2])} ${d[3]}`;
   // a solid of flat faces: each face's cells, f to an edge (its faces as its least size's mesh has them, the same at every size)
   // (a cut's, by construction: the solid it cuts, its faces' cells cut into so many each, see HULL_CUTS; kites, 3 a triangle)
   const mesh = S && !TORI.includes(kind) && leastMesh(kind),
@@ -19138,7 +19134,7 @@ const howCounted = (kind, f) => {
       return `${Object.entries(by)
         .map(
           ([c, k]) =>
-            `${mark('r', `${k} ${adj(c)} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(squaresAmongTriangles(g) && c === '4' ? 's' : 'y', `(Edge=${formatNumber(f)})² ${cells[c]}`)}`,
+            `${mark('r', `${k} ${adj(c)} face${k > 1 ? 's' : ''}`)} × ${round[c] ? `${round[c]} × ` : ''}${mark(squaresAmongTriangles(g) && c === '4' ? 's' : 'y', `Edge ${formatNumber(f)}² ${cells[c]}`)}`,
         )
         .join(' + ')}${cut > 1 ? ` × ${mark('k', `${cut} ${unit} each`)}` : ''} = ${formatNumber(n)} ${unit}`;
     }
@@ -19154,12 +19150,12 @@ const howCounted = (kind, f) => {
           : `{r:${F} triangular faces}`; // (red as drawn: its faces in steps, see redFaces)
     // (a sum on lines: its faces, a triangle f steps a side as big as f² / 2 hexagons; + 2: its corners, 5 faces round a
     // pentagon, not 6, each counted 5/6 by them, 12 × 1/6 (Euler's 2 on any of them); its cells, its corners' and its hexagons)
-    return `${faces} × (Edge=${formatNumber(f)})² / 2 = ${formatNumber(n - 2)}\n+ 2 (its corners: fewer than 6 faces round each)\n= ${formatNumber(n)} cells`; // (its hexagons and its corners' cells: in the title, see sizeCells)
+    return `${faces} × Edge ${formatNumber(f)}² / 2 + 2 {g:(its corners: fewer than 6 faces round each)}`; // (its hexagons and its corners' cells: in the title, see sizeCells)
   }
   const k = S.tiles(0),
     c = (n - k) / (f * f);
   return Number.isInteger(c) && S.tiles(2 * f) === 4 * c * f * f + k
-    ? `${c} × (Edge=${formatNumber(f)})²${k ? ` + ${k}` : ''} = ${formatNumber(n)} ${unit}`
+    ? `${c} × Edge ${formatNumber(f)}²${k ? ` + ${k}` : ''} = ${formatNumber(n)} ${unit}`
     : `{y:${formatNumber(n)} ${unit}}`; // (its motif a tile alone, violet as drawn: see motifOf)
 };
 // a solid of hexagons' corners: its cells there, by their sides (12 pentagons; 8 triangles + 6 octagons), as its least mesh has them

@@ -136,15 +136,17 @@ space: a `<br>` alone at a paragraph's end makes no line).
 <p align="center"><br>* * *</p>
 
 ## Line balance
-`python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's lines
-of code only (no comment, no blank line, see `tools/uncomment.py`): before, and +y or −y, nothing else: the « solde » of each
-delivery, e.g. `python3 tools/lines.py HEAD~1 HEAD` after a commit.
+`python3 tools/lines.py [from] [to]` (from: HEAD; to: the files now, or a commit) gives each changed code file's code
+only (no comment, no blank line, see `tools/uncomment.py`) in **standard lines of 36 characters**: its characters (its
+lines' ends left out) over 36, Prettier's mean line of code in HTML5, JS and CSS (main.js's: 35.8): before, and +y or −y,
+nothing else: the « solde » of each delivery, e.g. `python3 tools/lines.py HEAD~1 HEAD` after a commit.
 The solde is how the user sees whether a change is a patch or a foundation fix (a fix that grows the code where it
-should shrink it): it counts lines at Prettier's standard (see Format), so code is never squeezed, inlined or chained to
-lower it. Cheating on it is lying about the change.
+should shrink it): counted in characters, no layout moves it, neither Prettier's near empty lines (`});`, a list of
+selectors one a line) nor code squeezed on long lines to dodge it (index.html, which Prettier leaves as written: a
+button and its tooltip on one line count as long as they are). Cheating on it is lying about the change.
 Written with the version it brings first: « Solde v0.2.180 : main.js 12,143 +7 » (the app's files only, not tools/*).
-No code line gained or lost: the count and +0 all the same (« main.js 12,531 +0 »), never a sentence instead; a file
-touched shows (+0 if its code lines are as many).
+No code gained or lost: the count and +0 all the same (« main.js 12,531 +0 »), never a sentence instead; a file
+touched shows (+0 if its code is as long, to 36 characters).
 
 <p align="center"><br>* * *</p>
 

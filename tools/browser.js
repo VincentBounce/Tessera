@@ -11,6 +11,9 @@
 //   node tools/browser.js shot <tab> <file>  that tab's picture, a PNG
 //   node tools/browser.js profile <tab> <url> <seconds> [file]  that tab to url, its CPU profile for so many seconds: the
 //                                            functions by their own time, the 30 longest (file: the profile, as Chrome's)
+//   node tools/browser.js coverage <tab> <url> <js> [file]  that tab to url, then js run (a check, the night's clickAll),
+//                                            V8's precise coverage on all along: main.js's functions never run, outermost
+//                                            only, by size (file: every one and its blocks never run, as JSON)
 //   node tools/browser.js stop               closed
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -42,8 +45,9 @@ const FLAGS = [
 
 const pages = async () => (await (await fetch(`${HTTP}/json/list`)).json()).filter((t) => t.type === 'page');
 
-// one call of the protocol on a tab (its WebSocket opened for it, closed after)
-async function call(tab, method, params = {}) {
+// a session of the protocol on a tab, kept open while its calls need it (a profile, a coverage: they last as long as it):
+// send(method, params) its answer, close() when done
+async function session(tab) {
   const t = (await pages()).find((p) => p.id.startsWith(tab));
   if (!t) throw new Error(`no tab ${tab}`);
   const ws = new WebSocket(t.webSocketDebuggerUrl);
@@ -51,18 +55,39 @@ async function call(tab, method, params = {}) {
     ws.onopen = ok;
     ws.onerror = fail;
   });
-  const answer = await new Promise((ok, fail) => {
-    const minutes = Number(process.env.BROWSER_TIMEOUT ?? 10); // (a search's eval may be long: BROWSER_TIMEOUT=60, an hour)
-    setTimeout(() => fail(new Error(`${method}: no answer in ${minutes} minutes`)), minutes * 60e3);
-    ws.onmessage = (e) => {
-      const m = JSON.parse(e.data);
-      if (m.id === 1) ok(m);
-    };
-    ws.send(JSON.stringify({ id: 1, method, params }));
+  let id = 0;
+  const waiting = new Map();
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    waiting.get(m.id)?.(m);
+  };
+  const minutes = Number(process.env.BROWSER_TIMEOUT ?? 10); // (a search's eval may be long: BROWSER_TIMEOUT=60, an hour)
+  const send = (method, params = {}) =>
+    new Promise((ok, fail) => {
+      setTimeout(() => fail(new Error(`${method}: no answer in ${minutes} minutes`)), minutes * 60e3);
+      waiting.set(++id, (m) => (m.error ? fail(new Error(m.error.message)) : ok(m.result)));
+      ws.send(JSON.stringify({ id, method, params }));
+    });
+  return { send, close: () => ws.close() };
+}
+// one call of the protocol on a tab (its session opened for it, closed after)
+async function call(tab, method, params = {}) {
+  const { send, close } = await session(tab);
+  try {
+    return await send(method, params);
+  } finally {
+    close();
+  }
+}
+// js run in a session: its value
+async function evaluate(send, js) {
+  const r = await send('Runtime.evaluate', {
+    expression: `(async () => (${js}))()`,
+    awaitPromise: true,
+    returnByValue: true,
   });
-  ws.close();
-  if (answer.error) throw new Error(answer.error.message);
-  return answer.result;
+  if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
+  return r.result.value;
 }
 
 const commands = {
@@ -86,13 +111,12 @@ const commands = {
   },
   tabs: async () => (await pages()).map((t) => `${t.id.slice(0, 8)} ${t.url}`).join('\n'),
   eval: async (tab, js) => {
-    const r = await call(tab, 'Runtime.evaluate', {
-      expression: `(async () => (${js}))()`,
-      awaitPromise: true,
-      returnByValue: true,
-    });
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
-    return JSON.stringify(r.result.value, null, 1);
+    const { send, close } = await session(tab);
+    try {
+      return JSON.stringify(await evaluate(send, js), null, 1);
+    } finally {
+      close();
+    }
   },
   go: async (tab, url) => {
     await call(tab, 'Page.navigate', { url });
@@ -110,32 +134,14 @@ const commands = {
     return file;
   },
   profile: async (tab, url, seconds = 10, file = '') => {
-    // (one connection for it all: a profile lasts while its session does)
-    const t = (await pages()).find((p) => p.id.startsWith(tab));
-    if (!t) throw new Error(`no tab ${tab}`);
-    const ws = new WebSocket(t.webSocketDebuggerUrl);
-    await new Promise((ok, fail) => {
-      ws.onopen = ok;
-      ws.onerror = fail;
-    });
-    let id = 0;
-    const waiting = new Map();
-    ws.onmessage = (e) => {
-      const m = JSON.parse(e.data);
-      if (waiting.has(m.id)) waiting.get(m.id)(m.result ?? m);
-    };
-    const send = (method, params = {}) =>
-      new Promise((ok) => {
-        waiting.set(++id, ok);
-        ws.send(JSON.stringify({ id, method, params }));
-      });
+    const { send, close } = await session(tab); // (one session for it all: a profile lasts while it does)
     await send('Profiler.enable');
     await send('Profiler.setSamplingInterval', { interval: 200 });
     await send('Profiler.start');
     await send('Page.navigate', { url });
     await new Promise((r) => setTimeout(r, Number(seconds) * 1000));
     const { profile } = await send('Profiler.stop');
-    ws.close();
+    close();
     if (file) fs.writeFileSync(file, JSON.stringify(profile));
     // (each sample's time to its function, its own: the sampled node's)
     const byId = new Map(profile.nodes.map((n) => [n.id, n])),
@@ -154,6 +160,51 @@ const commands = {
         .map(([k, ms]) => `${String(Math.round(ms)).padStart(6)} ms  ${k}`),
     ].join('\n');
   },
+  coverage: async (tab, url, js, file = '') => {
+    const { send, close } = await session(tab); // (one session for it all: a coverage lasts while it does)
+    await send('Profiler.enable');
+    await send('Runtime.enable');
+    await send('Profiler.startPreciseCoverage', { callCount: true, detailed: true }); // (before the page: its load counted too)
+    await send('Network.enable');
+    await send('Network.setCacheDisabled', { cacheDisabled: true }); // (its scripts as they are now, as go's reload)
+    await send('Page.navigate', { url });
+    await new Promise((r) => setTimeout(r, 8000)); // (opened, its first walk built)
+    const value = await evaluate(send, js);
+    const { result } = await send('Profiler.takePreciseCoverage');
+    close();
+    const script = result.find((s) => /\/main\.js(\?|$)/.test(s.url));
+    if (!script) throw new Error('main.js not covered');
+    const source = await (await fetch(script.url)).text(),
+      lineOf = (offset) => source.slice(0, offset).split('\n').length;
+    // each function's first range its whole body (its count: its calls); the others its blocks never run (count 0)
+    const never = script.functions
+        .filter((f) => f.ranges[0].count === 0 && f.functionName !== '')
+        .map((f) => ({ name: f.functionName, start: f.ranges[0].startOffset, end: f.ranges[0].endOffset }))
+        .sort((a, b) => a.start - b.start)
+        .filter((f, i, all) => !all.some((g) => g !== f && g.start <= f.start && f.end <= g.end)), // (outermost only: one inside it never ran either)
+      blocks = script.functions
+        .filter((f) => f.ranges[0].count > 0)
+        .flatMap((f) =>
+          f.ranges
+            .slice(1)
+            .filter((r) => r.count === 0)
+            .map((r) => ({ in: f.functionName, ...r })),
+        );
+    const at = (r) => ({
+      ...r,
+      line: lineOf(r.start ?? r.startOffset),
+      lines: lineOf(r.end ?? r.endOffset) - lineOf(r.start ?? r.startOffset) + 1,
+    });
+    if (file) fs.writeFileSync(file, JSON.stringify({ value, never: never.map(at), blocks: blocks.map(at) }, null, 1));
+    return [
+      `${never.length} functions never run, ${blocks.length} blocks never run in functions that ran (js: ${JSON.stringify(value)?.slice(0, 200)})`,
+      ...never
+        .map(at)
+        .sort((a, b) => b.lines - a.lines)
+        .slice(0, 60)
+        .map((f) => `${String(f.lines).padStart(5)} lines  main.js:${f.line} ${f.name}`),
+    ].join('\n');
+  },
   stop: async () => {
     await call('', 'Browser.close').catch(() => {});
     return 'stopped';
@@ -162,7 +213,7 @@ const commands = {
 
 const [name, ...args] = process.argv.slice(2);
 if (!commands[name]) {
-  console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(0, 12).join('\n'));
+  console.log(fs.readFileSync(__filename, 'utf8').match(/^(\/\/.*\n)+/)[0]); // (its usage: the comment it opens with)
   process.exit(1);
 }
 commands[name](...args).then(

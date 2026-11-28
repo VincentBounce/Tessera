@@ -539,8 +539,8 @@
             .join(' '),
         ]),
     );
-  // Links opened cold, each in a page of its own (an iframe): their walk built, its variant the link's, its battle or its symmetry
-  // as the link asks (v0.4.426: a strip's battle looped on its own size, opened cold; v0.4.423: a symmetry before any walk);
+  // Links opened cold, each in a page of its own (an iframe): their walk built, its variant the link's, its battle as the link
+  // asks (v0.4.426: a strip's battle looped on its own size, opened cold);
   // a walk, an ant and Life on the plane first, no surface (v0.5.732 to v0.5.749: a walk on the plane, the page's own at its
   // opening, built nothing, figureOf reading a surface it has none of, unseen by a check of surfaces' links only)
   const COLD_LINKS = [
@@ -582,7 +582,6 @@
       }),
       { teams: 2 },
     ],
-    [toHash({ ...variantWords('lifeHex'), playRule: 'B3/S23', popSymmetry: 'mirror' }), { symmetry: 'mirror' }],
   ];
   async function checkColdLinks(fail) {
     for (const [link, want] of COLD_LINKS) {
@@ -593,17 +592,15 @@
       document.body.append(f);
       await new Promise((go) => f.addEventListener('load', go, { once: true }));
       for (let t = 0; t < 60 && f.contentWindow.eval('walk.variant') !== w; t++) await wait(100); // (built: its walk the link's variant, 6 s at most)
-      let variant, teams, symmetry;
+      let variant, teams;
       try {
-        [variant, teams, symmetry] = f.contentWindow.eval('[walk.variant, battleOn() ? walkTeams : 1, plane.sym]');
+        [variant, teams] = f.contentWindow.eval('[walk.variant, battleOn() ? walkTeams : 1]');
       } catch (e) {
         variant = `${e.name}: ${e.message}`;
       } // (its page broken: said, not thrown)
       f.remove();
       if (variant !== w) fail(`#${link} opened cold: no walk built (${variant})`);
       else if (want.teams && teams !== want.teams) fail(`#${link} opened cold: ${teams} teams, not ${want.teams}`);
-      else if (want.symmetry && symmetry !== want.symmetry)
-        fail(`#${link} opened cold: symmetry ${symmetry}, not ${want.symmetry}`);
     }
     return COLD_LINKS.length;
   }
@@ -833,7 +830,7 @@
       [2, clickIn('#huntZones button')],
       [2, clickIn('#ruleCards button')],
       [1, clickIn('#lifeStartTabs button, #antStartTabs button')],
-      [1, clickIn('#cellModes button, #colourButtons button, #areaModes button, #symmetryTiles button')],
+      [1, clickIn('#cellModes button, #colourButtons button, #areaModes button')],
       [
         3,
         () => {
@@ -1537,59 +1534,15 @@
       fail(
         `1/28's blocks, a jump to 30 across its return (12): at ${stepShown}, not round its loop (6, as a Game of Life)`,
       );
-    // a start's symmetry (see symmetricStart): its shape the same on every copy; in colours, a start by parts each colour as many
-    // (v0.2.79, v0.2.82); a text in colours laid at all (v0.2.78)
-    for (const link of [
-      '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=48&gridWalls=1&popSymmetry=rotate&popStart=random&popDraw=30.5',
-      '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=144&gridWalls=1&popSymmetry=rotate&popStart=text&popText=Walking%0Api&popFont=hand',
-      '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=144&gridWalls=1&popStart=text&popText=Walking%0Api&popFont=mono',
-      '#mode=life&shape=squares&popNumber=pi&playRule=B3/S23&gridSize=48&gridWalls=1&popSymmetry=kaleido&popStart=digits',
-    ]) {
+    // a text in colours laid at all, each colour as many (v0.2.78, v0.2.82)
+    {
+      const link =
+        '#mode=life&shape=squares&playRule=B3/S23&teams=4&gridSize=144&gridWalls=1&popStart=text&popText=Walking%0Api&popFont=mono';
       await openLife(link);
-      const { kind, W } = walk.plane,
-        seed = walk.life.seed,
-        by = [...walk.life.seedByColour].slice(1);
-      let bad = 0;
-      for (let t = 0; t < seed.length; t++)
-        for (const c of cellCopies(kind, W, t)) if (seed[c] > 0 !== seed[t] > 0) bad++;
+      const by = [...walk.life.seedByColour].slice(1);
       checked++;
       if (!walk.life.seedAlive) fail(`${link}: nothing laid`);
-      else if (bad) fail(`${link}: its start not symmetric (${bad} cells unlike their copies)`);
       else if (by.length > 1 && new Set(by).size > 1) fail(`${link}: its colours unequal (${by.join(', ')})`);
-    }
-    // each symmetry a grid offers kept 60 gens on (a grid in a hexagon: about its own middle, v0.2.89): squares and the
-    // grids in a hexagon all four, Florets no mirror (its tiles have none), hexagons' blocks none (their blocks not onto blocks)
-    for (const [w, offers] of [
-      ['lifeSquares', 'half rotate mirror kaleido'],
-      ['rewindSquares', 'half rotate mirror kaleido'],
-      ['lifeHex', 'half rotate mirror kaleido'],
-      ['lifeTriangles', 'half rotate mirror kaleido'],
-      ['lifeDual56', 'half rotate mirror kaleido'],
-      ['lifeFlorets', 'half rotate'],
-      ['rewindHex', ''],
-    ]) {
-      await openLife(
-        `#${toHash({ ...variantWords(w), gridSize: 32, gridWalls: 1, popStart: 'random', popDraw: '30.1' })}`,
-      );
-      const { kind, W } = walk.plane,
-        has = symmetriesHere(kind, W)
-          .filter((y) => y !== 'none')
-          .join(' ');
-      checked++;
-      if (has !== offers) fail(`${w}: symmetries ${has || 'none'}, known ${offers || 'none'}`);
-      for (const y of has ? has.split(' ') : []) {
-        plane.sym = y;
-        lifeReseed();
-        await wait(600);
-        restart();
-        await goTo(60);
-        const a = walk.life.alive;
-        let bad = 0;
-        for (let t = 0; t < a.length; t++) for (const c of cellCopies(kind, W, t)) if (a[c] > 0 !== a[t] > 0) bad++;
-        checked++;
-        if (bad) fail(`${w} ${y}: at gen ${stepShown}, ${bad} cells unlike their copies`);
-      }
-      plane.sym = 'none';
     }
     // a hunt: of the 2^14 starts of 14 cells (radius 2's first), the 8 longest
     location.hash = '#mode=life&shape=squares&playRule=B3/S23&gridSize=48&popStart=random&popDraw=49.5';

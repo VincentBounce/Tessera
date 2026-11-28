@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.975">
+  <link rel="stylesheet" href="style.css?v=0.5.976">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -137,10 +137,6 @@
         <div id="huntZones" class="nav-shapes" hidden></div>  <!-- the hunt's zones (a reversible rule's: its random starts'), with the hunt -->
         <div id="seedField" class="notch-field" hidden title="Seed's patches: their radius round each colour's spot, a notch each">  <!-- Seed's radius: a notched slider, its patches' width at its right (see renderSeed) -->
           <span id="seedGauge" class="size-gauge"></span><span id="seedLabel" class="notch-words"></span>
-        </div>
-        <div id="symmetryRow" hidden>  <!-- Life on the plane: the start copied by a symmetry of the grid, under the zones (a zone's sub-mode) -->
-          <h4>Symmetry</h4>
-          <div id="symmetryTiles" class="nav-shapes"></div>
         </div>
       </section>
 
@@ -351,11 +347,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.975"></script>
-  <script src="punkgen.js?v=0.5.975"></script>
-  <script src="loops.js?v=0.5.975"></script>
-  <script src="emoji.js?v=0.5.975"></script>
-  <script src="debug.js?v=0.5.975"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.975"></script>
+  <script src="pixelarticons.js?v=0.5.976"></script>
+  <script src="punkgen.js?v=0.5.976"></script>
+  <script src="loops.js?v=0.5.976"></script>
+  <script src="emoji.js?v=0.5.976"></script>
+  <script src="debug.js?v=0.5.976"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.976"></script>
 </body>
 </html>

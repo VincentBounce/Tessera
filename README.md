@@ -209,7 +209,6 @@ A cellular automaton on the plane (squares, triangles, hexagons, Cairo pentagons
 
     Each random start is as dense as drawn between 10 and 70 %, each colour at least one cell alive; a zone with at most 20,000 possible starts has them all tried.
   - **Draw:** cells drawn by hand, or the rule's patterns.
-  - On the plane, a start can have a **symmetry** (mirrors, turns).
   - **Digits:** the number's digits, one per cell, in base C.
 - The start is kept in the link, so a found pattern can be shared.
 

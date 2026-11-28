@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.976';
+const VERSION = '0.5.977';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -27457,7 +27457,7 @@ function startLead(number, seeded) {
     draw: `${formatNumber(walk.life.seedAlive)} cells drawn`,
     digits: `${number} ${seeded}`,
     text: `“${plane.text}” drawn`,
-  }[plane.start].replace(/,?$/, sym ? `, ${sym},` : '$&');
+  }[plane.start];
   return `${how} on ${where}`;
 }
 function planeFromSetup(s) {

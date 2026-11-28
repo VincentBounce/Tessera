@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.966';
+const VERSION = '0.5.967';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -6240,7 +6240,7 @@ const LINK_DEFAULTS = {
   gridOutline: 'hex',
   popStacked: 0,
   popFont: 'sans',
-  exploreRule: () => EXPLORE_RULES[0][0],
+  exploreRule: (s) => groundLook(setupVariant(s)).rule, // (as Display's ground there: Distance on the shapes ringed round, else Tiles)
   explorePalette: () => linkWord(EXPLORE_PALETTES[0][0]),
   exploreColours: 0,
   playRule: (s) => (VARIANTS[setupVariant(s)]?.net ? firstWalkRule(VARIANTS[setupVariant(s)]) : undefined), // (a walk's: its first)
@@ -12037,7 +12037,7 @@ function compute() {
   syncDigitsStepper();
   for (const [id, used] of Object.entries(sectionsOf(tabVariant()))) $(id).hidden = !used;
   if (variant.explore && exploreRuleWhyNot(exploreLook.rule, tabVariant())) {
-    exploreLook.rule = EXPLORE_RULES[0][0]; // (a colouring greyed on the grid clicked: the default, as a link's, see setupFrom)
+    exploreLook.rule = linkDefault(getSetup(), 'exploreRule'); // (a colouring greyed on the grid clicked: the default, as a link's, see setupFrom)
     syncDefaults();
   }
   if (variant.explore) renderExplore();
@@ -23907,10 +23907,10 @@ const tilesPalette = () =>
 const tilesOn = () =>
   !!tilesPalette() && shows('tiles', tabVariant()) && !(thumbnailWanted && !walk.plane && !walk.surface); // (a thumbnail of a walk or a creature on the infinite plane: its path alone, no ground, as no grid's lines)
 // Display › Grid's ground outside Explore (Blush, Mist…): Distance's rings in 2 colours on the spheres whose rings go round
-// them (rosettes, the globe, the icosahedron's: bands), the cube's pits and bumps (round each) and the 2D circles, but those
+// them (rosettes, the globe, the icosahedron's and the dodecahedron's: bands), the cube's pits and bumps (round each) and the 2D circles, but those
 // whose Tiles the user keeps (Hexa 3k, Flower 4k, Hats, Spectre, Pinwheel and its triangle); else Tiles; never Explore's own
 // rule (its look: see exploreLevels)
-const DISTANCE_GROUNDS = ['rosettes', 'globe', 'icosahedron', 'cubePits', 'cubeBumps'],
+const DISTANCE_GROUNDS = ['rosettes', 'globe', 'icosahedron', 'dodecahedron', 'cubePits', 'cubeBumps'],
   TILES_CIRCLES = ['hats', 'spectre', 'pinwheel', 'pinwheelTriangle'];
 const groundLook = (w) => {
   const { shape } = variantWords(w),
@@ -24083,6 +24083,7 @@ function renderExplore() {
       compute();
     },
   );
+  const ruleByDefault = linkDefault(getSetup(), 'exploreRule'); // (the shape's: Distance on those ringed round, else Tiles)
   $('exploreRules').replaceChildren(
     ...EXPLORE_RULES.map(([key, name, detail]) =>
       card({
@@ -24090,6 +24091,7 @@ function renderExplore() {
         name,
         detail,
         on: exploreLook.rule === key,
+        byDefault: key === ruleByDefault ? 'yes' : '',
         whyNot: ({ w }) => exploreRuleWhyNot(key, w),
         click: pick('rule', key),
         choice: `exploreRule:${key}`,
@@ -45689,6 +45691,7 @@ function variantDisplay() {
 $('variant').addEventListener('change', () => {
   variantPicked = true;
   $('startNo').value = 1;
+  if (VARIANTS[tabVariant()].explore) exploreLook.rule = linkDefault(getSetup(), 'exploreRule'); // (a grid picked: the shape's colouring, as its link's default)
   compute();
 });
 // a pane's scroll thumb, drawn in the view's gap beside it (Chrome's own takes its width from the pane, its cards then

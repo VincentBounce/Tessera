@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.971';
+const VERSION = '0.5.972';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -12823,7 +12823,8 @@ document.addEventListener('mouseover', (e) => {
   $('hint').hidden = !!el || !(e.target.tagName === 'CANVAS' && e.target.parentElement.id === 'stage'); // (the view's own layers, not a box's canvas over it)
 });
 // the hint, as the tooltips (each action in bold, then its gesture): the zoom first, against the view framed (×1: all of
-// it in view, see viewFor; ×2 twice as near), with the mouse's; the double-click's on the next line (see .hint)
+// it in view, see viewFor; ×2 twice as near), with the mouse's; the double-click's on the next line (see .hint); Pan by the
+// right button in 2D as in 3D (a drag pans there too: told the 3D way, one gesture for both)
 function showZoom() {
   const z = view.scale / viewFor(bounds).scale,
     x = `×${z >= 9.95 ? Math.round(z) : z.toFixed(1).replace(/\.0$/, '')}`;
@@ -12843,7 +12844,7 @@ function showZoom() {
       : [
           [
             [`Zoom ${x}`, 'wheel'],
-            ['Pan', 'drag'],
+            ['Pan', 'right-drag'],
           ],
           [['Auto-fit', 'double-click']],
         ];

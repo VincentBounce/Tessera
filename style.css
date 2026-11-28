@@ -531,6 +531,11 @@ button {
   font: inherit;
   cursor: pointer;
 }
+/* an important button: its name in bold, in gold (Share link, Save link, Refresh) */
+button.important {
+  font-weight: 600;
+  color: var(--accent-color);
+}
 :is(button, [role='button']):hover:not(:disabled),
 .rule-chip:hover {
   background-image: linear-gradient(
@@ -552,13 +557,6 @@ input[type='text']:disabled {
   opacity: 0.45;
   cursor: default;
 } /* a control greyed, a button or a field of words (Symmetric's start number): no click, no edit cursor */
-button.primary {
-  width: 100%;
-  background-color: var(--accent-color);
-  color: var(--on-accent-color);
-  border-color: var(--accent-color);
-  font-weight: 600;
-}
 .row {
   display: flex;
   gap: var(--middle-gap);

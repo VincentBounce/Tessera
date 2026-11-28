@@ -70,7 +70,13 @@ used = live_js + uncommented_html(html_src) + others
 css = uncommented_css(css_src)
 selectors = ' '.join(re.findall(r'(?:^|})([^{}]*){', css))
 prefixes = set(re.findall(r'([\w-]+-)\$\{', live_js))  # (a class made in a template: tip-${…})
-said = lambda word: re.search(r'(?<![\w-])' + re.escape(word) + r'(?![\w-])', used)
+# (a class or an id is read only in a string: the code's quotes and templates' text, the page's attributes; a word of the
+# code alone, a function named as a class, reads none: .primary, dead since Walking Pi's first commit, hid behind the parser's
+# primary())
+texts = []
+uncommented(live_js + '\n' + others, texts)
+strings = ' '.join(texts) + ' '.join(re.findall(r'=\s*"([^"]*)"', uncommented_html(html_src)))
+said = lambda word: re.search(r'(?<![\w-])' + re.escape(word) + r'(?![\w-])', strings)
 dead_classes = sorted(c for c in set(re.findall(r'\.([A-Za-z][\w-]*)', selectors)) if not said(c) and not any(c.startswith(p) for p in prefixes))
 dead_ids = sorted(i for i in set(re.findall(r'#([A-Za-z][\w-]*)', selectors)) if not said(i))
 defined = set(re.findall(r'(--[\w-]+)\s*:', css))

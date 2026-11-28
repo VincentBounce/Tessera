@@ -5,15 +5,21 @@ import re
 tidy = lambda text: '\n'.join(l.rstrip() for l in text.split('\n') if l.strip())
 
 # a script without its comments (// and /* */), read as the browser reads it: not in a string, a template's text (a
-# shader's own // kept) or a regular expression (a / where a value may start, not a division); tidied
+# shader's own // kept) or a regular expression (a / where a value may start, not a division); tidied. texts, a list given:
+# each string's and template text's words added to it (what the code says, not its names: see deadcode.py)
 REGEX_BEFORE = set('(,=:[!&|?{};+-*%<>~^') | {'return', 'typeof', 'case', 'do', 'else', 'in', 'of', 'new', 'delete', 'void', 'throw', 'yield', 'await'}
-def uncommented(src):
+def uncommented(src, texts=None):
     out, i, n, braces = [], 0, len(src), []  # braces: in ${ }, its depth
     def word_before():  # the word or the sign before
         tail = ''.join(out[-40:]).rstrip()
         m = re.search(r'[\w$]+$', tail)
         return m.group(0) if m else tail[-1:]
     def template(i):  # its text to its end or to ${ (then code again, braces[-1] counting its own { })
+        start = len(out)
+        i, inner = template_text(i)
+        if texts is not None: texts.append(''.join(out[start:]))
+        return i, inner
+    def template_text(i):
         while i < n:
             c = src[i]
             if c == '\\': out.append(src[i:i + 2]); i += 2; continue
@@ -35,6 +41,7 @@ def uncommented(src):
             j = i + 1
             while src[j] != c: j += 2 if src[j] == '\\' else 1
             out.append(src[i:j + 1]); i = j + 1
+            if texts is not None: texts.append(out[-1])
             continue
         if c == '`':
             out.append(c)

@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.969">
+  <link rel="stylesheet" href="style.css?v=0.5.970">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -92,7 +92,7 @@
         <h2 data-icon="eye">Colours</h2>
         <h3>Colouring</h3>
         <div id="exploreRules" class="mode-list rule-cards" role="listbox"></div>  <!-- its rules, as cards (see card) -->
-        <div class="pill-row"><h3>Colours</h3><div id="exploreColoursGauge" class="size-gauge shape-slider" title="So many of its rule's colours, taken in turn: the last notch all of them"></div></div>  <!-- under its cards, for every rule (see renderExplore) -->
+        <div class="pill-row"><h3>Max</h3><div id="exploreColoursGauge" class="size-gauge shape-slider" title="So many of its rule's colours at most, taken in turn: the first notch one, the last all of them"></div></div>  <!-- under its cards, for every rule (see renderExplore) -->
         <div id="exploreIsolate"></div>  <!-- a colour alone, the others white (see renderExplore) -->
         <h3>Palette</h3>
         <div id="explorePalettes" class="nav-shapes"></div>
@@ -351,11 +351,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.969"></script>
-  <script src="punkgen.js?v=0.5.969"></script>
-  <script src="loops.js?v=0.5.969"></script>
-  <script src="emoji.js?v=0.5.969"></script>
-  <script src="debug.js?v=0.5.969"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.969"></script>
+  <script src="pixelarticons.js?v=0.5.970"></script>
+  <script src="punkgen.js?v=0.5.970"></script>
+  <script src="loops.js?v=0.5.970"></script>
+  <script src="emoji.js?v=0.5.970"></script>
+  <script src="debug.js?v=0.5.970"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.970"></script>
 </body>
 </html>

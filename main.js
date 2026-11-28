@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.969';
+const VERSION = '0.5.970';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -7583,6 +7583,10 @@ function bandPicture(background, band) {
     }
   return `<svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">${cells.join('')}</svg>`;
 }
+// a colour's dot (a pill's picture: Isolate's colours), as big as its box, its ring half a unit in (a box on a fractional pixel
+// cuts its edge's last row)
+const colourDot = (c) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="${c}" stroke="${c}" stroke-width="3"/></svg>`; // (its ring its own colour: greyed, the ring alone, see .pill-group)
 // a 2 × 2 swatch of four colours (a look's picture, Life's and a walk's)
 const swatch = (cs) =>
   `<svg viewBox="0 0 2 2" aria-hidden="true">${cs.map((c, i) => `<rect x="${i % 2}" y="${i >> 1}" width="1" height="1" fill="${c}"/>`).join('')}</svg>`;
@@ -11758,8 +11762,7 @@ function renderModePicker() {
           // (made when hovered: the one shown, its size's card; another, its solid's faces, its tiling and size not known yet)
           if (to === w && SURFACES[surface]?.tiles)
             b.tipMore = () => sizeCardHtml(...surfaceCard(surface, sizeOf(figureSize(to)), true));
-          if (to === w) b.tipColours = coloursUsed;
-          else if (surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
+          else if (to !== w && surface) b.tipMore = () => (facesCount(surface) ? `${facesCount(surface)} faces` : '');
           if (again) {
             setTile(b, { on: true, again });
             b.title += plane.torus ? '\nA torus · Clicked again: walls' : '\nWalls · Clicked again: a torus';
@@ -12779,11 +12782,9 @@ document.addEventListener('mouseover', (e) => {
       return div;
     }; // (note: beside its title, fainter)
   const allowed = greyedOf(greyed)?.paths && pathsWords(greyedOf(greyed).paths()); // (the greyed one under it only: the shortest paths that allow it, see pathsTo; never a box's other greyed control, Twist's under Size's)
-  const more = el?.tipMore?.(), // (a part of its own, made when shown: a shape's size, see tipMore)
-    colours = el?.tipColours?.(); // (Explore's Tiles' colours used, made when shown: see coloursUsed)
+  const more = el?.tipMore?.(); // (a part of its own, made when shown: a shape's size, see tipMore)
   const told = [
     ...(more ? [Object.assign(part(), { innerHTML: `<div>${more}</div>` })] : []), // (in a block of its own: as the size box's, its lines its own)
-    ...(colours ? [Object.assign(part(), { innerHTML: `<b>Colours used</b><span>${colours}</span>` })] : []),
     ...(greyed ? [section('Why greyed out?', greyed.dataset.greyed)] : []),
     ...(allowed ? [section('Allowed on', allowed, 'click to locate the buttons on screen')] : []), // (a click on it lights them, see setTile's enablers)
     ...(el?.dataset.formula ? [section('Formula', el.dataset.formula)] : []), // (a number card's, see renderNumberPicker)
@@ -18621,15 +18622,6 @@ for (const [name, kind, turned, unit] of [
 
 // a surface's size's card at f: its total, then how it is counted, its sides, a strip's edge's cells, the size last picked
 // (the size box's; a shape's at the size it opens at, not shown: what its counts say alone, see the shapes' tooltips)
-// Explore's Tiles, the grid shown: its colours used (each cell's its level, see exploreLevels), their count and a dot each
-// in its colour; else '': a tooltip's section of its own, made when hovered, the grid built (see tipOf: its shape's, its size's)
-const coloursUsed = () => {
-  if (!walk.life?.palette || exploreLook.rule !== 'tiles') return '';
-  const seen = new Uint8Array(walk.life.palette.length + 1); // (its levels 1 to its palette's: a mark each, no set of millions)
-  for (const l of walk.life.seed) seen[l] = 1;
-  const levels = [...seen.keys()].filter((l) => l > 0 && seen[l]);
-  return `${levels.length} ${levels.map((l) => `<span style="color:${walk.life.palette[l - 1]}">●</span>`).join('')}`;
-};
 const surfaceCard = (kind, f, shown = true) => [
   sizeCells(kind, f, true),
   [
@@ -18757,23 +18749,26 @@ function greyInput(input, row, whyNot) {
   input.paths = pathsKept(input, (setup) => !whyNot(setup));
 }
 // A choice among a few on a row (Cut, Area): its title (h3), then its choices as pills (see .pill-group), each a tile of
-// words only, its words its tooltip's, the default marked, the one picked raised; whyNot(setup): the whole row greyed, as a
-// tile's (see setTile)
+// words, or of a picture (its fourth: its name then its tooltip's only, see .pill-group svg), its words its tooltip's, the
+// default marked, the one picked raised; whyNot(setup): the whole row greyed, as a tile's (see setTile)
 function pillRow(el, title, about, choices, at, first, set, whyNot = null) {
   const mark = (k) =>
       pills.forEach((b, j) =>
         setTile(b, { on: j === k, byDefault: j === first ? 'yes' : '', whyNot: choices[j][2] ?? whyNot }),
       ), // (a choice's own whyNot, its third, else the row's)
-    pills = choices.map(([name, words], k) =>
-      tile({
-        text: name,
+    pills = choices.map(([name, words, , pic = ''], k) => {
+      const b = tile({
+        pic,
+        text: pic ? '' : name,
         title: [about, words].filter(Boolean).join('\n'),
         click: () => {
           set(k);
           mark(k);
         },
-      }),
-    );
+      });
+      if (pic) b.setAttribute('aria-label', name); // (its name, its tooltip's, see controlName)
+      return b;
+    });
   mark(at);
   const group = Object.assign(document.createElement('div'), { className: 'pill-group' });
   group.append(...pills);
@@ -24046,20 +24041,20 @@ function renderExplore() {
     if (key === 'rule') syncDefaults(); // (its grid: see DISPLAY_DEFAULTS)
     compute();
   };
-  // (its colours under its cards, a notched slider always there: 2 to its rule's most on the grid shown, its last all of them
-  // (0), fewer taken in turn, see exploreLevels; Hemispheres' 2 by its rule, greyed)
+  // (its colours under its cards, Max: a notched slider always there, 1 to its rule's most on the grid shown, its last all of
+  // them (0), fewer taken in turn, see exploreLevels; Hemispheres' 2 by its rule, greyed)
   const most = walk.life?.most ?? explorePalette().length, // (the grid shown's, once built: see buildLife; before, its palette's)
     asked = exploreLook.colours ? Math.min(exploreLook.colours, most) : most;
   sizeGauge(
     $('exploreColoursGauge'),
-    most - 1,
-    asked - 2,
+    most,
+    asked - 1,
     () => {},
     (k) => {
-      exploreLook.colours = k + 2 < most ? k + 2 : 0;
+      exploreLook.colours = k + 1 < most ? k + 1 : 0;
       compute();
     },
-    most - 2,
+    most - 1,
     true,
   );
   greyInput($('exploreColoursGauge').firstChild, $('exploreColoursGauge').closest('.pill-row'), ({ exploreRule }) =>
@@ -24072,7 +24067,12 @@ function renderExplore() {
     'A colour alone, the others white',
     [
       ['All', 'Every colour'],
-      ...[...'abcde'].map((name, k) => [name, `Its colour ${k + 1}`, () => (k < asked ? '' : 'Not used here.')]),
+      ...[...'abcde'].map((name, k) => [
+        name,
+        `Its colour ${k + 1}`,
+        () => (k < asked ? '' : 'Not used here.'),
+        colourDot(explorePalette()[k]),
+      ]),
     ],
     exploreLook.isolated,
     0,
@@ -27437,7 +27437,7 @@ function buildLifePlane(seq) {
 // drawn before its grid till v0.5.883: their counts the grid's before)
 function renderBuilt() {
   renderTeams(); // the blocks a figure fits, and its size's words (its colours fitted)
-  if (VARIANTS[walk.variant].explore) renderExplore(); // (its Colours' notches and Isolate's colours: its rule's colours on this grid)
+  if (VARIANTS[walk.variant].explore) renderExplore(); // (its Max notches and Isolate's colours: its rule's colours on this grid)
   renderPlaneRow(); // (its starts: Text where a picture can be laid)
   renderRuleSection(); // (what it shows of the grid: its page's blocks, their max period here; a share rule's counts)
   showStacks();
@@ -45366,7 +45366,6 @@ $('startRow').addEventListener('mouseleave', () => {
   faced = false; // Centered: the camera turns to the walk (see followWalker)
   if ($('autoFit').checked) fitWhole();
 });
-for (const el of [$('sizeBox'), $('planeBox')]) el.tipColours = coloursUsed; // (Explore's Tiles' colours used, under its size: see coloursUsed)
 for (const el of [$('sizeDown'), $('sizeUp'), $('planeDown'), $('planeUp')])
   el.onmouseenter = el.onmouseleave = (e) => {
     motifShown = e.type === 'mouseenter';

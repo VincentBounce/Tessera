@@ -463,6 +463,18 @@ input[type='range'] {
   color: var(--accent-color);
   box-shadow: 0 0 0 1px var(--accent-color);
 } /* (picked as a tile is, see .nav-shapes button.active) */
+.pill-group button > svg {
+  display: block;
+  width: 1lh;
+  height: 1lh;
+  margin: auto;
+} /* a pill's picture in place of its words (Isolate's colours), as high as a word (see pillRow) */
+.pill-group button > svg + span:empty {
+  display: none;
+}
+.pill-group button:disabled > svg {
+  fill-opacity: 0;
+} /* greyed: its ring alone (a colour paled reads as another colour) */
 /* checkboxes as switches (iOS style): a pill whose knob slides to the right, yellow when on */
 input[type='checkbox'] {
   appearance: none;

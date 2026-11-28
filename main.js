@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.973';
+const VERSION = '0.5.974';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -16685,19 +16685,16 @@ function mobiusSheetOf(kind0, size, count = false, along = null) {
 // whose middle is within nv rows of b (a mirror along a: the strip's edges alike) and L along (see MOBIUS_ALONG), as
 // many corners each (the last one repeated); the usual length, the counts' nearest that the twist allows
 function tilingStrip(kind, kind0, size, across = false) {
-  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la, whole } = stripFrame(kind, kind0, size, across),
+  const { m, nv, L, W, sides, cells, i0, i1, j0, j1, la } = stripFrame(kind, kind0, size, across),
     by = W / nv,
     cols = Math.ceil((2 * L) / la - 1e-9),
     laid = [];
   for (let j = j0; j <= j1; j++)
-    for (let i = i0; i <= i1; i++) {
-      const polys = Array.from({ length: m }, (_, k) => cells(i, j, k)),
-        mids = polys.map((P) => meanPoint(P)),
-        middle = meanPoint(mids); // (its lattice cell's: a torus's sheet keeps its cells whole, see stripFrame's whole)
+    for (let i = i0; i <= i1; i++)
       for (let k = 0; k < m; k++) {
-        const P = polys[k],
-          [x, y] = mids[k];
-        if (!inSheet(whole ? middle : mids[k], L, W, across)) continue;
+        const P = cells(i, j, k),
+          [x, y] = [0, 1].map((d) => P.reduce((s2, p) => s2 + p[d], 0) / P.length);
+        if (x < -1e-9 || x >= L - 1e-9 || y < -1e-9 || y > W + 1e-9) continue;
         laid.push({
           P,
           x,
@@ -16706,7 +16703,6 @@ function tilingStrip(kind, kind0, size, across = false) {
           latticeCell: (j - j0) * (i1 - i0 + 1) + (i - i0),
         }); // (cell: the plane's, its x and y; latticeCell: the plane's lattice cell it was laid from, its motif)
       }
-    }
   // lattice cell by lattice cell from its corner: a row of b (its sides mirrors, as y = 0), |a| along it, m tiles each; a mirror through
   // tiles, those on its far edge after; a glide's twist, half a lattice cell at its end
   laid.sort((p, q) => p.latticeCell - q.latticeCell);
@@ -16769,31 +16765,8 @@ function stripFrame(kind, kind0, size, across = false) {
       const y = (u + i) * ta[1] + (v + j) * tb[1] - mirrorY; // (its mirror on y = 0)
       return snap([(u + i) * ta[0] + (v + j) * tb[0] - y * shear, y]);
     });
-  const whole = across && !!TORUS_SHEETS[kind0]; // (a torus glued straight both ways: its sheet whole lattice cells, its seams between them; a strip's or a bottle's ends turned over, its cells as tiles)
-  return {
-    t,
-    m,
-    nv,
-    L,
-    W,
-    sides,
-    cells,
-    i0,
-    i1,
-    j0,
-    j1,
-    ta,
-    tb,
-    mirrorY,
-    la: Math.hypot(...a),
-    bx: bx - by * shear,
-    whole,
-  };
+  return { t, m, nv, L, W, sides, cells, i0, i1, j0, j1, ta, tb, mirrorY, la: Math.hypot(...a), bx: bx - by * shear };
 }
-// a point of a sheet L × W, its tile's middle or its lattice cell's: on it, its far end left out (glued to its first); across
-// (a bottle's or a torus's), its top too, else to it (a strip's edge a mirror through tiles)
-const inSheet = ([x, y], L, W, across) =>
-  x >= -1e-9 && x < L - 1e-9 && y >= -1e-9 && (across ? y < W - 1e-9 : y <= W + 1e-9);
 // its tiles' count, as tilingStrip keeps them, without building it: each of a lattice cell's polygons' middle, moved by
 // the lattice's steps (no corner built; on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as near)
 // (across: a bottle's or a torus's, below its top, see foldSheet)
@@ -16810,13 +16783,12 @@ function stripCount(kind, kind0, size, across = false) {
 // |a| apart: a row counted at once from its first (on the fine grid a middle on an edge lands on it: here 10⁻⁵ of it, as
 // near); across: below its top (a bottle's or a torus's), else to it
 function stripCounted(kind, kind0, size, across) {
-  const { m, nv, L, W, cells, la, bx, whole } = stripFrame(kind, kind0, size, across),
+  const { m, nv, L, W, cells, la, bx } = stripFrame(kind, kind0, size, across),
     e = 1e-5,
-    by = W / nv,
-    middle = whole && meanPoint(Array.from({ length: m }, (_, k) => meanPoint(cells(0, 0, k)))); // (a torus's: its cells whole, as tilingStrip lays them)
+    by = W / nv;
   let count = 0;
   for (let k = 0; k < m; k++) {
-    const [mx, my] = middle || meanPoint(cells(0, 0, k));
+    const [mx, my] = meanPoint(cells(0, 0, k));
     for (let j = Math.ceil((-e - my) / by); across ? my + j * by < W - e : my + j * by <= W + e; j++)
       count += Math.ceil((L - e - (mx + j * bx - la * Math.floor((mx + j * bx + e) / la))) / la);
   }
@@ -16838,7 +16810,7 @@ const sheetMemo = remember('sheetMemo', weakCache());
 function foldSheet(kind, strip, nv, n) {
   return (sheetMemo[`${strip}|${nv}x${n}`] ??= (() => {
     const s = tilingStrip(kind, strip, `${nv}x${n}`, true),
-      keep = s.tiles.map((_, i) => i); // (its top left out already, see inSheet)
+      keep = s.tiles.map((_, i) => i).filter((i) => s.mids[2 * i + 1] < s.W - 1e-9);
     return {
       L: s.L,
       W: s.W,

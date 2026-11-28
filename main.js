@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.974';
+const VERSION = '0.5.975';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -24299,24 +24299,16 @@ const DRAW_STEPS = [
 ]; // (each: its tile, its icon, its name and words, the stack it takes from and the one it keeps the cells on, why greyed)
 // Draw's patterns, each for the rules it was found with (a rule of your own: all its grid's): [id, grid,
 // rules, name, RLE (the plane's rows: two triangles or pentagons a square, its first square an even one
-// on Cairo; o or A alive, B C… dying), what it does, its picture (5 × 5 pixels; else its cells)]; a disc's (the grids that
+// on Cairo; o or A alive, B C… dying), what it does (its picture its cells, see cellsIcon)]; a disc's (the grids that
 // never repeat, see CENTRED), its cells [cell, state] by their numbers on the disc (12A40A41B, see discPatternCells)
-// instead of an RLE, then null,
+// instead of an RLE,
 // then whether it lies 6 from the middle (for colours: a copy a colour) or at it
 // (a methuselah's end counted as Life counts it, its ships flying off taken away: they are named after it, as they
 // come round a torus and meet the rest, the end later there)
-const BRUSH_CELL = [
-  'cell',
-  '',
-  [],
-  'Paint (Shift+drag)',
-  'o!',
-  'one cell, again to change its state',
-  '.....,.....,..o..',
-];
+const BRUSH_CELL = ['cell', '', [], 'Paint (Shift+drag)', 'o!', 'one cell, again to change its state'];
 // Paste a pattern: the pattern copied (an RLE or a plaintext file, Golly's, LifeWiki's: see rleRead) as a brush, read at each click
 // (see pasteBrush), its grid then its file's (squares, or hexagons for an RLE in H), any rule; none read yet, its card alone
-const BRUSH_PASTED = ['pasted', '', [], 'Paste a pattern', 'o!', 'an RLE or .cells copied, as the brush', null];
+const BRUSH_PASTED = ['pasted', '', [], 'Paste a pattern', 'o!', 'an RLE or .cells copied, as the brush'];
 const DRAW_PATTERNS = [
   [
     'glider',
@@ -24325,27 +24317,10 @@ const DRAW_PATTERNS = [
     'Glider',
     'bo$2bo$3o!',
     'flies off diagonally',
-    '.....,..o..,...o.,.ooo.',
   ],
-  [
-    'rpentomino',
-    'square',
-    ['B3/S23'],
-    'R-pentomino',
-    'b2o$2o$bo!',
-    'settles at gen 1,103, 6 gliders flying off',
-    '.....,..oo.,.oo..,..o..',
-  ],
-  [
-    'acorn',
-    'square',
-    ['B3/S23'],
-    'Acorn',
-    'bo$3bo$2o2b3o!',
-    'settles at gen 5,206, 13 gliders flying off',
-    '.....,.o...,...o.,oo.oo',
-  ],
-  ['diehard', 'square', ['B3/S23'], 'Diehard', '6bo$2o$bo3b3o!', 'dies out at gen 130', '.....,....o,oo...,.o.oo'],
+  ['rpentomino', 'square', ['B3/S23'], 'R-pentomino', 'b2o$2o$bo!', 'settles at gen 1,103, 6 gliders flying off'],
+  ['acorn', 'square', ['B3/S23'], 'Acorn', 'bo$3bo$2o2b3o!', 'settles at gen 5,206, 13 gliders flying off'],
+  ['diehard', 'square', ['B3/S23'], 'Diehard', '6bo$2o$bo3b3o!', 'dies out at gen 130'],
   [
     'pulsar',
     'square',
@@ -24353,7 +24328,6 @@ const DRAW_PATTERNS = [
     'Pulsar',
     '2b3o3b3o$$o4bobo4bo$o4bobo4bo$o4bobo4bo$2b3o3b3o$$2b3o3b3o$o4bobo4bo$o4bobo4bo$o4bobo4bo$$2b3o3b3o!',
     'beats with period 3',
-    'oo.oo,o...o,.....,o...o,oo.oo',
   ],
   [
     'gosper',
@@ -24362,26 +24336,9 @@ const DRAW_PATTERNS = [
     'Gosper gun',
     '24bo$22bobo$12b2o6b2o12b2o$11bo3bo4b2o12b2o$2o8bo5bo3b2o$2o8bo3bob2o4bobo$10bo5bo7bo$11bo3bo$12b2o!',
     'a glider every 30 gens',
-    'oo.oo,oo.oo,...+.,....+,..+++',
   ],
-  [
-    'tship',
-    'square',
-    ['B3/S2-i34q', 'B2i34c/S2-i3'],
-    'T-ship',
-    '3o$bo!',
-    "flies, period 5 · 4 cells (tlife's name)",
-    '.....,.ooo.,..o..,.....,.....',
-  ],
-  [
-    'justfriends-ship',
-    'square',
-    ['B2-a/S12'],
-    'Ship',
-    'o$o$bo!',
-    'flies diagonally, period 6 · 3 cells',
-    '.....,.o...,.o...,..o..,.....',
-  ],
+  ['tship', 'square', ['B3/S2-i34q', 'B2i34c/S2-i3'], 'T-ship', '3o$bo!', "flies, period 5 · 4 cells (tlife's name)"],
+  ['justfriends-ship', 'square', ['B2-a/S12'], 'Ship', 'o$o$bo!', 'flies diagonally, period 6 · 3 cells'],
   // found by a search of each rule's small starts (PATTERNS.md); their pictures are their cells
   ['daynight-osc', 'square', ['B3678/S34678'], 'Oscillator', '.A$.A$2A$A!', 'period 16 · 5 cells'],
   [
@@ -24395,7 +24352,6 @@ const DRAW_PATTERNS = [
   ['loops-osc', 'hex', ['B34/S123/C3'], 'Oscillator', '2.A$.A$2A$A$A!', 'period 8 · 6 cells'],
   ['hexclassic-osc', 'hex', ['B2/S34'], 'Oscillator', '3.A$$2.A$.2A$$2A!', 'period 48 · 6 cells'],
   ['hexclassic-meth', 'hex', ['B2/S34'], 'Methuselah', '4.A$4.A$3.A$4A$3A!', 'settles at gen 254 · 10 cells'],
-  ['highlife-ship0', 'square', ['B36/S23'], 'Glider', 'A$A.A$2A!', 'flies, period 4 · 5 cells'],
   ['highlife-osc', 'square', ['B36/S23'], 'Oscillator', '5.A2.A$2A2.A3.A$2A2.2A.2A!', 'period 10 · 12 cells'],
   ['highlife-meth', 'square', ['B36/S23'], 'Seed', 'A.2A$3.2A$2A$3.2A$3A!', 'keeps spreading · 12 cells'],
   [
@@ -24405,7 +24361,6 @@ const DRAW_PATTERNS = [
     'Replicator',
     '2b3o$bo2bo$o3bo$o2bo$3o!',
     'copies of itself every 12 gens, along a diagonal · 12 cells',
-    '..ooo,.o..o,o...o,o..o.,ooo..',
   ],
   ['hexlife-osc', 'hex', ['B24/S35'], 'Oscillator', '3.A$2.A$.A$A!', 'period 6 · 4 cells'],
   ['hbrink-ship0', 'hex', ['B24/S134/C4'], 'Glider', '3.AC$.AB.B$ACACAC$AB.B$.AC!', 'flies, period 2 · 16 cells'],
@@ -24475,7 +24430,6 @@ const DRAW_PATTERNS = [
     'keeps spreading · 13 cells',
   ],
   ['few-ship0', 'hex', ['B2/S24/C3'], 'Glider', '3.BA$4.B$4.A$2.AB$.A$2A$A!', 'flies, period 6 · 10 cells'],
-  ['few-ship1', 'hex', ['B2/S24/C3'], 'Spaceship', '.ABA$B2.B$2.A$2.2A$2.2A!', 'flies, period 6 · 10 cells'],
   ['few-osc', 'hex', ['B2/S24/C3'], 'Oscillator', '.ABA$.B.BA$A2.A$B2A$A.B$BA!', 'period 9 · 15 cells'],
   ['few-meth', 'hex', ['B2/S24/C3'], 'Seed', '4.A$4.A$2A2.A$4A!', 'keeps spreading · 9 cells'],
   ['tsparse-osc', 'tri', ['B45/S345/C4'], 'Oscillator', '5.3A$2.C3.A$.A3.C$3A!', 'period 4 · 10 cells'],
@@ -35988,7 +35942,6 @@ for (const [table, off] of [
         name,
         discPatternCells(cells),
         what,
-        null,
         off,
       ]),
     );
@@ -36077,7 +36030,7 @@ function centredChoices(kind, K, rule, mine, any, centred = true) {
     );
   if (K > 1 && n % K) return out;
   const figs = DRAW_PATTERNS.filter(
-    (p) => p[1] === kind && discPattern(p) && (!centred || p[7] === K > 1) && (mine || p[2].includes(rule)),
+    (p) => p[1] === kind && discPattern(p) && (!centred || p[6] === K > 1) && (mine || p[2].includes(rule)),
   );
   const D = discCells(kind),
     laid = (cells, a, i) => D.laid(cells, a)?.flatMap(([t, v]) => [t, engineState(i + 1, v - 1)]); // (in colour i's states)
@@ -44396,9 +44349,9 @@ stage.addEventListener('pointerleave', () => {
   }
 });
 $('brushCards').replaceChildren(
-  ...[BRUSH_CELL, ...DRAW_PATTERNS, BRUSH_PASTED].map(([id, kind, , name, rle, what, art]) => {
+  ...[BRUSH_CELL, ...DRAW_PATTERNS, BRUSH_PASTED].map(([id, kind, , name, rle, what]) => {
     const b = card({
-      pic: id === 'pasted' ? icon('copy') : art ? pixelIcon(art) : typeof rle === 'string' ? cellsIcon(kind, rle) : '',
+      pic: id === 'pasted' ? icon('copy') : typeof rle === 'string' ? cellsIcon(kind, rle) : '', // (its picture its cells, from its RLE: one source)
       name,
       detail: what,
       byDefault: id === 'cell' ? 'yes' : '',

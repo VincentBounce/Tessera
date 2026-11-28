@@ -318,6 +318,34 @@
         (b) =>
           `${b.closest('[id]:not(button)')?.id ?? ''} › ${((b.querySelector('.mode-name') ?? b.querySelector('span') ?? b).textContent.trim() || b.id).slice(0, 24)}`,
       );
+  // Draw's patterns each once in a rule: two alike (turned by the grid's own turns or mirrored) in one rule show twice (the
+  // search's HighLife glider beside LifeWiki's, v0.1.484 to v0.5.974)
+  function checkPatternsOnce(fail) {
+    const form = (p) => {
+      const forms = [];
+      for (let turn = 0; turn < gridTurns(p[1]); turn++)
+        for (const flip of [false, true]) {
+          const c = orientPattern(p[1], p[4], turn, flip),
+            [x0, y0] = [0, 1].map((d) => Math.min(...c.map((q) => q[d])));
+          forms.push(
+            c
+              .map(([x, y, v]) => `${x - x0},${y - y0},${v}`)
+              .sort()
+              .join(' '),
+          );
+        }
+      return `${p[1]}|${forms.sort()[0]}`;
+    };
+    const seen = new Map();
+    for (const p of DRAW_PATTERNS.filter((q) => typeof q[4] === 'string')) {
+      const k = form(p),
+        q = seen.get(k),
+        both = q?.[2].filter((rule) => p[2].includes(rule)) ?? [];
+      if (both.length) fail(`Draw's patterns: ${q[0]} and ${p[0]} alike in ${both.join(', ')}`);
+      if (!q) seen.set(k, p);
+    }
+    return 1;
+  }
   // every function declared once in each script: a second one of the same name replaces the first with no word (battleScore,
   // v0.4.247: the hunt's score over a battle's stats, a battle frozen at its first step)
   async function checkNames(fail) {
@@ -2061,6 +2089,7 @@
       checkGrids(fail) +
       checkCentred(fail) +
       checkBlocksRound(fail) +
+      checkPatternsOnce(fail) +
       (await checkSheets(fail)) +
       (await checkNames(fail)) +
       (await checkColdLinks(fail));

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.959';
+const VERSION = '0.5.960';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -6633,7 +6633,7 @@ const DISPLAY_DEFAULTS = {
       return NAV[w][1].startsWith('2D') || NAV[w][1] === '3D' ? 1 : 2; // (11% in 2D and in a lattice, 20% on a solid)
     },
   ], // (Life, Ant and Rewind: Tiles' Mist, Slate in the dark; else its lines Faint in 2D, Medium in 3D; Explore's colours alone, no seams drawn over them, but its kinds of tile's, distances', hemispheres' and lunes', Strong: see GRID_LINES)
-  trail: ['lifeTrail', [], true], // (Life's Trail: on, in Solo and in teams, its colour the one that died, see lifeBook)
+  trail: ['lifeTrail', ['tab', 'theme'], (variant, w) => NAV[w][0] === 'Life' && themeName() === 'light'], // (Life's Trail: on a light page, in Solo and in teams, its colour the one that died, see lifeBook; off in the dark)
   ocean: ['ocean', ['tab', 'battle'], (variant, w) => battleAt(w) && NAV[w][0] === 'Walk'], // (on in a walk's battle on a surface; picked, kept till the battle starts or ends)
   cut: [null, [], 0],
   blocks: [null, [], false],

@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.970';
+const VERSION = '0.5.971';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -18982,10 +18982,12 @@ const cssColour = (name) => getComputedStyle(document.documentElement).getProper
 let cellsAsked = null;
 const nearCells = (sizes, cells, n) =>
   sizes.reduce((a, b) => (Math.abs(Math.log(cells(b) / n)) < Math.abs(Math.log(cells(a) / n)) ? b : a)); // the size with about n cells
-// a size's card in words marked ({b:…} bold, {g:…} grey, {y:…} and the others coloured), as html: its total, then its words
+// a size's card in words marked ({b:…} bold, {g:…} grey, {y:…} and the others coloured), as html: its total, then its words;
+// a parenthesis outside a mark a note, grey as {g:…} (its words' convention: none a formula's, see howCounted)
 const sizeCardHtml = (total, text) => {
   const marks = (t) =>
     t
+      .replace(/\{[a-z]:[^}]*\}|\([^()]*\)/g, (m) => (m[0] === '(' ? `{g:${m}}` : m)) // (a mark first, as it is: its own parentheses its own)
       .replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`)
       .replace(/\{([yroskbge]):([^}]*)\}/g, (_, c, w) =>
         c === 'g' ? `<span class="tip-default">${w}</span>` : `<b${c === 'b' ? '' : ` class="tip-${c}"`}>${w}</b>`,

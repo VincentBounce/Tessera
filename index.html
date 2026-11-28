@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://vincentbounce.github.io/Tessera/">
   <meta property="og:type" content="website">
   <link id="favicon" rel="icon">  <!-- the app's logo, set at start-up (see LOGO_PATH) -->
-  <link rel="stylesheet" href="style.css?v=0.5.961">
+  <link rel="stylesheet" href="style.css?v=0.5.962">
   <script>  // the theme before the first paint (see applyTheme)
     try { const t = localStorage.getItem('tesseraTheme'); document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
   </script>
@@ -20,7 +20,7 @@
     <div class="header-row">
       <div id="modeTabs" class="tabs" role="tablist"><button id="appTab" type="button" class="pane-tab" data-in-more title="Its version and the people whose work it shows"></button></div>  <!-- About: the app's tab, a pane's tab as Gallery's, the last in the "…" menu (see renderModePicker) -->
       <div class="header-end">
-        <button id="shareLink" data-icon="link" type="button" title="Copy the link to what is shown">Share link</button>  <!-- see shareView -->
+        <button id="shareLink" class="important" data-icon="link" type="button" title="Copy the link to what is shown">Share link</button>  <!-- see shareView -->
         <div class="stepper max-steps">  <!-- the length asked, steps at most (a walk's, a creature's, Elementary's and Space-time's generations): kept in every tab, set before going there -->
           <button id="digitsDown" type="button" title="Fewer steps">−</button>
           <span class="field"><input id="digitsLabel" type="text" inputmode="numeric" maxlength="12" spellcheck="false" autocomplete="off"><button class="enter" type="button" tabindex="-1" title="Apply (Enter)">↵</button><span id="waitGauge" hidden><span class="wait-fill"></span><span class="wait-words"></span></span></span>  <!-- waitGauge: a long wait's, over the length (see showWaits) -->
@@ -237,9 +237,9 @@
         <div class="gallery-tools-row">  <!-- one row of buttons as Share link's: with no card selected, the Gallery's; with some, those acting on them (data-when, see syncSelection) -->
           <button id="openRle" data-icon="import" data-when="none" type="button" title="An RLE file (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Open RLE</button>
           <button id="pasteRle" data-icon="copy" data-when="none" type="button" title="The RLE copied (Golly's, LifeWiki's, Save RLE's) as the cells drawn, in the nearest setup that plays it: its grid, its colours, its rule">Paste RLE</button>
-          <button id="gallerySaveLink" data-icon="save" data-when="none" type="button" title="Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)">Save link</button>
+          <button id="gallerySaveLink" class="important" data-icon="save" data-when="none" type="button" title="Save the link to what is shown as a file, opened in the browser (.webloc on a Mac, .url elsewhere)">Save link</button>
           <button id="gallerySelectAll" data-icon="boxTicked" data-when="some" type="button" title="Every card of every tab: to Export, Delete or Refresh them">Select all</button>
-          <button id="refreshThumbnails" data-icon="autoRotate" data-toggle type="button" title="Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done">Refresh</button>
+          <button id="refreshThumbnails" class="important" data-icon="autoRotate" data-toggle type="button" title="Erase the thumbnails no card shows any more, then take again those of the cards selected, else the missing ones, one setup after the other: each shown, then taken once built; on while it runs, off by a click or once done">Refresh</button>
           <button id="galleryDelete" data-icon="trash" data-when="some" type="button" title="The cards selected, with their thumbnails">Delete</button>
           <button id="galleryImport" data-icon="import" data-when="none" type="button" title="Add the setups of a JSON file to the Gallery as they are (those of a name already used numbered: none replaced); no thumbnails taken: Refresh takes them">Import</button>
           <button id="galleryExport" data-icon="export" type="button" title="The cards selected as a JSON file, else the whole Gallery">Export</button>
@@ -352,11 +352,11 @@
     </div>
   </main>
 
-  <script src="pixelarticons.js?v=0.5.961"></script>
-  <script src="punkgen.js?v=0.5.961"></script>
-  <script src="loops.js?v=0.5.961"></script>
-  <script src="emoji.js?v=0.5.961"></script>
-  <script src="debug.js?v=0.5.961"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
-  <script src="main.js?v=0.5.961"></script>
+  <script src="pixelarticons.js?v=0.5.962"></script>
+  <script src="punkgen.js?v=0.5.962"></script>
+  <script src="loops.js?v=0.5.962"></script>
+  <script src="emoji.js?v=0.5.962"></script>
+  <script src="debug.js?v=0.5.962"></script>  <!-- a panel to try settings by eye (see debugPanel) -->
+  <script src="main.js?v=0.5.962"></script>
 </body>
 </html>

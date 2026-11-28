@@ -41,7 +41,7 @@
 
 // The version shown after the title, and the only place it is written: 0.1.0 was the first
 // commit, and every commit adds 1 to the last number (0.1.N, N = commits before this one)
-const VERSION = '0.5.961';
+const VERSION = '0.5.962';
 const APP_TITLE = 'Tessera'; // (its name, as its page's heading; Text's words at first)
 const SITE = 'https://vincentbounce.github.io/Tessera/'; // (the app published: a link that opens for anyone, see rleFile)
 // The dev's page: debug.js loaded (its debug panel, the version in the address bar); the site published has none (see
@@ -37297,6 +37297,12 @@ const putThumbnail = (key, thumbnail) => {
   thumbnailUrls.set(key, URL.createObjectURL(thumbnail));
   return thumbnailStore('readwrite', (store) => store.put(thumbnail, key));
 };
+// a card's thumbnail taken from the view (its setup shown, built), kept and shown on its card
+async function takeThumbnail(x, row) {
+  const key = thumbnailKey(x.setup);
+  await putThumbnail(key, await wantThumbnail()).catch(() => {});
+  cardPicture(row, thumbnailUrls.get(key));
+}
 // Refresh: the cards selected (taken again, a thumbnail or not), else those with no thumbnail, in their order, one after the
 // other: each shown (as a click on it) and taken once built, its thumbnail fading in on its card; a click again, the Gallery
 // shut or a card clicked stops it (the last built shown)
@@ -37329,9 +37335,7 @@ async function refreshThumbnails() {
     } // (its tab, its parameters under the Gallery)
     if (!refreshing) return; // (stopped meanwhile: another setup shown, not its thumbnail)
     await adoptShown(x, row);
-    const thumbnail = await wantThumbnail();
-    await putThumbnail(thumbnailKey(x.setup), thumbnail).catch(() => {});
-    cardPicture(row, thumbnailUrls.get(thumbnailKey(x.setup)));
+    await takeThumbnail(x, row);
   }
   refreshing = false;
   syncRefreshTile();
@@ -45969,7 +45973,8 @@ function setupRow(name, detail, x, inView) {
         if (!applySetup(setup)) preview.hidden = true;
         built.then(() => {
           if (cardShown !== x) return;
-          adoptShown(x, b); // (its setup as the app writes it now, its name its bar's, see adoptShown)
+          // (its setup as the app writes it now, its name its bar's, see adoptShown; a card with no picture, its thumbnail taken)
+          adoptShown(x, b).then(() => thumbnail || takeThumbnail(x, b));
           requestAnimationFrame(() => {
             preview.hidden = true;
           }); // (once drawn)
